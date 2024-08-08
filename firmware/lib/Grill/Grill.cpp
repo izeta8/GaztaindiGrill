@@ -13,6 +13,7 @@ extern const char* mqttUser;
 extern const char* mqttPassword;
 
 extern PubSubClient client;
+extern SerialTelnet SerialTN;
 
 #define ENCODER_ERROR -9999.0 // Definir un valor especial que represente cuando el encoder lee mal un valor.
 #define SIN_OBJETIVO -999 // Definir un valor cuando no se tiene ningun objetivo en go_to
@@ -126,7 +127,7 @@ void Grill::update_rotor_encoder() {
     // Solo va a imprimir en los multiplos de 5.
     if (rotorEncoderValue % 5 == 0)
     {
-        Serial.println("Rotor Encoder = " + String(rotorEncoderValue));
+        SerialTN.println("Rotor Encoder = " + String(rotorEncoderValue));
         publicarMQTT(parse_topic("inclinacion"), String(rotorEncoderValue));
     }
 }
@@ -154,7 +155,7 @@ void Grill::update_encoder() {
 
     String encoderValueStr = String(encoderValue);
     String stringTopicEncoder = parse_topic("posicion");
-    Serial.println("Encoder " + String(index) + " = " + encoderValue);
+    SerialTN.println("Encoder " + String(index) + " = " + encoderValue);
     publicarMQTT(stringTopicEncoder, encoderValueStr);
 }
 
@@ -175,7 +176,7 @@ void Grill::update_temperature() {
     lastTemperatureValue = temperature;
 
     String temperatureStr = String(temperature);
-    Serial.println("Temperature = " + temperatureStr);
+    SerialTN.println("Temperature = " + temperatureStr);
     publicarMQTT(parse_topic("temperatura"), temperatureStr);
 }
  
@@ -410,7 +411,7 @@ bool Grill::limit_switch_pulsado(const int CS_LIMIT_SWITCH) {
 /// ----------------------///
 
 void Grill::imprimir(String msg) {
-    Serial.println(msg);
+    SerialTN.println(msg);
     publicarMQTT(parse_topic("log"), msg);
 }
 
@@ -428,7 +429,7 @@ String Grill::parse_topic(String accion) {
 
 void Grill::subscribe_topics() {
     if (!client.connected()) {
-        Serial.println("Cliente MQTT no está conectado. No se pueden suscribir los tópicos.");
+        SerialTN.println("Cliente MQTT no está conectado. No se pueden suscribir los tópicos.");
         return;
     }
 
@@ -438,9 +439,9 @@ void Grill::subscribe_topics() {
     for (int i = 0; i < numTopics; ++i) {
         String topic = parse_topic(topics[i]);
         if (client.subscribe(topic.c_str())) {
-            Serial.println("Subscribed to: " + topic);
+            // SerialTN.println("Subscribed to: " + topic);
         } else {
-            Serial.println("Failed to subscribe to: " + topic);
+            SerialTN.println("Failed to subscribe to: " + topic);
         }
     }
 }
@@ -537,7 +538,7 @@ void Grill::executeProgram(const char* program) {
 
     // Imprimir el JSON recibido para depuración
     serializeJson(doc, Serial);
-    Serial.println();
+    SerialTN.println();
 
     JsonArray array = doc.as<JsonArray>();
     numPasosPrograma = array.size(); 

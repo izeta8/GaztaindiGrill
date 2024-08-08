@@ -3,14 +3,20 @@
 #include <SPI.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <ArduinoOTA.h>
 
 #include <GRILL_config.h>
 #include <Grill.h>
+#include <SerialTelnet.h>
 
 #define NUM_GRILLS 2
 
 const char* ssid = "WiFi-Gaztaindi";
-const char* password = "";
+const char* password = ""; 
+const IPAddress local_IP(192, 168, 1, 100);
+const IPAddress gateway(192, 168, 1, 1);
+const IPAddress subnet(255, 255, 255, 0);  
+
 const char* mqttServer = "192.168.1.62"; 
 const int mqttPort = 1883;  
 const char* mqttUser = "gaztaindi";
@@ -18,7 +24,11 @@ const char* mqttPassword = "gaztaindi";
 
 WiFiClient wifiClient;
 PubSubClient client(wifiClient);
-
+   
+WiFiServer telnetServer(23);  // Puerto Telnet
+WiFiClient telnetClient;
+SerialTelnet SerialTN(telnetClient);
+    
 Grill* grills[NUM_GRILLS];
 
 unsigned long previousMillisTemp = 0; 
@@ -29,26 +39,41 @@ void connectToWiFi();
 void connectToMQTT();
 void handleMQTTCallback(char* topic, byte* payload, unsigned int length);
 bool publicarMQTT(const String& topic, const String& payload);
+void configurarOTA();
+void manejarTelnet();
 
 void setup() {
+
     Serial.begin(115200);
     SPI.begin();
 
+    // WIFI eta MQTTa konektatu
     connectToWiFi();
     client.setCallback(handleMQTTCallback);
     connectToMQTT();
 
+    // Configuración de Telnet
+    telnetServer.begin();
+    telnetServer.setNoDelay(true); 
+
+    // OTA konfiguratu
+    configurarOTA();
+  
+    // Parrillak instantziatu eta martxan jarri
     for (int i = 0; i < NUM_GRILLS; ++i) {
         grills[i] = new Grill(i);
         if (grills[i]->setup_devices()) {
-            Serial.println("Los dispositivos de la parrilla " + String(i) + " se han configurado correctamente");
+            SerialTN.println("Los dispositivos de la parrilla " + String(i) + " se han configurado correctamente");
             grills[i]->resetear_sistema();
             grills[i]->subscribe_topics();
 
         } else {
-            Serial.println("Ha habido un error al configurar los dispositivos de la parrilla " + String(i));
+            SerialTN.println("Ha habido un error al configurar los dispositivos de la parrilla " + String(i));
         }
-    }
+    } 
+    
+    // Manejar telnet
+    manejarTelnet();
 }
 
 void loop() {
@@ -121,20 +146,28 @@ void loop() {
         // Guardar el tiempo actual
         // grills[0]->update_temperature(); // Kontuan euki ezkerreko parrillak bakarrik eukikoula pt100
     }   
-     
-}
+      
+    // Manejar actualizaciones OTA
+    ArduinoOTA.handle(); 
+
+    // Manejar Telnet
+    manejarTelnet();
+    
+} 
+
 
 /// -------------------------------- ///
 ///             MQTT & WIFI          /// 
 /// -------------------------------- ///
 
 void connectToWiFi() {
+    WiFi.config(local_IP, gateway, subnet);
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
         Serial.print(".");
-    }
-    Serial.println("WiFi connected");
+    } 
+    SerialTN.println("WiFi connected: " + WiFi.localIP().toString());
 }
 
 void connectToMQTT() {
@@ -142,11 +175,11 @@ void connectToMQTT() {
     while (!client.connected()) {
         Serial.print("Attempting MQTT connection...");
         if (client.connect("ESP32Client", mqttUser, mqttPassword)) {
-            Serial.println("connected");
+            SerialTN.println("connected");
         } else {
             Serial.print("failed, rc=");
             Serial.print(client.state());
-            Serial.println(" try again in 5 seconds");
+            SerialTN.println(" try again in 5 seconds");
             delay(5000);
         }
     }
@@ -172,5 +205,67 @@ void handleMQTTCallback(char* topic, byte* payload, unsigned int length) {
     // Verificar que el id es válido antes de usarlo
     if (id >= 0 && id < NUM_GRILLS) {
         grills[id]->handleMQTTMessage(accion, mensaje);
+    }
+}
+ 
+
+/// -------------------------------- ///
+///            OTA & TELNET          /// 
+/// -------------------------------- /// 
+  
+void configurarOTA()  
+{ 
+    // Configuración de ArduinoOTA
+    ArduinoOTA.setHostname("GaztaindiGrill");
+    ArduinoOTA.setPassword("gaztaindi"); // Opcional: añade una contraseña para mayor seguridad
+
+    ArduinoOTA.onStart([]() {
+        String type;
+        if (ArduinoOTA.getCommand() == U_FLASH)
+            type = "sketch";
+        else // U_SPIFFS
+            type = "filesystem";
+        // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+        SerialTN.println("Start updating " + type);
+    });
+    ArduinoOTA.onEnd([]() {
+        SerialTN.println("\nEnd");
+    });
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+        Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+    });
+    ArduinoOTA.onError([](ota_error_t error) {
+        Serial.printf("Error[%u]: ", error);
+        if (error == OTA_AUTH_ERROR) SerialTN.println("Auth Failed");
+        else if (error == OTA_BEGIN_ERROR) SerialTN.println("Begin Failed");
+        else if (error == OTA_CONNECT_ERROR) SerialTN.println("Connect Failed");
+        else if (error == OTA_RECEIVE_ERROR) SerialTN.println("Receive Failed");
+        else if (error == OTA_END_ERROR) SerialTN.println("End Failed");
+    });
+
+    ArduinoOTA.begin();
+}    
+ 
+ 
+void manejarTelnet()
+{ 
+    // Manejar Telnet
+    if (telnetServer.hasClient()) {
+        if (!telnetClient || !telnetClient.connected()) {
+            if (telnetClient) telnetClient.stop();
+            telnetClient = telnetServer.available();
+                SerialTN.println("Cliente Telnet conectado");  // Mensaje de depuración
+        } else {
+            telnetServer.available().stop();
+        }
+    } 
+     
+    if (telnetClient && telnetClient.connected()) {
+        while (telnetClient.available()) {
+            Serial.write(telnetClient.read());
+        }
+        if (Serial.available()) {
+            telnetClient.write(Serial.read());
+        }
     }
 }

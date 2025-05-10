@@ -89,7 +89,7 @@ void Grill::resetear_sistema() {
     }
 
     // ------------- RESETEAR ACTUADOR LINEAL ------------- //
-    resetear_actuador_lineal();
+    // resetear_actuador_lineal();
     
     // ------------- RESETEAR ENCODER ------------- //
     resetear_encoder(encoder);
@@ -317,10 +317,18 @@ void Grill::manejar_parada_encoder() {
 
 // ------------- PT100 ------------- //
 
+bool temperatura_valida(int temp) 
+{
+    return (temp != -1);
+} 
+
 void Grill::go_to_temp(int temperatura) {
 
     temperaturaObjetivo = temperatura;
     int currentTemperature = get_temperature();
+
+    // Si no es una temperatura valida nos salimos del metodo
+    if (!temperatura_valida(currentTemperature)) {return;}
 
     // En la funcion manejar_parada_encoder(), que se llamada en loop, manejamos cuando tenemos que parar.
     if (currentTemperature < temperatura) {
@@ -333,6 +341,9 @@ void Grill::go_to_temp(int temperatura) {
 void Grill::manejar_parada_temperatura() {
     int currentTemperature = get_temperature();
     int margen = 2; // Ajusta el margen según sea necesario
+ 
+    // Si no es una temperatura valida nos salimos del metodo
+    if (!temperatura_valida(currentTemperature)) {return;}
 
     if (abs(currentTemperature - temperaturaObjetivo) <= margen && temperaturaObjetivo != SIN_OBJETIVO ) {
         parar();

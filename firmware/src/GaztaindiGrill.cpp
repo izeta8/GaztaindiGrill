@@ -144,7 +144,7 @@ void loop() {
     unsigned long currentMillisTemp = millis();
     if (currentMillisTemp - previousMillisTemp >= intervalTemp) {
         // Guardar el tiempo actual
-        // grills[0]->update_temperature(); // Kontuan euki ezkerreko parrillak bakarrik eukikoula pt100
+        grills[0]->update_temperature(); // Kontuan euki ezkerreko parrillak bakarrik eukikoula pt100
     }   
       
     // Manejar actualizaciones OTA
@@ -217,7 +217,7 @@ void configurarOTA()
 { 
     // Configuración de ArduinoOTA
     ArduinoOTA.setHostname("GaztaindiGrill");
-    ArduinoOTA.setPassword("gaztaindi"); // Opcional: añade una contraseña para mayor seguridad
+    // ArduinoOTA.setPassword("gaztaindi"); // Opcional: añade una contraseña para mayor seguridad
 
     ArduinoOTA.onStart([]() {
         String type;

@@ -13,7 +13,6 @@ extern const char* mqttUser;
 extern const char* mqttPassword;
 
 extern PubSubClient client;
-extern SerialTelnet SerialTN;
 
 #define ENCODER_ERROR -9999.0 // Definir un valor especial que represente cuando el encoder lee mal un valor.
 #define SIN_OBJETIVO -999 // Definir un valor cuando no se tiene ningun objetivo en go_to
@@ -89,7 +88,7 @@ void Grill::resetear_sistema() {
     }
 
     // ------------- RESETEAR ACTUADOR LINEAL ------------- //
-    // resetear_actuador_lineal();
+    resetear_actuador_lineal();
     
     // ------------- RESETEAR ENCODER ------------- //
     resetear_encoder(encoder);
@@ -127,7 +126,7 @@ void Grill::update_rotor_encoder() {
     // Solo va a imprimir en los multiplos de 5.
     if (rotorEncoderValue % 5 == 0)
     {
-        SerialTN.println("Rotor Encoder = " + String(rotorEncoderValue));
+        Serial.println("Rotor Encoder = " + String(rotorEncoderValue));
         publicarMQTT(parse_topic("inclinacion"), String(rotorEncoderValue));
     }
 }
@@ -155,7 +154,7 @@ void Grill::update_encoder() {
 
     String encoderValueStr = String(encoderValue);
     String stringTopicEncoder = parse_topic("posicion");
-    SerialTN.println("Encoder " + String(index) + " = " + encoderValue);
+    Serial.println("Encoder " + String(index) + " = " + encoderValue);
     publicarMQTT(stringTopicEncoder, encoderValueStr);
 }
 
@@ -176,7 +175,7 @@ void Grill::update_temperature() {
     lastTemperatureValue = temperature;
 
     String temperatureStr = String(temperature);
-    SerialTN.println("Temperature = " + temperatureStr);
+    Serial.println("Temperature = " + temperatureStr);
     publicarMQTT(parse_topic("temperatura"), temperatureStr);
 }
  
@@ -422,7 +421,7 @@ bool Grill::limit_switch_pulsado(const int CS_LIMIT_SWITCH) {
 /// ----------------------///
 
 void Grill::imprimir(String msg) {
-    SerialTN.println(msg);
+    Serial.println(msg);
     publicarMQTT(parse_topic("log"), msg);
 }
 
@@ -440,7 +439,7 @@ String Grill::parse_topic(String accion) {
 
 void Grill::subscribe_topics() {
     if (!client.connected()) {
-        SerialTN.println("Cliente MQTT no está conectado. No se pueden suscribir los tópicos.");
+        Serial.println("Cliente MQTT no está conectado. No se pueden suscribir los tópicos.");
         return;
     }
 
@@ -450,9 +449,9 @@ void Grill::subscribe_topics() {
     for (int i = 0; i < numTopics; ++i) {
         String topic = parse_topic(topics[i]);
         if (client.subscribe(topic.c_str())) {
-            // SerialTN.println("Subscribed to: " + topic);
+            Serial.println("Subscribed to: " + topic);
         } else {
-            SerialTN.println("Failed to subscribe to: " + topic);
+            Serial.println("Failed to subscribe to: " + topic);
         }
     }
 }
@@ -549,7 +548,6 @@ void Grill::executeProgram(const char* program) {
 
     // Imprimir el JSON recibido para depuración
     serializeJson(doc, Serial);
-    SerialTN.println();
 
     JsonArray array = doc.as<JsonArray>();
     numPasosPrograma = array.size(); 

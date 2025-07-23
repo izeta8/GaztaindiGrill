@@ -7,7 +7,6 @@
 #include <ArduinoJson.h>
 #include <PubSubClient.h>
 #include <SerialTelnet.h>
-// #include <../SerialTelnet/SerialTelnet.h>
 
 #include <GRILL_config.h>
 #include <DeviceEncoder.h>
@@ -22,7 +21,6 @@
 #define RNOMINAL 100.0
 
 extern PubSubClient client;
-extern SerialTelnet SerialTN;
 
 enum Modo {
     NORMAL,

@@ -46,10 +46,10 @@ bool Grill::setup_devices() {
 
     // ACTUADOR LINEAL LIMIT SWITCH (RESETEATZEKO)
     pinMode(PIN_CS_LIMIT_LINEAL[index], INPUT_PULLUP);
-
+    
     // ROTOR LIMIT SWITCH (RESETEATZEKO)
     pinMode(PIN_CS_LIMIT_ROTOR, INPUT_PULLUP);
-
+    
     // ROTOR ETA PT100 (EZKERREKUAK BAKARRIK DAZKAE)
     if (index == 0)
     {
@@ -357,7 +357,7 @@ void Grill::manejar_parada_temperatura() {
 /// ------------------------------------  ///
 
 bool Grill::esta_arriba()
-{
+{   
     return (modo == DUAL) ? esta_arriba_dual : limit_switch_pulsado(PIN_CS_LIMIT_LINEAL[index]);
 }
 
@@ -421,6 +421,9 @@ bool Grill::limit_switch_pulsado(const int CS_LIMIT_SWITCH) {
 /// ----------------------///
 
 void Grill::imprimir(String msg) {
+    Serial.print("[");
+    Serial.print(this->index);
+    Serial.print("] ");
     Serial.println(msg);
     publicarMQTT(parse_topic("log"), msg);
 }

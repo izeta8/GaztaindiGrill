@@ -47,9 +47,9 @@ const int PIN_CS_LIMIT_LINEAL []  = {4, 15};
 //   ENCODERS
 //====================================================================================
 const long PULSES_ENCODER_GRILL  = 5640L; // Default: 2400L // Neria: 5640L
-extern float DATA_INTERVAL_GRILL[]; // Declarar como extern (Se le da valor en el Grill_config.cpp)
+extern float DATA_INTERVAL_GRILL[]; // Declare as extern (Assign value in Grill_config.cpp)
 const long PULSES_ENCODER_ROTOR  = 2400L;
-extern float DATA_INTERVAL_ROTOR[]; // Declarar como extern (Se le da valor en el Grill_config.cpp)
+extern float DATA_INTERVAL_ROTOR[]; // Declare as extern (Assign value in Grill_config.cpp)
  
 const uint8_t PIN_OLED_I2C_SDA  = 4;
 const uint8_t PIN_OLED_I2C_SLC  = 15;

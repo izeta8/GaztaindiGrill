@@ -16,32 +16,32 @@
 
 #include <DeviceRotorDrive.h>
  
-// Definir RNOMINAL y RREF
+// Define RNOMINAL and RREF
 #define RREF 430.0
 #define RNOMINAL 100.0
 
 extern PubSubClient client;
 
-enum Modo {
+enum Mode {
     NORMAL,
-    BURRUNTZI,
+    SPINNING,
     DUAL
 };
 
-enum DireccionDual {
-    ARRIBA,
-    QUIETO,
-    ABAJO
+enum DualModeDirection {
+    UPWARDS,
+    STILL,
+    DOWNWARDS
 };
 
 class Grill {
 public:
     Grill(int index);
 
-    bool esta_arriba_dual;
+    bool is_at_top_dual;
     bool setup_devices();
-    void resetear_sistema();
-    bool esta_arriba();
+    void reset_system();
+    bool is_at_top();
 
     // ----------------- GETTERS ----------------- //
     int get_rotor_encoder_value();
@@ -54,35 +54,35 @@ public:
     void update_encoder();
     void update_temperature();
 
-    // ---------------- BASIKUAK ----------------- //
-    void subir();
-    void bajar();
-    void parar();
+    // ---------------- BASICS ----------------- //
+    void go_up();
+    void go_down();
+    void stop_lineal_actuator();
 
-    void voltear();   
-    void rotar_horario();
-    void rotar_antihorario();
-    void parar_rotor();
-    bool limit_switch_pulsado(const int cs_limit_switch);
+    void turn_around();   
+    void rotate_clockwise();
+    void rotate_counter_clockwise();
+    void stop_rotor();
+    bool limit_switch_pressed(const int cs_limit_switch);
 
     // ------------------- GO_TO ------------------ //
-    void go_to(int posicion);
-    void go_to_temp(int temperatura);
-    void go_to_rotor(int grados);
+    void go_to(int position);
+    void go_to_temp(int temperature);
+    void go_to_rotor(int grades);
 
-    DireccionDual direccion_dual;
-    Modo modo;
+    DualModeDirection dual_direction;
+    Mode mode;
 
-    // ---- MANEJAR PARADAS (GO_TO / PROGRAMA) ---- //
-    void manejar_parada_rotor();
-    void manejar_parada_encoder();
-    void manejar_parada_temperatura();
-    void update_programa();
+    // ---- HANDLE STOPS (GO_TO / PROGRAM) ---- //
+    void handle_rotor_stop();
+    void handle_position_stop();
+    void handle_temperature_stop();
+    void update_program();
 
     // ------------------- MQTT ------------------- //
-    void handleMQTTMessage(const char* topic, const char* payload);
-    void executeProgram(const char* program);
-    void subscribe_topics();
+    void handle_mqtt_message(const char* topic, const char* payload);
+    void execute_program(const char* program);
+    void subscribe_to_topics();
 
 
 private:
@@ -100,36 +100,36 @@ private:
     int lastTemperatureValue;
 
     // ------------------- RESETS ------------------ //
-    void resetear_rotor();
-    void resetear_actuador_lineal();
-    void resetear_encoder(DeviceEncoder* sel_encoder);
+    void reset_rotor();
+    void reset_linear_actuators();
+    void reset_encoder(DeviceEncoder* sel_encoder);
 
     // -------------------- MQTT ------------------- //
-    void imprimir(String msg);
-    String parse_topic(String accion);
-    bool publicarMQTT(const String& topic, const String& payload);
+    void print(String msg);
+    String parse_topic(String action);
+    bool publish_mqtt(const String& topic, const String& payload);
 
-    // -------------- GO_TO OBJETIBUAK ------------- //
-    int temperaturaObjetivo;
-    int gradosObjetivo;
-    int posicionObjetivo;  
+    // -------------- GO_TO TARGETS ------------- //
+    int targetTemperature;
+    int targetDegrees;
+    int targetPosition;  
 
-    // ----------------- PROGRAMAK ----------------- //
-    void cancelar_programa();
+    // ----------------- PROGRAMS ----------------- //
+    void cancel_program();
     
-    struct Paso {
-        int tiempo;
-        int temperatura;
-        int posicion;
-        int rotacion;
-        const char* accion;
+    struct Step {
+        int time;
+        int temperature;
+        int position;
+        int rotation;
+        const char* action;
     };
-    Paso pasos[25]; // Programa batek dazkan pausu maximuak
-    int numPasosPrograma;
-    int pasoActualPrograma;
-    bool objetivoAlcanzado;
-    bool cancelarPrograma; 
-    unsigned long tiempoInicioPaso;
+    Step steps[25]; // The maximum number of steps in a program
+    int programStepsCount;
+    int programCurrentStep;
+    bool targetReached;
+    bool cancelProgram; 
+    unsigned long stepStartTime;
 };
 
 #endif

@@ -26,34 +26,34 @@ PubSubClient client(wifiClient);
 Grill* grills[NUM_GRILLS];
 
 unsigned long previousMillisTemp = 0; 
-const long intervalTemp = 1500; // Temperaturan estadua aktualizatzeko pausa, MQTT ez kargatzeko.
+const long intervalTemp = 1500; // Temperature update pause, MQTT not loading.
 
-// Funtziyuak lenuotik deklaratu, bestela erroria emateu.
-void connectToWiFi();
-void connectToMQTT();
-void handleMQTTCallback(char* topic, byte* payload, unsigned int length);
-bool publicarMQTT(const String& topic, const String& payload);
+// Functions declared from the library, otherwise error.
+void connect_to_wifi();
+void connect_to_mqtt();
+void handle_mqtt_callback(char* topic, byte* payload, unsigned int length);
+bool publish_mqtt(const String& topic, const String& payload);
 
 void setup() {
 
     Serial.begin(115200);
     SPI.begin();
 
-    // WIFI eta MQTTa konektatu
-    connectToWiFi();
-    client.setCallback(handleMQTTCallback);
-    connectToMQTT();
+    // WIFI & MQTT connection
+    connect_to_wifi();
+    client.setCallback(handle_mqtt_callback);
+    connect_to_mqtt();
   
-    // Parrillak instantziatu eta martxan jarri
+    // Grill instantization & start
     for (int i = 0; i < NUM_GRILLS; ++i) {
         grills[i] = new Grill(i);
         if (grills[i]->setup_devices()) {
-            Serial.println("Los dispositivos de la parrilla " + String(i) + " se han configurado correctamente");
-            grills[i]->resetear_sistema();
-            grills[i]->subscribe_topics();
+            Serial.println("The grill " + String(i) + " has been configured correctly");
+            grills[i]->reset_system();
+            grills[i]->subscribe_to_topics();
 
         } else {
-            Serial.println("Ha habido un error al configurar los dispositivos de la parrilla " + String(i));
+            Serial.println("An error has occurred while configuring the devices of grill " + String(i));
         }
     } 
     
@@ -62,66 +62,63 @@ void setup() {
 void loop() {
 
     if (!client.connected()) {
-        connectToMQTT();
+        connect_to_mqtt();
     }
     client.loop();  
  
     /// ----------------------------------- ///
-    ///          MANEJAR MODO DUAL          /// 
+    ///          HANDLE DUAL MODE          /// 
     /// ----------------------------------- ///
 
-    if (grills[0]-> modo == DUAL)
+    if (grills[0]-> mode == DUAL)
     {
 
-        // ------------- ESTA ARRIBA ------------- //
-        bool esta_arriba_dual = grills[0]->esta_arriba() && grills[1]->esta_arriba();
-        grills[0]->esta_arriba_dual = esta_arriba_dual;
+        // ------------- AT TOP ------------- //
+        bool is_at_top_dual = grills[0]->is_at_top() && grills[1]->is_at_top();
+        grills[0]->is_at_top_dual = is_at_top_dual;
 
-        // ------------- DIRECCIONES ------------- //
-        DireccionDual direccion_dual = grills[0]->direccion_dual;
-        if (direccion_dual == ARRIBA)
-        {
-            grills[0]->subir();
-            grills[1]->subir();
-        }
-        if (direccion_dual == QUIETO)
-        {
-            grills[0]->parar();
-            grills[1]->parar();
-        }
-        if (direccion_dual == ABAJO)
-        {
-            grills[0]->bajar();
-            grills[1]->bajar();
+        // ------------- DIRECTIONS ------------- //
+        switch (grills[0]->dual_direction) {
+            case UPWARDS:
+                grills[0]->go_up();
+                grills[1]->go_up();
+                break;
+            case STILL:
+                grills[0]->stop_lineal_actuator();
+                grills[1]->stop_lineal_actuator();
+                break;
+            case DOWNWARDS:
+                grills[0]->go_down();
+                grills[1]->go_down();
+                break;
         }
     }
       
     // ---- ROTOR ---- //
-    // Ezkerreko parrillak bakarrik daka rotorra
-    grills[0]->manejar_parada_rotor();
+    
+    // Only the left grill has a rotor
+    grills[0]->handle_rotor_stop();
     grills[0]->update_rotor_encoder();   
     
     for (int i = 0; i < NUM_GRILLS; ++i) 
     {
-        /// --------------------------------- ///
-        ///       MANEJAR LAS PARADAS DE      /// 
-        ///        LOS GO_TO / PROGRAMA       /// 
-        /// --------------------------------- ///
+        /// ------------------------------------------------- ///
+        ///       HANDLE THE STOP OF GO_TO AND PROGRAMS       /// 
+        /// ------------------------------------------------- ///
 
-        grills[i]->manejar_parada_encoder(); 
-        grills[i]->update_programa();    
+        grills[i]->handle_position_stop(); 
+        grills[i]->update_program();    
     
-        /// -------------------------------- ///
-        ///          HOME ASSISTANTEKO       /// 
-        ///        ESTADUAK AKTUALIZATU      /// 
-        /// -------------------------------- ///
+        /// ---------------------------------------------- ///
+        ///          UPDATE HOME ASSISTANTEKO STATES       /// 
+        /// ---------------------------------------------- ///
 
         grills[i]->update_encoder(); 
     }
 
-    // ---- TEMPERATURA ---- //
+    // ---- TEMPERATURE ---- //
 
-    // grills[0]->manejar_parada_temperatura(); 
+    // grills[0]->handle_temperature_stop(); 
      
     // // Temperatura irakutzeko pausa, MQTT ez kargatzeko.
     // unsigned long currentMillisTemp = millis();
@@ -137,7 +134,7 @@ void loop() {
 ///             MQTT & WIFI          /// 
 /// -------------------------------- ///
 
-void connectToWiFi() {
+void connect_to_wifi() {
     WiFi.config(local_IP, gateway, subnet);
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
@@ -147,7 +144,7 @@ void connectToWiFi() {
     Serial.println("WiFi connected: " + WiFi.localIP().toString());
 }
 
-void connectToMQTT() {
+void connect_to_mqtt() {
     client.setServer(mqttServer, mqttPort);
     while (!client.connected()) {
         Serial.print("Attempting MQTT connection...");
@@ -162,25 +159,25 @@ void connectToMQTT() {
     }
 }
 
-bool publicarMQTT(const String& topic, const String& payload) {
+bool publish_mqtt(const String& topic, const String& payload) {
     if (!client.connected()) {
-        connectToMQTT();
+        connect_to_mqtt();
     }
     return client.publish(topic.c_str(), payload.c_str());
 }
 
-void handleMQTTCallback(char* topic, byte* payload, unsigned int length) {
-    char mensaje[length + 1];
-    memcpy(mensaje, payload, length);
-    mensaje[length] = '\0';
+void handle_mqtt_callback(char* topic, byte* payload, unsigned int length) {
+    char message[length + 1];
+    memcpy(message, payload, length);
+    message[length] = '\0';
 
-    // Akziyua, eta akziyua dagokion parrilla atea, formatua hau dala kontuan izanda: "grill/{id}/{accion}" 
+    // Get the action and its corresponding grill taking into account the topic format is "grill/{id}/{action}"
     int id;
-    char accion[120]; // MQTT topic batek ezin du array honen dimentsiyua baño handiyo izan.
-    sscanf(topic, "grill/%d/%s", &id, accion);
+    char action[120]; // An MQTT topic cant be longer than the size of the array.
+    sscanf(topic, "grill/%d/%s", &id, action);
 
-    // Verificar que el id es válido antes de usarlo
+    // Verify that the id is valid before using it
     if (id >= 0 && id < NUM_GRILLS) {
-        grills[id]->handleMQTTMessage(accion, mensaje);
+        grills[id]->handle_mqtt_message(action, message);
     }
 }

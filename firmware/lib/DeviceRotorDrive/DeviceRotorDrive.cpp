@@ -24,12 +24,12 @@ void DeviceRotorDrive::stop(void) {
     digitalWrite(_pinIN4, LOW);
 };
 
-void DeviceRotorDrive::rotateCounterClockwise(void) {
+void DeviceRotorDrive::rotate_counter_clockwise(void) {
     digitalWrite(_pinIN3, HIGH);
     digitalWrite(_pinIN4, LOW);
 };
 
-void DeviceRotorDrive::rotateClockwise(void) {
+void DeviceRotorDrive::rotate_clockwise(void) {
     digitalWrite(_pinIN3, LOW);
     digitalWrite(_pinIN4, HIGH);
 };

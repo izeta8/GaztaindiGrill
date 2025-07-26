@@ -15,8 +15,8 @@ class DeviceRotorDrive {
     DeviceRotorDrive(int pinIN3, int pinIN4, int pinENB);
 
     void stop(void);
-    void rotateClockwise(void);
-    void rotateCounterClockwise(void);
+    void rotate_clockwise(void);
+    void rotate_counter_clockwise(void);
 };
 
 #endif // DEVICEROTORDRIVE_H

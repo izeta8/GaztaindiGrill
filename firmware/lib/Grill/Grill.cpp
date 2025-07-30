@@ -4,6 +4,7 @@
 
 #include <Grill.h>
 
+
 extern PubSubClient client;
 
 #define ENCODER_ERROR -9999.0 // Define a special value that represents a bad read from the encoder.
@@ -11,21 +12,25 @@ extern PubSubClient client;
 
 Grill::Grill(int index) :
     index(index), 
-    encoder(nullptr), rotorEncoder(nullptr), drive(nullptr), rotor(nullptr), thermocouple(nullptr), // PERIPHERALS
+    encoder(nullptr), rotorEncoder(nullptr), drive(nullptr), rotor(nullptr), thermocouple(nullptr), mqtt(nullptr), // PERIPHERALS
     lastEncoderValue(0), lastRotorEncoderValue(0), lastTemperatureValue(0), // LAST VALUES
     dual_direction(STILL), mode(NORMAL), is_at_top_dual(false), // DATA
     targetPosition(NO_TARGET), targetDegrees(NO_TARGET), targetTemperature(NO_TARGET), // GO_TO TARGETS
     programStepsCount(0), programCurrentStep(0), targetReached(false), stepStartTime(0), cancelProgram(false) // PROGRAM
-    {}
+    {
+
+        mqtt = new GrillMQTT(this->index);
+
+    }
 
 bool Grill::setup_devices() {
    
-    print("Configuring devices for grill " + String(index));
+    mqtt->print("Configuring devices for grill " + String(index));
 
     // ENCODER
     encoder = new DeviceEncoder(PIN_SPI_CS_GRILL_ENC[index]);
     if (!encoder->begin(PULSES_ENCODER_GRILL, DATA_INTERVAL_GRILL, false)) {
-        print("Error Begin Encoder " + String(index));
+        mqtt->print("Error Begin Encoder " + String(index));
         return false;
     }
     
@@ -47,7 +52,7 @@ bool Grill::setup_devices() {
         // Rotor Encoder
         rotorEncoder = new DeviceEncoder(PIN_SPI_CS_ROTOR_ENC);
         if (!rotorEncoder->begin(PULSES_ENCODER_ROTOR, DATA_INTERVAL_ROTOR, true)) {
-            print("Error Begin Rotor Encoder");
+            mqtt->print("Error Begin Rotor Encoder");
             return false;
         }
 
@@ -67,7 +72,7 @@ bool Grill::setup_devices() {
 
 void Grill::reset_system() {
     
-    print("Resetting devices for grill " + String(index));   
+    mqtt->print("Resetting devices for grill " + String(index));   
 
     // ------------- RESET ROTOR ------------- //
     if (index == 0)
@@ -82,7 +87,7 @@ void Grill::reset_system() {
     reset_encoder(encoder);
     update_encoder();
 
-    print("Devices reset");  
+    mqtt->print("Devices reset");  
     
 }
 
@@ -114,7 +119,8 @@ void Grill::update_rotor_encoder() {
     if (rotorEncoderValue % 5 == 0)
     {
         Serial.println("Rotor Encoder = " + String(rotorEncoderValue));
-        publish_mqtt(parse_topic("inclinacion"), String(rotorEncoderValue));
+        String topic = mqtt->parse_topic("inclinacion");
+        mqtt->publish_message(topic, String(rotorEncoderValue));
     }
 }
 
@@ -140,9 +146,9 @@ void Grill::update_encoder() {
     lastEncoderValue = encoderValue;
 
     String encoderValueStr = String(encoderValue);
-    String stringTopicEncoder = parse_topic("posicion");
+    String stringTopicEncoder = mqtt->parse_topic("posicion");
     Serial.println("Encoder " + String(index) + " = " + encoderValue);
-    publish_mqtt(stringTopicEncoder, encoderValueStr);
+    mqtt->publish_message(stringTopicEncoder, encoderValueStr);
 }
 
 // ------------- PT 100 ------------- //
@@ -150,7 +156,7 @@ void Grill::update_encoder() {
 int Grill::get_temperature() {
     double temperature = thermocouple->readCelsius();
     if (isnan(temperature)) {
-        print("Error reading temperature!");
+        mqtt->print("Error reading temperature!");
         return -1;
     }
     return (int) temperature;
@@ -163,7 +169,8 @@ void Grill::update_temperature() {
 
     String temperatureStr = String(temperature);
     Serial.println("Temperature = " + temperatureStr);
-    publish_mqtt(parse_topic("temperatura"), temperatureStr);
+    String topic = mqtt->parse_topic("temperatura");
+    mqtt->publish_message(topic, temperatureStr);
 }
  
 /// -------------------------///
@@ -202,7 +209,7 @@ void Grill::stop_lineal_actuator() {
 }
 
 void Grill::turn_around() {
-    print("Turning around");
+    mqtt->print("Turning around");
     int currentInclination = get_rotor_encoder_value();
     int targetInclination = (currentInclination + 180) % 360;
     go_to_rotor(targetInclination);
@@ -236,7 +243,7 @@ void Grill::stop_rotor()
 void Grill::go_to_rotor(int degrees) {
 
     if (degrees < 0 || degrees >= 360) {
-        print("Rotor degrees out of range");
+        mqtt->print("Rotor degrees out of range");
         return;
     }  
      
@@ -349,7 +356,7 @@ bool Grill::is_at_top()
 
 void Grill::reset_rotor()
 {
-    print("Resetting rotor");
+    mqtt->print("Resetting rotor");
     rotate_clockwise();
 
     // To avoid printing the message all the time, make a non-blocking delay so it can receive MQTT
@@ -360,7 +367,7 @@ void Grill::reset_rotor()
         unsigned long currentMillis = millis();
         if (currentMillis - previousMessageMillis >= messageInterval) {
             previousMessageMillis = currentMillis;
-            print("Resetting rotor...");
+            mqtt->print("Resetting rotor...");
         }
         client.loop();
     }
@@ -372,7 +379,7 @@ void Grill::reset_rotor()
 void Grill::reset_linear_actuators()
 {
     go_up(); 
-    print("Moving linear actuators to top");
+    mqtt->print("Moving linear actuators to top");
 
     // To avoid printing the message all the time, make a non-blocking delay so it can receive MQTT
     unsigned long previousMessageMillis = 0;
@@ -383,12 +390,12 @@ void Grill::reset_linear_actuators()
         unsigned long currentMillis = millis();
         if (currentMillis - previousMessageMillis >= messageInterval) {
             previousMessageMillis = currentMillis;
-            print("Moving linear actuators to top...");
+            mqtt->print("Moving linear actuators to top...");
         }
         client.loop();
     }
 
-    print("Linear actuators at top");
+    mqtt->print("Linear actuators at top");
     stop_lineal_actuator();
 }
 
@@ -404,121 +411,6 @@ bool Grill::limit_switch_pressed(const int CS_LIMIT_SWITCH) {
 ///          MQTT         /// 
 /// ----------------------///
 
-void Grill::print(String msg) {
-    Serial.print("[");
-    Serial.print(this->index);
-    Serial.print("] ");
-    Serial.println(msg);
-    publish_mqtt(parse_topic("log"), msg);
-}
-
-bool Grill::publish_mqtt(const String& topic, const String& payload) {
-    if (!client.connected()) {
-        extern void connect_to_mqtt();
-        connect_to_mqtt();
-    }
-    return client.publish(topic.c_str(), payload.c_str());
-}
-
-String Grill::parse_topic(String action) {
-    return "grill/" + String(index) + "/" + action;
-}
-
-void Grill::subscribe_to_topics() {
-    if (!client.connected()) {
-        Serial.println("MQTT client is not connected. Cannot subscribe to topics.");
-        return;
-    }
-
-    const char* topics[] = {"log", "reiniciar", "dirigir", "inclinar", "establecer_posicion", "ejecutar_programa", "cancelar_programa", "establecer_inclinacion", "establecer_modo"};
-    const int numTopics = sizeof(topics) / sizeof(topics[0]);
-
-    for (int i = 0; i < numTopics; ++i) {
-        String topic = parse_topic(topics[i]);
-        if (client.subscribe(topic.c_str())) {
-            Serial.println("Subscribed to: " + topic);
-        } else {
-            Serial.println("Failed to subscribe to: " + topic);
-        }
-    }
-}
-
-void Grill::handle_mqtt_message(const char* pAction, const char* pPayload) {
-    String action(pAction);
-    String payload(pPayload);
-
-    String topic = parse_topic("mqtt_topic_listener");
-    String message = "An action has reached. " + action + ": " + payload;
-    publish_mqtt(topic, message);
-
-    if (action == "dirigir") {
-        if (payload == "subir") {
-            go_up();
-        } else if (payload == "bajar") {
-            go_down();
-        } else if (payload == "parar") {
-            stop_lineal_actuator();
-        }
-    }  
-
-     if (action == "inclinar") {
-        if (payload == "horario") {
-            rotate_clockwise();
-        } else if (payload == "antihorario") {
-            rotate_counter_clockwise();
-        } else if (payload == "parar") {
-            stop_rotor();
-        }
-    }  
-
-    if (action == "establecer_posicion") {
-        int posicion = payload.toInt();
-        go_to(posicion);
-    }
-    
-    if (action == "reiniciar") {
-        print("Reiniciando sistema");
-    }
-    
-    if (action == "ejecutar_programa") {
-        print("Ejecutando un programa..."); 
-        execute_program(pPayload);
-    }
-    
-    if (action == "cancel_program") {
-        cancelProgram = true;
-        print("Programa cancelado");
-    }
-    
-    if (action == "establecer_inclinacion")
-    {
-        int grades = payload.toInt();
-        go_to_rotor(grades);
-    }
-    
-    if (action == "establecer_modo")
-    {
-        if (payload == "normal")
-        {
-            mode = NORMAL;
-            stop_lineal_actuator();
-            reset_rotor();
-        }
-        
-        if (payload == "burruntzi") 
-        {
-            mode = SPINNING;
-            stop_lineal_actuator();
-            stop_rotor();
-        }
-        
-        if (payload == "dual")
-        {
-            // The dual mode is controller in the main function from src/GaztaindiGrill.cpp
-            mode = DUAL;
-        }
-    }
-}
 
 void Grill::execute_program(const char* program) { 
      
@@ -529,11 +421,11 @@ void Grill::execute_program(const char* program) {
     DeserializationError error = deserializeJson(doc, program);
 
     if (error) {
-        print("Error deserializing JSON.");
+        mqtt->print("Error deserializing JSON.");
         return;
     }
     
-    print("JSON deserialized successfully.");
+    mqtt->print("JSON deserialized successfully.");
     serializeJson(doc, Serial);
 
     JsonArray array = doc.as<JsonArray>();
@@ -569,7 +461,7 @@ void Grill::cancel_program()
     targetReached = false;
     stepStartTime = 0;
 
-    print("Program cancelled and system restarted."); 
+    mqtt->print("Program cancelled and system restarted."); 
 
 }
 

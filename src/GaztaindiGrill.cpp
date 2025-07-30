@@ -32,7 +32,6 @@ const long intervalTemp = 1500; // Temperature update pause, MQTT not loading.
 void connect_to_wifi();
 void connect_to_mqtt();
 void handle_mqtt_callback(char* topic, byte* payload, unsigned int length);
-bool publish_mqtt(const String& topic, const String& payload);
 
 void setup() {
 
@@ -49,8 +48,8 @@ void setup() {
         grills[i] = new Grill(i);
         if (grills[i]->setup_devices()) {
             Serial.println("The grill " + String(i) + " has been configured correctly");
-            grills[i]->reset_system();
-            grills[i]->subscribe_to_topics();
+            // grills[i]->reset_system();
+            // grills[i]->subscribe_to_topics();
 
         } else {
             Serial.println("An error has occurred while configuring the devices of grill " + String(i));
@@ -159,13 +158,6 @@ void connect_to_mqtt() {
     }
 }
 
-bool publish_mqtt(const String& topic, const String& payload) {
-    if (!client.connected()) {
-        connect_to_mqtt();
-    }
-    return client.publish(topic.c_str(), payload.c_str());
-}
-
 void handle_mqtt_callback(char* topic, byte* payload, unsigned int length) {
     char message[length + 1];
     memcpy(message, payload, length);
@@ -178,6 +170,6 @@ void handle_mqtt_callback(char* topic, byte* payload, unsigned int length) {
 
     // Verify that the id is valid before using it
     if (id >= 0 && id < NUM_GRILLS) {
-        grills[id]->handle_mqtt_message(action, message);
+        grills[id]->mqtt->handle_mqtt_message(action, message);
     }
 }

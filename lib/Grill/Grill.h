@@ -15,6 +15,7 @@
 #include <Adafruit_MAX31855.h>
 
 #include <DeviceRotorDrive.h>
+#include <GrillMQTT.h>
  
 // Define RNOMINAL and RREF
 #define RREF 430.0
@@ -36,25 +37,28 @@ enum DualModeDirection {
 
 class Grill {
 public:
-    Grill(int index);
 
+    Grill(int index);
+    GrillMQTT* mqtt;
+ 
     bool is_at_top_dual;
     bool setup_devices();
     void reset_system();
     bool is_at_top();
 
-    // ----------------- GETTERS ----------------- //
+    // ----------------- SENSIRS ----------------- //
     int get_rotor_encoder_value();
     long get_encoder_real_value();
     long get_encoder_value();
     int  get_temperature();
+    bool limit_switch_pressed(const int cs_limit_switch);
 
     // ---------- HOME ASSISTANT UPDATE ---------- //
     void update_rotor_encoder();
     void update_encoder();
     void update_temperature();
 
-    // ---------------- BASICS ----------------- //
+    // ---------------- MOVEMENTS ----------------- //
     void go_up();
     void go_down();
     void stop_lineal_actuator();
@@ -63,7 +67,6 @@ public:
     void rotate_clockwise();
     void rotate_counter_clockwise();
     void stop_rotor();
-    bool limit_switch_pressed(const int cs_limit_switch);
 
     // ------------------- GO_TO ------------------ //
     void go_to(int position);
@@ -80,10 +83,10 @@ public:
     void update_program();
 
     // ------------------- MQTT ------------------- //
-    void handle_mqtt_message(const char* topic, const char* payload);
+    // void handle_mqtt_message(const char* topic, const char* payload);
+    // void subscribe_to_topics();
+    
     void execute_program(const char* program);
-    void subscribe_to_topics();
-
 
 private:
     CytronMD* drive;
@@ -105,9 +108,9 @@ private:
     void reset_encoder(DeviceEncoder* sel_encoder);
 
     // -------------------- MQTT ------------------- //
-    void print(String msg);
-    String parse_topic(String action);
-    bool publish_mqtt(const String& topic, const String& payload);
+    // void print(String msg);
+    // String parse_topic(String action);
+    // bool publish_mqtt(const String& topic, const String& payload);
 
     // -------------- GO_TO TARGETS ------------- //
     int targetTemperature;

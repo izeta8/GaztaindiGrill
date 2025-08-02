@@ -6,38 +6,6 @@ GrillSensor::GrillSensor(int index, GrillMQTT* mqtt, HardwareManager* hardware, 
     grillIndex(index), mqtt(mqtt), hardware(hardware), modeManager(modeManager),
     is_at_top_dual(false), lastEncoderValue(0), lastRotorEncoderValue(0), lastTemperatureValue(0) {}
 
-/// -------------------------- ///
-///          GET/PRINT         /// 
-///         PERIPHERALS        /// 
-/// -------------------------- ///
-
-// ------------- ROTOR ENCODER ------------- //
- 
-int GrillSensor::get_rotor_encoder_value()
-{  
-    int rotorEncoderValue = hardware->rotorEncoder->get_data();
-     
-    if (rotorEncoderValue<0) { rotorEncoderValue+=360; }  
-    if (rotorEncoderValue == 0) return lastRotorEncoderValue;
- 
-    return rotorEncoderValue;
-}
-
-void GrillSensor::update_rotor_encoder() { 
-
-    int rotorEncoderValue = get_rotor_encoder_value();
-    
-    if (rotorEncoderValue == lastRotorEncoderValue) { return; }
-    lastRotorEncoderValue = rotorEncoderValue;
-
-    // Only prints every 5th value.
-    if (rotorEncoderValue % 5 == 0)
-    {
-        Serial.println("Rotor Encoder = " + String(rotorEncoderValue));
-        String topic = mqtt->parse_topic("inclinacion");
-        mqtt->publish_message(topic, String(rotorEncoderValue));
-    }
-}
 
 // ------------- ENCODER ------------- //
 
@@ -71,6 +39,36 @@ bool GrillSensor::limit_switch_pressed(const int CS_LIMIT_SWITCH) {
     return digitalRead(CS_LIMIT_SWITCH) == LOW;
 }
 
+
+// ------------- ROTOR ENCODER ------------- //
+ 
+int GrillSensor::get_rotor_encoder_value()
+{  
+    int rotorEncoderValue = hardware->rotorEncoder->get_data();
+     
+    if (rotorEncoderValue<0) { rotorEncoderValue+=360; }  
+    if (rotorEncoderValue == 0) return lastRotorEncoderValue;
+ 
+    return rotorEncoderValue;
+}
+
+void GrillSensor::update_rotor_encoder() { 
+
+    int rotorEncoderValue = get_rotor_encoder_value();
+    
+    if (rotorEncoderValue == lastRotorEncoderValue) { return; }
+    lastRotorEncoderValue = rotorEncoderValue;
+
+    // Only prints every 5th value.
+    if (rotorEncoderValue % 5 == 0)
+    {
+        Serial.println("Rotor Encoder = " + String(rotorEncoderValue));
+        String topic = mqtt->parse_topic("inclinacion");
+        mqtt->publish_message(topic, String(rotorEncoderValue));
+    }
+}
+
+
 // ------------- PT 100 ------------- //
 
 int GrillSensor::get_temperature() {
@@ -92,8 +90,6 @@ void GrillSensor::update_temperature() {
     String topic = mqtt->parse_topic("temperatura");
     mqtt->publish_message(topic, temperatureStr);
 }
-
-// ------------- PT100 ------------- //
 
 bool GrillSensor::is_valid_temperature(int temperature) 
 {

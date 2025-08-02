@@ -1,3 +1,6 @@
+#ifndef GRILL_CONSTANTS
+#define GRILL_CONSTANTS
+
 class GrillConstants {
 public:
 
@@ -27,3 +30,5 @@ public:
     // System limits
     static constexpr int MAX_PROGRAM_STEPS = 50;
 };
+
+#endif

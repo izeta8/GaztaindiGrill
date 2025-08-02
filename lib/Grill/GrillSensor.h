@@ -16,17 +16,15 @@ public:
     long get_encoder_value();
     int  get_temperature();
     bool limit_switch_pressed(const int cs_limit_switch);
+    bool is_valid_temperature(int temperature);
+    bool is_at_top();
+    bool is_at_top_dual;
 
     // ---------- HOME ASSISTANT UPDATE ---------- //
     void update_rotor_encoder();
     void update_encoder();
     void update_temperature();
 
-    bool is_valid_temperature(int temperature);
-    
-    bool is_at_top();
-    bool is_at_top_dual;
-    
 private:
        
     int grillIndex;
@@ -34,7 +32,7 @@ private:
     HardwareManager* hardware;
     ModeManager* modeManager;
     
-    // ----------------- LAST VALUES --------------- //
+    // Last values
     long lastEncoderValue;
     int lastRotorEncoderValue;
     int lastTemperatureValue;

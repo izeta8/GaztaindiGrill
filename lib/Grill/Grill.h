@@ -58,7 +58,9 @@ public:
     void updateProgram();
     
     // MQTT
+    void subscribe_to_topics();
     void handle_mqtt_message(const char* pAction, const char* pPayload);
+
 
 private:
     

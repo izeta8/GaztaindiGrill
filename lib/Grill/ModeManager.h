@@ -20,7 +20,7 @@ public:
 
     DualModeDirection dual_direction = STILL;
     Mode mode = NORMAL;
-
+    
 private:
 
     int grillIndex;

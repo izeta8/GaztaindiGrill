@@ -114,11 +114,11 @@ Mode Grill::get_mode() {
 //
 // Programs
 //
-void Grill::executeProgram(const char* program) {
+void Grill::execute_program(const char* program) {
     programManager->execute_program(program);
 }
 
-void Grill::updateProgram() {
+void Grill::update_program() {
     programManager->update_program();
 }
 

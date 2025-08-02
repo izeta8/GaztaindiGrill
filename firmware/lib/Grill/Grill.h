@@ -54,8 +54,8 @@ public:
     Mode get_mode();
 
     // Programs
-    void executeProgram(const char* program);
-    void updateProgram();
+    void execute_program(const char* program);
+    void update_program();
     
     // MQTT
     void subscribe_to_topics();

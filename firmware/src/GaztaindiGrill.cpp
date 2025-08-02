@@ -5,7 +5,7 @@
 #include <PubSubClient.h>
 
 #include <GRILL_config.h>
-#include <Grill.h>
+#include <GrillSystem.h>
 
 const char* ssid = "Gaztaindi";
 const char* password = "Gaztaindi"; 
@@ -21,10 +21,7 @@ const char* mqttPassword = "gaztaindi";
 WiFiClient wifiClient;
 PubSubClient client(wifiClient);
    
-Grill* grills[GrillConstants::NUM_GRILLS];
-
-unsigned long previousMillisTemp = 0; 
-const long intervalTemp = 1500; // Temperature update pause, MQTT not loading.
+GrillSystem* grillSystem;
 
 // Functions declared from the library, otherwise error.
 void connect_to_wifi();
@@ -41,18 +38,12 @@ void setup() {
     client.setCallback(handle_mqtt_callback);
     connect_to_mqtt();
   
-    // Grill instantization & start
-    for (int i = 0; i < GrillConstants::NUM_GRILLS; ++i) {
-        grills[i] = new Grill(i);
-        if (grills[i]->setup_devices()) {
-            Serial.println("The grill " + String(i) + " has been configured correctly");
-            grills[i]->reset_system();
-            grills[i]->subscribe_to_topics();
-
-        } else {
-            Serial.println("An error has occurred while configuring the devices of grill " + String(i));
-        }
-    } 
+    // Initialize GrillSystem
+    grillSystem = new GrillSystem();
+    if (!grillSystem->initialize_system()) {
+        Serial.println("Error initializing grill system");
+        return;
+    }
     
 }
 
@@ -63,66 +54,8 @@ void loop() {
     }
     client.loop();  
  
-    /// ----------------------------------- ///
-    ///          HANDLE DUAL MODE          /// 
-    /// ----------------------------------- ///
-
-    if (grills[0]->get_mode()== DUAL)
-    {
-
-        // ------------- AT TOP ------------- //
-        bool is_at_top_dual = grills[0]->is_at_top() && grills[1]->is_at_top();
-        grills[0]->set_is_at_top_dual(is_at_top_dual);
-
-        // ------------- DIRECTIONS ------------- //
-        switch (grills[0]->get_dual_direction()) {
-            case UPWARDS:
-                grills[0]->go_up();
-                grills[1]->go_up();
-                break;
-            case STILL:
-                grills[0]->stop_lineal_actuator();
-                grills[1]->stop_lineal_actuator();
-                break;
-            case DOWNWARDS:
-                grills[0]->go_down();
-                grills[1]->go_down();
-                break;
-        }
-    }
-      
-    // ---- ROTOR ---- //
-    
-    // Only the left grill has a rotor
-    grills[0]->handle_rotor_stop();
-    grills[0]->update_rotor_encoder();   
-    
-    for (int i = 0; i < GrillConstants::NUM_GRILLS; ++i) 
-    {
-        /// ------------------------------------------------- ///
-        ///       HANDLE THE STOP OF GO_TO AND PROGRAMS       /// 
-        /// ------------------------------------------------- ///
-
-        grills[i]->handle_position_stop(); 
-        grills[i]->update_program();    
-    
-        /// ---------------------------------------------- ///
-        ///          UPDATE HOME ASSISTANTEKO STATES       /// 
-        /// ---------------------------------------------- ///
-        
-        grills[i]->update_encoder(); 
-    }
-
-    // ---- TEMPERATURE ---- //
-
-    // grills[0]->handle_temperature_stop(); 
-     
-    // // Temperatura irakutzeko pausa, MQTT ez kargatzeko.
-    // unsigned long currentMillisTemp = millis();
-    // if (currentMillisTemp - previousMillisTemp >= intervalTemp) {
-    //     // Guardar el tiempo actual
-    //     grills[0]->update_temperature(); // Kontuan euki ezkerreko parrillak bakarrik eukikoula pt100
-    // }   
+    // All grill logic is now encapsulated in GrillSystem
+    grillSystem->update();
       
 } 
 
@@ -168,6 +101,9 @@ void handle_mqtt_callback(char* topic, byte* payload, unsigned int length) {
 
     // Verify that the id is valid before using it
     if (id >= 0 && id < GrillConstants::NUM_GRILLS) {
-        grills[id]->handle_mqtt_message(action, message);
+        Grill* grill = grillSystem->get_grill(id);
+        if (grill) {
+            grill->handle_mqtt_message(action, message);
+        }
     }
 }

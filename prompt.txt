@@ -1,0 +1,11 @@
+Eres un expero en C++ y Arduino y tienes experiencia en el desarrollo de proyectos de electrónica y robótica.
+
+
+
+
+Para esto, lee los siguientes archivos: 
+
+I:\Izeta\Documentos\Gaztaindi\Parrilla\Neria\Programak\GaztaindiGrill\lib\Grill\Grill.cpp
+I:\Izeta\Documentos\Gaztaindi\Parrilla\Neria\Programak\GaztaindiGrill\lib\Grill\Grill.h
+I:\Izeta\Documentos\Gaztaindi\Parrilla\Neria\Programak\GaztaindiGrill\lib\GRILL_Modules\GRILL_config.h
+I:\Izeta\Documentos\Gaztaindi\Parrilla\Neria\Programak\GaztaindiGrill\src\GaztaindiGrill.cpp

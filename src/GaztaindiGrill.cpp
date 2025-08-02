@@ -7,8 +7,6 @@
 #include <GRILL_config.h>
 #include <Grill.h>
 
-#define NUM_GRILLS 2
-
 const char* ssid = "Gaztaindi";
 const char* password = "Gaztaindi"; 
 const IPAddress local_IP(192, 168, 1, 100);
@@ -23,7 +21,7 @@ const char* mqttPassword = "gaztaindi";
 WiFiClient wifiClient;
 PubSubClient client(wifiClient);
    
-Grill* grills[NUM_GRILLS];
+Grill* grills[GrillConstants::NUM_GRILLS];
 
 unsigned long previousMillisTemp = 0; 
 const long intervalTemp = 1500; // Temperature update pause, MQTT not loading.
@@ -44,7 +42,7 @@ void setup() {
     connect_to_mqtt();
   
     // Grill instantization & start
-    for (int i = 0; i < NUM_GRILLS; ++i) {
+    for (int i = 0; i < GrillConstants::NUM_GRILLS; ++i) {
         grills[i] = new Grill(i);
         if (grills[i]->setup_devices()) {
             Serial.println("The grill " + String(i) + " has been configured correctly");
@@ -69,15 +67,15 @@ void loop() {
     ///          HANDLE DUAL MODE          /// 
     /// ----------------------------------- ///
 
-    if (grills[0]-> mode == DUAL)
+    if (grills[0]->get_mode()== DUAL)
     {
 
         // ------------- AT TOP ------------- //
         bool is_at_top_dual = grills[0]->is_at_top() && grills[1]->is_at_top();
-        grills[0]->is_at_top_dual = is_at_top_dual;
+        grills[0]->set_is_at_top_dual(is_at_top_dual);
 
         // ------------- DIRECTIONS ------------- //
-        switch (grills[0]->dual_direction) {
+        switch (grills[0]->get_dual_direction()) {
             case UPWARDS:
                 grills[0]->go_up();
                 grills[1]->go_up();
@@ -99,7 +97,7 @@ void loop() {
     grills[0]->handle_rotor_stop();
     grills[0]->update_rotor_encoder();   
     
-    for (int i = 0; i < NUM_GRILLS; ++i) 
+    for (int i = 0; i < GrillConstants::NUM_GRILLS; ++i) 
     {
         /// ------------------------------------------------- ///
         ///       HANDLE THE STOP OF GO_TO AND PROGRAMS       /// 
@@ -111,7 +109,7 @@ void loop() {
         /// ---------------------------------------------- ///
         ///          UPDATE HOME ASSISTANTEKO STATES       /// 
         /// ---------------------------------------------- ///
-
+        
         grills[i]->update_encoder(); 
     }
 
@@ -169,7 +167,7 @@ void handle_mqtt_callback(char* topic, byte* payload, unsigned int length) {
     sscanf(topic, "grill/%d/%s", &id, action);
 
     // Verify that the id is valid before using it
-    if (id >= 0 && id < NUM_GRILLS) {
-        grills[id]->mqtt->handle_mqtt_message(action, message);
+    if (id >= 0 && id < GrillConstants::NUM_GRILLS) {
+        grills[id]->handle_mqtt_message(action, message);
     }
 }

@@ -3,7 +3,6 @@
 
 HardwareManager::HardwareManager(int index, GrillMQTT* mqtt): grillIndex(index), mqtt(mqtt) {}
 
-
 bool HardwareManager::setup_devices() {
    
     mqtt->print("Configuring devices for grill " + String(grillIndex));
@@ -53,4 +52,8 @@ bool HardwareManager::setup_devices() {
 
 void HardwareManager::reset_encoder(DeviceEncoder* selected_encoder) {
     selected_encoder->reset_counter(PULSES_ENCODER_GRILL);
+}
+
+void HardwareManager::reset_rotor_encoder() {
+    rotorEncoder->reset_counter(0);
 }

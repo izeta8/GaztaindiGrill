@@ -7,10 +7,7 @@ MovementManager::MovementManager(int index, GrillMQTT* mqtt, HardwareManager* ha
     targetPosition(GrillConstants::NO_TARGET), targetDegrees(GrillConstants::NO_TARGET), targetTemperature(GrillConstants::NO_TARGET) {}
 
 
-/// -------------------------///
-///           LINEAL         /// 
-///          ACTUATOR        /// 
-/// -------------------------///
+/// ----------- LINEAL ACTUATOR ----------- ///
 
 void MovementManager::go_up() {
 
@@ -50,9 +47,7 @@ void MovementManager::turn_around() {
     go_to_rotor(targetInclination);
 }
 
-/// -------------------------///
-///            ROTOR         /// 
-/// -------------------------///
+/// ----------- ROTOR ----------- ///
 
 void MovementManager::rotate_clockwise()
 {
@@ -171,9 +166,30 @@ void MovementManager::handle_temperature_stop() {
     } 
 }
 
-/// ------------------------------------  ///
-///         PERIPHERALS EXTRA FUNC        /// 
-/// ------------------------------------  ///
+/// ------------------------------------ ///
+///             RESET SYSTEMS            /// 
+/// ------------------------------------ ///
+
+void MovementManager::reset_system() {
+    
+    mqtt->print("Resetting devices for grill " + String(grillIndex));   
+
+    // ------------- RESET ROTOR ------------- //
+    if (index == 0)
+    {
+        // reset_rotor(); 
+    }
+
+    // ------------- RESET LINEAL ACTUATOR ------------- //
+    reset_linear_actuators();
+    
+    // ------------- RESET ENCODER ------------- //
+    hardware->reset_encoder(hardware->encoder);
+    sensor->update_encoder();
+
+    mqtt->print("Devices reset");  
+    
+}
 
 void MovementManager::reset_rotor()
 {
@@ -193,7 +209,7 @@ void MovementManager::reset_rotor()
     }
 
     stop_rotor();
-    hardware->rotorEncoder->reset_counter(0);
+    hardware->reset_rotor_encoder();
 }
 
 void MovementManager::reset_linear_actuators()
@@ -218,24 +234,3 @@ void MovementManager::reset_linear_actuators()
     stop_lineal_actuator();
 }
 
-
-void MovementManager::reset_system() {
-    
-    mqtt->print("Resetting devices for grill " + String(grillIndex));   
-
-    // ------------- RESET ROTOR ------------- //
-    if (index == 0)
-    {
-        // reset_rotor(); 
-    }
-
-    // ------------- RESET LINEAL ACTUATOR ------------- //
-    reset_linear_actuators();
-    
-    // ------------- RESET ENCODER ------------- //
-    hardware->reset_encoder(hardware->encoder);
-    sensor->update_encoder();
-
-    mqtt->print("Devices reset");  
-    
-}

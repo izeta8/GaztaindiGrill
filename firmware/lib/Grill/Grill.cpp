@@ -1,8 +1,6 @@
 #include <Arduino.h>
 #include <GRILL_config.h>
-
 #include <Grill.h>
-
 
 extern PubSubClient client;
 
@@ -127,6 +125,84 @@ void Grill::updateProgram() {
 //
 // MQTT
 //
+
+void Grill::subscribe_to_topics() {
+    mqtt->subscribe_to_topics();
+}
+
 void Grill::handle_mqtt_message(const char* pAction, const char* pPayload) {
-    mqtt->handle_mqtt_message(pAction, pPayload);
+    String action(pAction);
+    String payload(pPayload);
+
+    String topic = mqtt->parse_topic("mqtt_topic_listener");
+    String message = "An action has reached. " + action + ": " + payload;
+    mqtt->publish_message(topic, message);
+
+    if (action == "dirigir") {
+        if (payload == "subir") {
+            movement->go_up();
+        } else if (payload == "bajar") {
+            movement->go_down();
+        } else if (payload == "parar") {
+            movement->stop_lineal_actuator();
+        }
+    }  
+
+     if (action == "inclinar") {
+        if (payload == "horario") {
+            movement->rotate_clockwise();
+        } else if (payload == "antihorario") {
+            movement->rotate_counter_clockwise();
+        } else if (payload == "parar") {
+            movement->stop_rotor();
+        }
+    }  
+
+    if (action == "establecer_posicion") {
+        int posicion = payload.toInt();
+        movement->go_to(posicion);
+    }
+    
+    if (action == "reiniciar") {
+        mqtt->print("Reiniciando sistema");
+    }
+    
+    if (action == "ejecutar_programa") {
+        mqtt->print("Ejecutando un programa..."); 
+        programManager->execute_program(pPayload);
+    }
+    
+    if (action == "cancel_program") {
+        programManager->cancel_program();
+        mqtt->print("Programa cancelado");
+    }
+    
+    if (action == "establecer_inclinacion")
+    {
+        int grades = payload.toInt();
+        movement->go_to_rotor(grades);
+    }
+    
+    if (action == "establecer_modo")
+    {
+        if (payload == "normal")
+        {
+            modeManager->mode = NORMAL;
+            movement->stop_lineal_actuator();
+            movement->reset_rotor();
+        }
+        
+        if (payload == "burruntzi") 
+        {
+            modeManager->mode = SPINNING;
+            movement->stop_lineal_actuator();
+            movement->stop_rotor();
+        }
+        
+        if (payload == "dual")
+        {
+            // The dual mode is controller in the main function from src/GaztaindiGrill.cpp
+            modeManager->mode = DUAL;
+        }
+    }
 }

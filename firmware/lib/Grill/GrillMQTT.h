@@ -8,7 +8,6 @@ class GrillMQTT {
 public:
     GrillMQTT(int index);
 
-    void handle_mqtt_message(const char* topic, const char* payload);
     void subscribe_to_topics();
     void print(String msg);
     String parse_topic(String action);

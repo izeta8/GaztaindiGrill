@@ -15,6 +15,7 @@ public:
 
     bool setup_devices();
     void reset_encoder(DeviceEncoder* sel_encoder);
+    void reset_rotor_encoder();
 
     GrillMQTT* mqtt;
     CytronMD* drive;

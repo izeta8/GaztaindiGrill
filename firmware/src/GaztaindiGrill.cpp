@@ -46,8 +46,8 @@ void setup() {
         grills[i] = new Grill(i);
         if (grills[i]->setup_devices()) {
             Serial.println("The grill " + String(i) + " has been configured correctly");
-            // grills[i]->reset_system();
-            // grills[i]->subscribe_to_topics();
+            grills[i]->reset_system();
+            grills[i]->subscribe_to_topics();
 
         } else {
             Serial.println("An error has occurred while configuring the devices of grill " + String(i));

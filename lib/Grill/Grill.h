@@ -41,7 +41,6 @@ public:
 
     // Sensor updates
     void update_rotor_encoder();
-    void update_program();    
     void update_encoder(); 
 
     // Handle stops

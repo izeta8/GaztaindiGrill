@@ -81,10 +81,6 @@ void Grill::update_rotor_encoder() {
     sensor->update_rotor_encoder();
 }
 
-void Grill::update_program() {
-    programManager->update_program();
-}   
-
 //
 // Handle stops
 //

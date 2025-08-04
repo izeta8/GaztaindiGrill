@@ -2,6 +2,8 @@
 #define GRILL_MQTT_H
 
 #include <PubSubClient.h>
+#include <GrillConstants.h>
+
 extern PubSubClient client;
 
 class GrillMQTT {

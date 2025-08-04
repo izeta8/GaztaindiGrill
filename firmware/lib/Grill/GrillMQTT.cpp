@@ -12,7 +12,18 @@ void GrillMQTT::subscribe_to_topics() {
         return;
     }
 
-    const char* topics[] = {"log", "reiniciar", "dirigir", "inclinar", "establecer_posicion", "ejecutar_programa", "cancelar_programa", "establecer_inclinacion", "establecer_modo"};
+    const char* topics[] = {
+        GrillConstants::TOPIC_LOG,
+        GrillConstants::TOPIC_REINICIAR,
+        GrillConstants::TOPIC_DIRIGIR,
+        GrillConstants::TOPIC_INCLINAR,
+        GrillConstants::TOPIC_ESTABLECER_POSICION,
+        GrillConstants::TOPIC_EJECUTAR_PROGRAMA,
+        GrillConstants::TOPIC_CANCELAR_PROGRAMA,
+        GrillConstants::TOPIC_ESTABLECER_INCLINACION,
+        GrillConstants::TOPIC_ESTABLECER_MODO
+    };
+
     const int numTopics = sizeof(topics) / sizeof(topics[0]);
 
     for (int i = 0; i < numTopics; ++i) {

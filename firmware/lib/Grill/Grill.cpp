@@ -133,69 +133,71 @@ void Grill::handle_mqtt_message(const char* pAction, const char* pPayload) {
     String topic = mqtt->parse_topic("mqtt_topic_listener");
     String message = "An action has reached. " + action + ": " + payload;
     mqtt->publish_message(topic, message);
+    mqtt->print(message);
 
-    if (action == "dirigir") {
-        if (payload == "subir") {
+
+    if (action == GrillConstants::CMD_MOVE) {
+        if (payload == GrillConstants::PAYLOAD_UP) {
             movement->go_up();
-        } else if (payload == "bajar") {
+        } else if (payload == GrillConstants::PAYLOAD_DOWN) {
             movement->go_down();
-        } else if (payload == "parar") {
+        } else if (payload == GrillConstants::PAYLOAD_STOP) {
             movement->stop_lineal_actuator();
         }
     }  
 
-     if (action == "inclinar") {
-        if (payload == "horario") {
+     if (action == GrillConstants::CMD_ROTATE) {
+        if (payload == GrillConstants::PAYLOAD_CLOCKWISE) {
             movement->rotate_clockwise();
-        } else if (payload == "antihorario") {
+        } else if (payload == GrillConstants::PAYLOAD_COUNTER_CLOCKWISE) {
             movement->rotate_counter_clockwise();
-        } else if (payload == "parar") {
+        } else if (payload == GrillConstants::PAYLOAD_STOP) {
             movement->stop_rotor();
         }
     }  
 
-    if (action == "establecer_posicion") {
+    if (action == GrillConstants::CMD_SET_POSITION) {
         int posicion = payload.toInt();
         movement->go_to(posicion);
     }
     
-    if (action == "reiniciar") {
+    if (action == GrillConstants::CMD_RESTART) {
         mqtt->print("Reiniciando sistema");
     }
     
-    if (action == "ejecutar_programa") {
+    if (action == GrillConstants::CMD_EXECUTE_PROGRAM) {
         mqtt->print("Ejecutando un programa..."); 
         programManager->execute_program(pPayload);
     }
     
-    if (action == "cancel_program") {
+    if (action == GrillConstants::CMD_CANCEL_PROGRAM) {
         programManager->cancel_program();
         mqtt->print("Programa cancelado");
     }
     
-    if (action == "establecer_inclinacion")
+    if (action == GrillConstants::CMD_SET_TILT)
     {
         int grades = payload.toInt();
         movement->go_to_rotor(grades);
     }
     
-    if (action == "establecer_modo")
+    if (action == GrillConstants::CMD_SET_MODE)
     {
-        if (payload == "normal")
+        if (payload == GrillConstants::PAYLOAD_NORMAL)
         {
             modeManager->mode = NORMAL;
             movement->stop_lineal_actuator();
             movement->reset_rotor();
         }
         
-        if (payload == "burruntzi") 
+        if (payload == GrillConstants::PAYLOAD_SPINNING) 
         {
             modeManager->mode = SPINNING;
             movement->stop_lineal_actuator();
             movement->stop_rotor();
         }
         
-        if (payload == "dual")
+        if (payload == GrillConstants::PAYLOAD_DUAL)
         {
             // The dual mode is controller in the main function from src/GaztaindiGrill.cpp
             modeManager->mode = DUAL;

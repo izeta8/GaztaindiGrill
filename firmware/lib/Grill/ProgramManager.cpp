@@ -1,5 +1,3 @@
-
-
 #include <ProgramManager.h>
 
 ProgramManager::ProgramManager(int index, GrillMQTT* mqtt, MovementManager* movement) : 
@@ -27,14 +25,20 @@ void ProgramManager::execute_program(const char* program) {
     programStepsCount = array.size(); 
     
     for (int i = 0; i < programStepsCount; i++) {
+        
+        // Fill the 'steps' array with the program received by MQTT. 
+
         JsonObject step = array[i];
-        if (step.containsKey("time") && step.containsKey("temperature")) {
-            steps[i] = {step["time"], step["temperature"], -1, -1};
-        } else if (step.containsKey("time") && step.containsKey("position")) {
-            steps[i] = {step["time"], -1, step["position"], -1};
-        } else if (step.containsKey("time") && step.containsKey("rotation")) {
-            steps[i] = {step["time"], -1, -1, step["rotation"]};
-        } 
+        
+        Step newStep = {
+            .time = step.containsKey(GrillConstants::JSON_TIME) ? step[GrillConstants::JSON_TIME].as<int>() : 0,
+            .temperature = step.containsKey(GrillConstants::JSON_TEMPERATURE) ? step[GrillConstants::JSON_TEMPERATURE].as<int>() : -1,
+            .position = step.containsKey(GrillConstants::JSON_POSITION) ? step[GrillConstants::JSON_POSITION].as<int>() : -1,
+            .rotation = step.containsKey(GrillConstants::JSON_ROTATION) ? step[GrillConstants::JSON_ROTATION].as<int>() : -1,
+            .action = step.containsKey(GrillConstants::JSON_ACTION) ? step[GrillConstants::JSON_ACTION].as<const char*>() : nullptr
+        };
+        
+        steps[i] = newStep;
     }
 
     // Initialize state variables

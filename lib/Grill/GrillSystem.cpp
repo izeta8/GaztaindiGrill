@@ -74,8 +74,10 @@ void GrillSystem::update_individual_grills() {
     for (int i = 0; i < GrillConstants::NUM_GRILLS; ++i) {
         if (grills[i]) {
 
-            // Handle the stop of go_to and programs
-            grills[i]->handle_position_stop(); 
+            // Handle the stop
+            grills[i]->handle_position_stop();
+           
+            // Handle program steps
             grills[i]->update_program();    
         
             // Update Home Assistant states

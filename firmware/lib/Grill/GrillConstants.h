@@ -15,7 +15,7 @@ public:
     static constexpr float RNOMINAL = 100.0f;
     
     // Margins
-    static constexpr int POSITION_MARGIN = 5;        // For go_to position
+    static constexpr int POSITION_MARGIN = 2;        // For go_to position
     static constexpr int TEMPERATURE_MARGIN = 2;     // For go_to temperature
     static constexpr int ROTOR_MARGIN = 3;           // For go_to rotor
     

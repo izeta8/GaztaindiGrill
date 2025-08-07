@@ -83,6 +83,8 @@ void MovementManager::go_to_rotor(int degrees) {
     int differenceRight = (targetDegrees - currentRotorPosition + 360) % 360;
     int differenceLeft = (currentRotorPosition - targetDegrees + 360) % 360;
      
+    mqtt->print("New target: " + String(targetDegrees) + " (current: " + String(currentRotorPosition) + ")");
+
     // In the handle_rotor_stop() function that is called in loop, we handle when we have to stop
     if (differenceRight < differenceLeft) 
     {
@@ -115,6 +117,8 @@ void MovementManager::go_to(int position) {
     targetPosition = position;
     int currentPercentage = sensor->get_encoder_value();
 
+    mqtt->print("New target: " + String(position) + " (current: " + String(currentPercentage) + ")");
+
     // In the function handle_temperature_stop(), which is called in loop, we handle when we have to stop.
     if (currentPercentage < position) {
         go_up();
@@ -142,6 +146,8 @@ void MovementManager::go_to_temp(int temperature) {
 
     // If the temperature is not valid, we exit the method
     if (!sensor->is_valid_temperature(currentTemperature)) {return;}
+
+    mqtt->print("New target: " + String(targetTemperature) + " (current: " + String(currentTemperature) + ")");
 
     // In the function handle_temperature_stop(), which is called in loop, we handle when we have to stop.
     if (currentTemperature < targetTemperature) {

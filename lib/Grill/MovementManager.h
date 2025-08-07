@@ -40,6 +40,7 @@ public:
     int targetTemperature;
     int targetDegrees;
     int targetPosition; 
+    bool has_any_active_target();
 
 private:
 

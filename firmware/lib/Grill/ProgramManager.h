@@ -20,7 +20,28 @@ private:
 
     GrillMQTT* mqtt;
     MovementManager* movement;
+    
+    enum ProgramState {
+        PROGRAM_IDLE,
+        PROGRAM_RUNNING,
+        PROGRAM_COMPLETED,
+        PROGRAM_CANCELLED,
+        PROGRAM_ERROR
+    } programState = PROGRAM_IDLE;
+    
+    enum StepState {
+        STEP_STARTING,
+        STEP_MOVING_TO_TARGET,
+        STEP_WAITING_TIME,
+        STEP_EXECUTING_ACTION,
+        STEP_COMPLETED
+    } stepState = STEP_STARTING;
 
+    void start_current_step();
+    void check_target_reached();
+    void check_time_elapsed();
+    void execute_current_action();
+    void advance_to_next_step();
     
     struct Step {
         int time;
@@ -30,10 +51,10 @@ private:
         const char* action;
     };
     Step steps[GrillConstants::MAX_PROGRAM_STEPS];
+    
+    
     int programStepsCount;
     int programCurrentStep;
-    bool stepObjectiveReached;
-    bool cancelProgram; 
     unsigned long stepDurationStart;
 };
 

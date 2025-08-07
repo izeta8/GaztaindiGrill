@@ -1,6 +1,6 @@
-Eres un expero en C++ y Arduino y tienes experiencia en el desarrollo de proyectos de electrónica y robótica.
+rol: Eres un expero en C++ y Arduino y tienes experiencia en el desarrollo de proyectos de electrónica y robótica.
 
 
 
 
-Para esto, cada archivo de lib/Grill.
+contexto: Para esto, cada archivo de lib/Grill.

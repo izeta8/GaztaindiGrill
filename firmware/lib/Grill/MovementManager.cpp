@@ -40,13 +40,6 @@ void MovementManager::stop_lineal_actuator() {
     }
 }
 
-void MovementManager::turn_around() {
-    mqtt->print("Turning around");
-    int currentInclination = sensor->get_rotor_encoder_value();
-    int targetInclination = (currentInclination + 180) % 360;
-    go_to_rotor(targetInclination);
-}
-
 /// ----------- ROTOR ----------- ///
 
 void MovementManager::rotate_clockwise()
@@ -63,6 +56,14 @@ void MovementManager::stop_rotor()
 {
     hardware->rotor->stop();
 }
+
+void MovementManager::turn_around() {
+    mqtt->print("Turning around");
+    int currentInclination = sensor->get_rotor_encoder_value();
+    int targetInclination = (currentInclination + 180) % 360;
+    go_to_rotor(targetInclination);
+}
+
 
 /// -------------------------- ///
 ///            GO TOs          /// 
@@ -102,8 +103,6 @@ void MovementManager::handle_rotor_stop() {
     if (abs(currentRotorPosition-targetDegrees) <= GrillConstants::ROTOR_MARGIN && targetDegrees != GrillConstants::NO_TARGET ) { 
         stop_rotor();
         targetDegrees = GrillConstants::NO_TARGET;
-        // program->stepObjectiveReached = true; // Mark that the step is in progress after reaching the position
-        // program->stepDurationStart = millis(); // Start counting time now
     } 
 }
 
@@ -133,8 +132,6 @@ void MovementManager::handle_position_stop() {
     if (abs(currentPercentage - targetPosition) <= GrillConstants::POSITION_MARGIN && targetPosition != GrillConstants::NO_TARGET ) {
         stop_lineal_actuator();
         targetPosition = GrillConstants::NO_TARGET;
-        // program->stepObjectiveReached = true; // Marks that the step is in progress after reaching the position
-        // program->stepDurationStart = millis(); // Start counting time now
     } 
 }
 
@@ -167,8 +164,6 @@ void MovementManager::handle_temperature_stop() {
     if (abs(currentTemperature - targetTemperature) <= GrillConstants::TEMPERATURE_MARGIN && targetTemperature != GrillConstants::NO_TARGET ) {
         stop_lineal_actuator();
         targetTemperature = GrillConstants::NO_TARGET;
-        // program->stepObjectiveReached = true; // Mark that the step is in progress after reaching the temperature
-        // program->stepDurationStart = millis(); // Start counting time now
     } 
 }
 
@@ -240,3 +235,8 @@ void MovementManager::reset_linear_actuators()
     stop_lineal_actuator();
 }
 
+bool MovementManager::has_any_active_target() {
+    return (targetTemperature != GrillConstants::NO_TARGET ||
+            targetPosition != GrillConstants::NO_TARGET ||
+            targetDegrees != GrillConstants::NO_TARGET);    
+}

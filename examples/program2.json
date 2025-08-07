@@ -1,0 +1,7 @@
+
+[
+  { "time": 40, "position": 40 },
+  { "time": 60, "position": 30 },
+  { "action": "flip" },
+  { "time": 40, "position": 70 }
+]

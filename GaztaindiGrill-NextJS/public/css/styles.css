@@ -1,0 +1,123 @@
+*
+{
+    margin:0px;
+    padding:0px;
+    color: white;
+} 
+
+body
+{
+    padding: 10% 4%;
+    background-color: #1d1d1f;
+    font-family: Arial, Helvetica, sans-serif;
+}
+    
+h1
+{
+    font-size: 2rem;
+    text-align:center;
+    margin: 6% 0px;
+}
+
+main 
+{
+    margin: auto;
+    max-width: 950px;
+    width:100%;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.contenedor
+{
+    padding: 0% 5%;
+    background: #3e3e40;
+    border-radius: 15px;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    max-width: 600px;
+    margin: auto;
+    box-shadow: rgb(78 78 78 / 25%) 0px 6px 12px -2px, rgb(110 110 110 / 30%) 0px 3px 7px -3px;
+}
+
+
+.contenedor h2
+{
+    font-size: 1.2rem;
+    text-decoration: underline;
+    width:fit-content;
+    display:inline-block;
+    margin: 20px 0px;
+    text-wrap: balance;
+}
+
+.id_text
+{
+    width: fit-content;
+    display:inline-block;
+    font-style: italic;
+    font-size: 0.8rem;
+}
+
+
+.descripcion, .ver_pasos
+{
+    margin-bottom: 10px;
+    font-size: 1rem;
+    text-wrap: balance;
+}
+
+.fecha_creacion, .fecha_actualizacion, .creador
+{
+    color: darkgray;
+    font-style: italic;
+    font-size: 12px;
+}
+
+
+.botonera
+{
+    display: flex;
+    gap: 10px;
+}
+
+.contenedor button
+{
+    background-color: rgb(59, 157, 238);
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 20px 0px
+}
+
+.ver_pasos
+{
+    display: inline-block;
+}
+
+.ver_pasos:hover
+{
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+
+.lista_pasos
+{
+    padding-left: 40px;
+    margin-bottom: 15px;
+    display: none;
+}
+
+
+@media (max-width: 768px) {
+    .contenedor {
+        width: 100%;
+        margin: 10px 0;
+    }
+}

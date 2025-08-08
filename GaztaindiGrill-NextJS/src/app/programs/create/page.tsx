@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Select } from '@/components/ui/Select'
+import { toast } from 'sonner'
 
 // Explicit step types for clarity
 type StepType = 'temperature' | 'position' | 'action' | ''
@@ -31,7 +32,6 @@ export default function CreateProgram() {
   const [steps, setSteps] = useState<ProgramStep[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingStep, setEditingStep] = useState<number | null>(null)
-  const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Step form state
@@ -97,7 +97,12 @@ export default function CreateProgram() {
         newStep.temperature = parseInt(stepForm.temperature)
       } else if (stepForm.type === 'position') {
         if (!stepForm.position) return
-        newStep.position = parseInt(stepForm.position)
+        const pos = parseInt(stepForm.position)
+        if (isNaN(pos) || pos < 0 || pos > 100) {
+          toast.error('La posición debe estar entre 0 y 100')
+          return
+        }
+        newStep.position = pos
       }
     }
 
@@ -156,12 +161,11 @@ export default function CreateProgram() {
     e.preventDefault()
     
     if (steps.length === 0) {
-      setMessage('Debes añadir al menos un paso al programa')
+      toast.error('Debes añadir al menos un paso al programa')
       return
     }
 
     setIsSubmitting(true)
-    setMessage('')
 
     try {
       const response = await fetch('/api/programs/create', {
@@ -176,15 +180,15 @@ export default function CreateProgram() {
       })
 
       if (response.ok) {
-        setMessage('¡Programa creado correctamente!')
+        toast.success('¡Programa creado correctamente!')
         setFormData({ name: '', description: '', creatorName: '' })
         setSteps([])
       } else {
         const errorData = await response.json()
-        setMessage('Error al crear el programa: ' + (errorData?.message || 'Error desconocido'))
+        toast.error('Error al crear el programa: ' + (errorData?.message || 'Error desconocido'))
       }
     } catch {
-      setMessage('Error de conexión. Inténtalo de nuevo.')
+      toast.error('Error de conexión. Inténtalo de nuevo.')
     } finally {
       setIsSubmitting(false)
     }
@@ -322,16 +326,6 @@ export default function CreateProgram() {
 
           {/* Submit Section */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            {message && (
-              <div className={`p-4 rounded-md mb-4 ${
-                message.includes('Error') || message.includes('Debes')
-                  ? 'bg-red-50 text-red-700 border border-red-200'
-                  : 'bg-green-50 text-green-700 border border-green-200'
-              }`} role="status" aria-live="polite">
-                {message}
-              </div>
-            )}
-            
             <Button
               type="submit"
               disabled={isSubmitting || !formData.name || !formData.creatorName || steps.length === 0}
@@ -393,7 +387,15 @@ export default function CreateProgram() {
                     label="Posición"
                     type="number"
                     value={stepForm.position}
-                    onChange={(value) => setStepForm(prev => ({ ...prev, position: value }))}
+                    onChange={(value) => {
+                      const n = Number(value)
+                      if (Number.isNaN(n)) {
+                        setStepForm(prev => ({ ...prev, position: '' }))
+                        return
+                      }
+                      const clamped = Math.max(0, Math.min(100, Math.floor(n)))
+                      setStepForm(prev => ({ ...prev, position: String(clamped) }))
+                    }}
                     placeholder="80"
                     min={0}
                     max={100}

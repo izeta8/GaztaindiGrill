@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, type ReactNode } from 'react'
-import { Plus, Trash2, Edit2, Clock, Thermometer, Target, ArrowUp, MoveVertical } from 'lucide-react'
+import { Plus, Trash2, Edit2, Clock, Thermometer, Target, ArrowUp, MoveVertical, RotateCw } from 'lucide-react'
 import { ProgramStep } from '@/lib/types'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
@@ -11,13 +11,14 @@ import { Select } from '@/components/ui/Select'
 import { toast } from 'sonner'
 
 // Explicit step types for clarity
-type StepType = 'temperature' | 'position' | 'action' | ''
+type StepType = 'temperature' | 'position' | 'rotation' | 'action' | ''
 
 type StepFormState = {
   type: StepType
   time: string
   temperature: string
   position: string
+  rotation: string
   action: string
 }
 
@@ -36,10 +37,11 @@ export default function CreateProgram() {
 
   // Step form state
   const [stepForm, setStepForm] = useState<StepFormState>({
-    type: '', // 'temperature', 'position', 'action'
+    type: '', // 'temperature', 'position', 'rotation', 'action'
     time: '',
     temperature: '',
     position: '',
+    rotation: '',
     action: ''
   })
 
@@ -57,6 +59,7 @@ export default function CreateProgram() {
       time: '',
       temperature: '',
       position: '',
+      rotation: '',
       action: ''
     })
   }
@@ -70,10 +73,11 @@ export default function CreateProgram() {
   const openEditStepModal = (index: number) => {
     const step = steps[index]
     setStepForm({
-      type: step.action ? 'action' : step.temperature ? 'temperature' : 'position',
+      type: step.action ? 'action' : step.temperature ? 'temperature' : step.rotation ? 'rotation' : 'position',
       time: step.time?.toString() || '',
       temperature: step.temperature?.toString() || '',
       position: step.position?.toString() || '',
+      rotation: step.rotation?.toString() || '',
       action: step.action || ''
     })
     setEditingStep(index)
@@ -103,6 +107,14 @@ export default function CreateProgram() {
           return
         }
         newStep.position = pos
+      } else if (stepForm.type === 'rotation') {
+        if (!stepForm.rotation) return
+        const inc = parseInt(stepForm.rotation)
+        if (isNaN(inc) || inc < 0 || inc > 360) {
+          toast.error('La rotación debe estar entre 0 y 360')
+          return
+        }
+        newStep.rotation = inc
       }
     }
 
@@ -140,6 +152,7 @@ export default function CreateProgram() {
     if (step.action) return <Target className="h-5 w-5" />
     if (step.temperature) return <Thermometer className="h-7 w-7" />
     if (step.position) return <MoveVertical className="h-5 w-5" />
+    if (step.rotation) return <RotateCw className="h-5 w-5" />
     return <Clock className="h-5 w-5" />
   }
 
@@ -173,6 +186,14 @@ export default function CreateProgram() {
       return (
         <div className="leading-tight">
           <div><span className="font-medium">Posición:</span> {step.position}</div>
+          <div><span className="font-medium">Tiempo:</span> {formatSeconds(step.time as number)}</div>
+        </div>
+      )
+    }
+    if (step.rotation) {
+      return (
+        <div className="leading-tight">
+          <div><span className="font-medium">Inclinación:</span> {step.rotation}°</div>
           <div><span className="font-medium">Tiempo:</span> {formatSeconds(step.time as number)}</div>
         </div>
       )
@@ -381,6 +402,7 @@ export default function CreateProgram() {
                 options={[
                   { value: 'temperature', label: 'Temperatura' },
                   { value: 'position', label: 'Posición' },
+                  { value: 'rotation', label: 'Rotación' },
                   { value: 'action', label: 'Acción' }
                 ]}
                 required
@@ -428,6 +450,38 @@ export default function CreateProgram() {
                     placeholder="80"
                     min={0}
                     max={100}
+                    required
+                  />
+                  <Input
+                    label="Tiempo (segundos)"
+                    type="number"
+                    value={stepForm.time}
+                    onChange={(value) => setStepForm(prev => ({ ...prev, time: value }))}
+                    placeholder="30"
+                    min={1}
+                    required
+                  />
+                </>
+              )}
+
+              {stepForm.type === 'rotation' && (
+                <>
+                  <Input
+                    label="Rotación (°)"
+                    type="number"
+                    value={stepForm.rotation}
+                    onChange={(value) => {
+                      const n = Number(value)
+                      if (Number.isNaN(n)) {
+                        setStepForm(prev => ({ ...prev, rotation: '' }))
+                        return
+                      }
+                      const clamped = Math.max(0, Math.min(360, Math.floor(n)))
+                      setStepForm(prev => ({ ...prev, rotation: String(clamped) }))
+                    }}
+                    placeholder="45"
+                    min={0}
+                    max={360}
                     required
                   />
                   <Input

@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from 'react'
-import { Plus, Trash2, Edit2, GripVertical, Clock, Thermometer, MapPin, RotateCw, ArrowUp } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
+import { Plus, Trash2, Edit2, Clock, Thermometer, Target, ArrowUp, MoveVertical } from 'lucide-react'
 import { ProgramStep } from '@/lib/types'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
@@ -137,24 +137,47 @@ export default function CreateProgram() {
   }
 
   const getStepIcon = (step: ProgramStep) => {
-    if (step.action) return <RotateCw className="h-5 w-5" />
-    if (step.temperature) return <Thermometer className="h-5 w-5" />
-    if (step.position) return <MapPin className="h-5 w-5" />
+    if (step.action) return <Target className="h-5 w-5" />
+    if (step.temperature) return <Thermometer className="h-7 w-7" />
+    if (step.position) return <MoveVertical className="h-5 w-5" />
     return <Clock className="h-5 w-5" />
   }
 
-  const getStepDescription = (step: ProgramStep) => {
+  const formatSeconds = (seconds: number) => {
+    if (seconds > 60) {
+      const m = Math.floor(seconds / 60)
+      const s = seconds % 60
+      return `${m}m ${s}s`
+    }
+    return `${seconds}s`
+  }
+
+  const getStepDescription = (step: ProgramStep): ReactNode => {
     if (step.action) {
       const actionLabel = actionOptions.find(opt => opt.value === step.action)?.label || step.action
-      return `Acción: ${actionLabel}`
+      return (
+        <div className="leading-tight">
+          <div><span className="font-medium">Acción:</span> {actionLabel}</div>
+        </div>
+      )
     }
     if (step.temperature) {
-      return `Temperatura: ${step.temperature}°C, Tiempo: ${step.time}s`
+      return (
+        <div className="leading-tight">
+          <div><span className="font-medium">Temperatura:</span> {step.temperature}°C</div>
+          <div><span className="font-medium">Tiempo:</span> {formatSeconds(step.time as number)}</div>
+        </div>
+      )
     }
     if (step.position) {
-      return `Posición: ${step.position}, Tiempo: ${step.time}s`
+      return (
+        <div className="leading-tight">
+          <div><span className="font-medium">Posición:</span> {step.position}</div>
+          <div><span className="font-medium">Tiempo:</span> {formatSeconds(step.time as number)}</div>
+        </div>
+      )
     }
-    return 'Paso desconocido'
+    return <div className="leading-tight">Paso desconocido</div>
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -218,7 +241,7 @@ export default function CreateProgram() {
                 label="Nombre del Programa"
                 value={formData.name}
                 onChange={(value) => setFormData(prev => ({ ...prev, name: value }))}
-                placeholder="Ej: Chuletón perfecto"
+                placeholder="Ej: Chuletón"
                 required
                 
               />
@@ -262,12 +285,12 @@ export default function CreateProgram() {
             ) : (
               <div className="space-y-3">
                 {steps.map((step, index) => (
+                  
                   <div
                     key={index}
                     className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg bg-gray-50"
                   >
                     <div className="flex items-center gap-2 text-gray-600">
-                      <GripVertical className="h-4 w-4" />
                       <span className="font-medium text-sm">#{index + 1}</span>
                     </div>
                     
@@ -278,7 +301,8 @@ export default function CreateProgram() {
                       </span>
                     </div>
                     
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 grid grid-cols-2">
+                      
                       <Button
                         onClick={() => moveStep(index, 'up')}
                         variant="secondary"
@@ -289,6 +313,7 @@ export default function CreateProgram() {
                       >
                         <ArrowUp className="h-3 w-3" />
                       </Button>
+                      
                       <Button
                         onClick={() => moveStep(index, 'down')}
                         variant="secondary"
@@ -299,6 +324,7 @@ export default function CreateProgram() {
                       >
                         <ArrowUp className="h-3 w-3" />
                       </Button>
+
                       <Button
                         onClick={() => openEditStepModal(index)}
                         variant="secondary"
@@ -308,6 +334,7 @@ export default function CreateProgram() {
                       >
                         <Edit2 className="h-3 w-3" />
                       </Button>
+
                       <Button
                         onClick={() => deleteStep(index)}
                         variant="danger"
@@ -317,7 +344,9 @@ export default function CreateProgram() {
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
+
                     </div>
+
                   </div>
                 ))}
               </div>

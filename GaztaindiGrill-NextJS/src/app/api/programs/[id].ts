@@ -40,29 +40,29 @@ export default async function handler(
         const updateFields = []
         const updateValues = []
         
-        if (updateData.nombre) {
+        if (updateData.name) {
           updateFields.push('Nombre = ?')
-          updateValues.push(updateData.nombre)
+          updateValues.push(updateData.name)
         }
-        if (updateData.descripcion !== undefined) {
+        if (updateData.description !== undefined) {
           updateFields.push('Descripcion = ?')
-          updateValues.push(updateData.descripcion)
+          updateValues.push(updateData.description)
         }
-        if (updateData.pasosJSON) {
+        if (updateData.stepsJson) {
           updateFields.push('PasosJSON = ?')
-          updateValues.push(updateData.pasosJSON)
+          updateValues.push(updateData.stepsJson)
         }
-        if (updateData.cantidadUsos !== undefined) {
+        if (updateData.usageCount !== undefined) {
           updateFields.push('CantidadUsos = ?')
-          updateValues.push(updateData.cantidadUsos)
+          updateValues.push(updateData.usageCount)
         }
-        if (updateData.fechaActualizacion) {
+        if (updateData.updateDate) {
           updateFields.push('FechaActualizacion = ?')
-          updateValues.push(updateData.fechaActualizacion)
+          updateValues.push(updateData.updateDate)
         }
-        if (updateData.activo !== undefined) {
+        if (updateData.isActive !== undefined) {
           updateFields.push('Activo = ?')
-          updateValues.push(updateData.activo)
+          updateValues.push(updateData.isActive)
         }
 
         if (updateFields.length === 0) {

@@ -22,16 +22,11 @@ export async function POST(req: Request) {
 
     const connection = await getConnection();
 
-    const usageCount = 0;
-    const creationDate = new Date().toISOString();
-    const updateDate = new Date().toISOString();
-    const isActive = 1;
-
     const [result] = await connection.execute(
       `INSERT INTO programs 
-       (name, description, steps_json, usage_count, creation_date, update_date, creator_name, is_active) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [name, description, stepsJson, usageCount, creationDate, updateDate, creatorName, isActive]
+       (name, description, steps_json, creator_name) 
+       VALUES (?, ?, ?, ?)`,
+      [name, description, stepsJson, creatorName]
     );
 
     const insertResult = result as { insertId: number };

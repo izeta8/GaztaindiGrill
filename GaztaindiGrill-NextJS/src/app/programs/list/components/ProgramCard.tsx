@@ -1,6 +1,6 @@
 "use client"
 
-import { BarChart3, Calendar, Pencil, Play, Tag, Eye, Trash2 } from "lucide-react"
+import { BarChart3, Calendar, Pencil, Play, Tag, Eye, Trash2, User } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 import type { Program } from "@/lib/types"
 import { truncate, formatDate } from "@/lib/utils"
@@ -81,6 +81,11 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
             <div className="flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5 text-gray-500" />
               <span className="font-medium">Actualiz.:</span> {formatDate(p.updateDate)}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <User className="h-3.5 w-3.5 text-gray-500" />
+              <span className="font-medium">Creador:</span> {p.creatorName}
             </div>
           </div>
         </div>

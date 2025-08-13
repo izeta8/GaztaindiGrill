@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, type ReactNode } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { Plus, Trash2, Edit2, Clock, Thermometer, Target, ArrowUp, MoveVertical, RotateCw } from 'lucide-react'
 import { ProgramStep } from '@/lib/types'
 import { Modal } from '@/components/ui/Modal'
@@ -22,6 +22,11 @@ type StepFormState = {
   action: string
 }
 
+type Category = {
+  id: number
+  name: string
+}
+
 export default function CreateProgram() {
 
   const [formData, setFormData] = useState({
@@ -29,11 +34,42 @@ export default function CreateProgram() {
     description: '',
     creatorName: ''
   })
+
+  // Load categories on mount
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`)
+        if (!res.ok) {
+          throw new Error('No se pudieron cargar las categorías')
+        }
+        const data = await res.json()
+        if (Array.isArray(data)) {
+          setCategories(data as Category[])
+        } else {
+          // In case API wraps results
+          const arr = (data?.results || data?.data || []) as Category[]
+          setCategories(Array.isArray(arr) ? arr : [])
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Error al cargar categorías'
+        toast.error(message)
+      }
+    }
+    loadCategories()
+  }, [])
   
   const [steps, setSteps] = useState<ProgramStep[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingStep, setEditingStep] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Categories
+  const [categories, setCategories] = useState<Category[]>([])
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null)
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false)
 
   // Step form state
   const [stepForm, setStepForm] = useState<StepFormState>({
@@ -209,24 +245,30 @@ export default function CreateProgram() {
       return
     }
 
+    // Categoría es opcional
+
     setIsSubmitting(true)
 
     try {
-      const response = await fetch('/api/programs/create', {
+      const payload: Record<string, unknown> = {
+        ...formData,
+        stepsJson: JSON.stringify(steps)
+      }
+      if (selectedCategoryId !== null) payload.categoryId = selectedCategoryId
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/programs/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          stepsJson: JSON.stringify(steps)
-        }),
+        body: JSON.stringify(payload),
       })
 
       if (response.ok) {
         toast.success('¡Programa creado correctamente!')
         setFormData({ name: '', description: '', creatorName: '' })
         setSteps([])
+        setSelectedCategoryId(null)
       } else {
         const errorData = await response.json()
         toast.error('Error al crear el programa: ' + (errorData?.message || 'Error desconocido'))
@@ -235,6 +277,43 @@ export default function CreateProgram() {
       toast.error('Error de conexión. Inténtalo de nuevo.')
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast.error('El nombre de la categoría es obligatorio')
+      return
+    }
+
+    setIsCreatingCategory(true)
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newCategoryName.trim() })
+      })
+
+      const data = await res.json()
+      if (!res.ok || data?.success === false) {
+        toast.error(data?.message || 'No se pudo crear la categoría')
+        return
+      }
+
+      const newCat: Category = { id: data?.id ?? data?.categoryId ?? data?.data?.id, name: newCategoryName.trim() }
+      // Update local list and select it
+      setCategories(prev => {
+        const exists = prev.some(c => c.id === newCat.id)
+        return exists || !newCat.id ? prev : [...prev, newCat]
+      })
+      if (newCat.id) setSelectedCategoryId(newCat.id)
+      setIsCategoryModalOpen(false)
+      setNewCategoryName('')
+      toast.success(data?.message || 'Categoría creada')
+    } catch {
+      toast.error('Error de conexión al crear la categoría')
+    } finally {
+      setIsCreatingCategory(false)
     }
   }
 
@@ -267,6 +346,28 @@ export default function CreateProgram() {
                 
               />
               
+              <div>
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <Select
+                      label="Categoría"
+                      value={selectedCategoryId ? String(selectedCategoryId) : ''}
+                      onChange={(value) => setSelectedCategoryId(value ? Number(value) : null)}
+                      options={[{ value: '', label: 'Sin categoría' }, ...categories.map(c => ({ value: String(c.id), label: c.name }))]}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setIsCategoryModalOpen(true)}
+                    ariaLabel="Crear categoría"
+                    className="h-10"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
               <Textarea
                 label="Descripción"
                 value={formData.description}
@@ -526,6 +627,39 @@ export default function CreateProgram() {
                 }
               >
                 {editingStep !== null ? 'Actualizar' : 'Añadir'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+
+        {/* Create Category Modal */}
+        <Modal isOpen={isCategoryModalOpen} onClose={() => !isCreatingCategory && setIsCategoryModalOpen(false)}>
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Crear Categoría</h3>
+            <div className="space-y-4">
+              <Input
+                label="Nombre de la categoría"
+                value={newCategoryName}
+                onChange={setNewCategoryName}
+                placeholder="Ej: Carne"
+                required
+              />
+            </div>
+            <div className="flex gap-3 mt-6">
+              <Button
+                onClick={() => setIsCategoryModalOpen(false)}
+                variant="secondary"
+                className="flex-1"
+                disabled={isCreatingCategory}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleCreateCategory}
+                className="flex-1"
+                disabled={isCreatingCategory || !newCategoryName.trim()}
+              >
+                {isCreatingCategory ? 'Creando...' : 'Crear'}
               </Button>
             </div>
           </div>

@@ -4,6 +4,7 @@ export interface Program {
   id: number;
   name: string;
   description?: string;
+  categoryId: number;
   stepsJson: string;
   usageCount: number;
   creatorName: string;
@@ -25,6 +26,7 @@ export interface ProgramStep {
 export interface CreateProgramRequest {
   name: string;
   description?: string;
+  categoryId: number;
   stepsJson: string;
   creatorName: string;
 }
@@ -33,6 +35,7 @@ export interface CreateProgramRequest {
 export interface UpdateProgramRequest {
   name?: string;
   description?: string;
+  categoryId?: number;
   stepsJson?: string;
   usageCount?: number;
   updateDate?: string;

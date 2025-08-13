@@ -11,7 +11,6 @@ import { ConfirmExecuteModal } from './components/ConfirmExecuteModal'
 import { parseSteps } from '@/lib/utils'
 import type { Program } from '@/lib/types'
 
-type ApiProgram = Partial<Program> & Record<string, unknown>
 type Category = { id: number; name: string }
 type ApiCategory = { id: number; name: string } | { categoryId: number; name: string } | Record<string, unknown>
 

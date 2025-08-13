@@ -8,7 +8,7 @@ import { List, Clock } from 'lucide-react'
 import { ProgramCard } from './components/ProgramCard'
 import { StepsModal } from './components/StepsModal'
 import { ConfirmExecuteModal } from './components/ConfirmExecuteModal'
-import { parseSteps } from '../utils'
+import { parseSteps } from '@/lib/utils'
 import type { Program } from '@/lib/types'
 
 type ApiProgram = Partial<Program> & Record<string, unknown>
@@ -40,19 +40,36 @@ export default function ProgramsPage() {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/programs`)
         if (!res.ok) throw new Error('No se pudieron cargar los programas')
-        const data: ApiProgram[] = await res.json()
-        const mapped: Program[] = (Array.isArray(data) ? data : []).map((p) => ({
-          id: p.id,
-          name: p.name,
-          description: p.description,
-          categoryId: p.categoryId,
-          stepsJson: p.steps_json ?? '[]',
-          usageCount: p.usage_count,
-          creatorName: p.creator_name,
-          creationDate: p.creation_date,
-          updateDate: p.update_date,
-          isActive: p.is_active,
-        })).filter(p => p.id !== undefined && p.name)
+        const data: unknown = await res.json()
+        const arr = Array.isArray(data) ? (data as Record<string, unknown>[]) : []
+
+        const mapped: Program[] = arr
+          .filter((p): p is Record<string, unknown> & {
+            id: number; name: string; category_id: number; steps_json: string;
+            usage_count: number; creator_name: string; creation_date: string; update_date: string; is_active: boolean | number;
+          } =>
+            typeof p.id === 'number' &&
+            typeof p.name === 'string' &&
+            typeof p.category_id === 'number' &&
+            typeof p.steps_json === 'string' &&
+            typeof p.usage_count === 'number' &&
+            typeof p.creator_name === 'string' &&
+            typeof p.creation_date === 'string' &&
+            typeof p.update_date === 'string' &&
+            (typeof p.is_active === 'boolean' || typeof p.is_active === 'number')
+          )
+          .map((p) => ({
+            id: p.id,
+            name: p.name,
+            description: typeof p.description === 'string' ? p.description : undefined,
+            categoryId: p.category_id,
+            stepsJson: p.steps_json,
+            usageCount: p.usage_count,
+            creatorName: p.creator_name,
+            creationDate: p.creation_date,
+            updateDate: p.update_date,
+            isActive: typeof p.is_active === 'boolean' ? p.is_active : p.is_active === 1,
+          }))
         setPrograms(mapped)
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Error desconocido al cargar programas'
@@ -150,6 +167,9 @@ export default function ProgramsPage() {
           ) : (
             <div className="space-y-3">
               {programs.map((p) => {
+
+                if (!p.isActive) return null
+
                 const steps = parseSteps(p.stepsJson)
                 return (
                   <ProgramCard

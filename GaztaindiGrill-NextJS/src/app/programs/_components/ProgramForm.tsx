@@ -225,6 +225,12 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
     }
     setIsSubmitting(true)
     try {
+
+      // Build today's YYYY-MM-DD for updateDate
+      const pad = (n: number) => String(n).padStart(2, '0')
+      const now = new Date()
+      const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+
       const payload: ProgramFormSubmitPayload = {
         id: initialValues?.id,
         name: formData.name,
@@ -233,8 +239,8 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
         categoryId: selectedCategoryId ?? undefined,
         steps,
         stepsJson: JSON.stringify(steps),
-        creationDate: mode === 'edit' ? fromDateInputValue(creationDate) : undefined,
-        updateDate: mode === 'edit' ? fromDateInputValue(updateDate) : undefined,
+        creationDate: mode === 'edit' ? undefined : fromDateInputValue(creationDate),
+        updateDate: mode === 'edit' ? today : fromDateInputValue(updateDate),
         usageCount: mode === 'edit' && usageCount !== '' ? Number(usageCount) : undefined
       }
       await onSubmit(payload)
@@ -353,12 +359,14 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Metadatos</h2>
               <div className="grid grid-cols-1 gap-4">
                 <Input
+                  disabled
                   label="Fecha de creación"
                   type="date"
                   value={creationDate}
                   onChange={setCreationDate}
                 />
                 <Input
+                  disabled
                   label="Última fecha de actualización"
                   type="date"
                   value={updateDate}

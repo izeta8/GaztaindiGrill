@@ -19,13 +19,8 @@ export default function Home() {
           </Link>
           <br />
           
-          <Link href="/programs">
+          <Link href="/programs/list">
             EJECUTAR PROGRAMA
-          </Link>
-          <br />
-          
-          <Link href="/programs">
-            EDITAR PROGRAMA
           </Link>
           <br />
         </nav>

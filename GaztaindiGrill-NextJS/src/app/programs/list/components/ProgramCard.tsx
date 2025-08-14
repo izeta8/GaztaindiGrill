@@ -71,7 +71,7 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
           ) : null}
 
           {/* Meta grid */}
-          <div className="my-5 grid justify-center grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-xs text-gray-700">
+          <div className="my-5 flex flex-wrap justify-between gap-x-4 gap-y-2 text-xs text-gray-700">
 
             <div className="flex items-center gap-2">
               <BarChart3 className="h-3.5 w-3.5 text-gray-500" />

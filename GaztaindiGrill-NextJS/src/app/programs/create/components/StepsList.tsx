@@ -89,7 +89,7 @@ export function StepsList({ steps, onMove, onEdit, onDelete, actionOptions }: St
           </div>
 
           <div className="flex items-center gap-2 flex-1">
-            {getStepIcon(step)}
+            <span className="max-[360px]:hidden">{getStepIcon(step)}</span>
             <span className="text-sm font-medium">
               {getStepDescription(step, actionOptions)}
             </span>

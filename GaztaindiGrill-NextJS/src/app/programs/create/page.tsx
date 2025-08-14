@@ -1,26 +1,16 @@
 "use client"
 
-import { useState, useEffect, type ReactNode } from 'react'
-import { Plus, Trash2, Edit2, Clock, Thermometer, Target, ArrowUp, MoveVertical, RotateCw } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus } from 'lucide-react'
 import { ProgramStep } from '@/lib/types'
-import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Select } from '@/components/ui/Select'
 import { toast } from 'sonner'
-
-// Explicit step types for clarity
-type StepType = 'temperature' | 'position' | 'rotation' | 'action' | ''
-
-type StepFormState = {
-  type: StepType
-  time: string
-  temperature: string
-  position: string
-  rotation: string
-  action: string
-}
+import { StepsList } from './components/StepsList'
+import { StepModal, type StepFormState } from './components/StepModal'
+import { CategoryModal } from './components/CategoryModal'
 
 type Category = {
   id: number
@@ -184,58 +174,7 @@ export default function CreateProgram() {
     setSteps(swapped)
   }
 
-  const getStepIcon = (step: ProgramStep) => {
-    if (step.action) return <Target className="h-5 w-5" />
-    if (step.temperature) return <Thermometer className="h-7 w-7" />
-    if (step.position) return <MoveVertical className="h-5 w-5" />
-    if (step.rotation) return <RotateCw className="h-5 w-5" />
-    return <Clock className="h-5 w-5" />
-  }
-
-  const formatSeconds = (seconds: number) => {
-    if (seconds > 60) {
-      const m = Math.floor(seconds / 60)
-      const s = seconds % 60
-      return `${m}m ${s}s`
-    }
-    return `${seconds}s`
-  }
-
-  const getStepDescription = (step: ProgramStep): ReactNode => {
-    if (step.action) {
-      const actionLabel = actionOptions.find(opt => opt.value === step.action)?.label || step.action
-      return (
-        <div className="leading-tight">
-          <div><span className="font-medium">Acción:</span> {actionLabel}</div>
-        </div>
-      )
-    }
-    if (step.temperature) {
-      return (
-        <div className="leading-tight">
-          <div><span className="font-medium">Temperatura:</span> {step.temperature}°C</div>
-          <div><span className="font-medium">Tiempo:</span> {formatSeconds(step.time as number)}</div>
-        </div>
-      )
-    }
-    if (step.position) {
-      return (
-        <div className="leading-tight">
-          <div><span className="font-medium">Posición:</span> {step.position}</div>
-          <div><span className="font-medium">Tiempo:</span> {formatSeconds(step.time as number)}</div>
-        </div>
-      )
-    }
-    if (step.rotation) {
-      return (
-        <div className="leading-tight">
-          <div><span className="font-medium">Inclinación:</span> {step.rotation}°</div>
-          <div><span className="font-medium">Tiempo:</span> {formatSeconds(step.time as number)}</div>
-        </div>
-      )
-    }
-    return <div className="leading-tight">Paso desconocido</div>
-  }
+  // UI helper functions moved into `./components/StepsList`
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -397,82 +336,13 @@ export default function CreateProgram() {
                 Añadir Paso
               </Button>
             </div>
-
-            {steps.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <Clock className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                <p>No hay pasos añadidos</p>
-                <p className="text-sm">Haz clic en &quot;Añadir Paso&quot; para comenzar</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {steps.map((step, index) => (
-                  
-                  <div
-                    key={index}
-                    className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg bg-gray-50"
-                  >
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <span className="font-medium text-sm">#{index + 1}</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 flex-1">
-                      {getStepIcon(step)}
-                      <span className="text-sm font-medium">
-                        {getStepDescription(step)}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-1 grid grid-cols-2">
-                      
-                      <Button
-                        onClick={() => moveStep(index, 'up')}
-                        variant="secondary"
-                        size="sm"
-                        disabled={index === 0}
-                        className="p-2"
-                        ariaLabel={`Mover paso ${index + 1} arriba`}
-                      >
-                        <ArrowUp className="h-3 w-3" />
-                      </Button>
-                      
-                      <Button
-                        onClick={() => moveStep(index, 'down')}
-                        variant="secondary"
-                        size="sm"
-                        disabled={index === steps.length - 1}
-                        className="p-2 rotate-180"
-                        ariaLabel={`Mover paso ${index + 1} abajo`}
-                      >
-                        <ArrowUp className="h-3 w-3" />
-                      </Button>
-
-                      <Button
-                        onClick={() => openEditStepModal(index)}
-                        variant="secondary"
-                        size="sm"
-                        className="p-2"
-                        ariaLabel={`Editar paso ${index + 1}`}
-                      >
-                        <Edit2 className="h-3 w-3" />
-                      </Button>
-
-                      <Button
-                        onClick={() => deleteStep(index)}
-                        variant="danger"
-                        size="sm"
-                        className="p-2"
-                        ariaLabel={`Eliminar paso ${index + 1}`}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-
-                    </div>
-
-                  </div>
-                ))}
-              </div>
-            )}
+            <StepsList
+              steps={steps}
+              onMove={moveStep}
+              onEdit={openEditStepModal}
+              onDelete={deleteStep}
+              actionOptions={actionOptions}
+            />
           </div>
 
           {/* Submit Section */}
@@ -489,181 +359,25 @@ export default function CreateProgram() {
         </form>
 
         {/* Step Modal */}
-        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-          <div className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4" id="step-modal-title">
-              {editingStep !== null ? 'Editar Paso' : 'Añadir Nuevo Paso'}
-            </h3>
-            
-            <div className="space-y-4">
-              <Select
-                label="Tipo de Paso"
-                value={stepForm.type}
-                onChange={(value) => setStepForm(prev => ({ ...prev, type: value as StepType }))}
-                options={[
-                  { value: 'temperature', label: 'Temperatura' },
-                  { value: 'position', label: 'Posición' },
-                  { value: 'rotation', label: 'Rotación' },
-                  { value: 'action', label: 'Acción' }
-                ]}
-                required
-              />
-
-              {stepForm.type === 'temperature' && (
-                <>
-                  <Input
-                    label="Temperatura (°C)"
-                    type="number"
-                    value={stepForm.temperature}
-                    onChange={(value) => setStepForm(prev => ({ ...prev, temperature: value }))}
-                    placeholder="300"
-                    min={0}
-                    max={500}
-                    required
-                  />
-                  <Input
-                    label="Tiempo (segundos)"
-                    type="number"
-                    value={stepForm.time}
-                    onChange={(value) => setStepForm(prev => ({ ...prev, time: value }))}
-                    placeholder="60"
-                    min={1}
-                    required
-                  />
-                </>
-              )}
-
-              {stepForm.type === 'position' && (
-                <>
-                  <Input
-                    label="Posición"
-                    type="number"
-                    value={stepForm.position}
-                    onChange={(value) => {
-                      const n = Number(value)
-                      if (Number.isNaN(n)) {
-                        setStepForm(prev => ({ ...prev, position: '' }))
-                        return
-                      }
-                      const clamped = Math.max(0, Math.min(100, Math.floor(n)))
-                      setStepForm(prev => ({ ...prev, position: String(clamped) }))
-                    }}
-                    placeholder="80"
-                    min={0}
-                    max={100}
-                    required
-                  />
-                  <Input
-                    label="Tiempo (segundos)"
-                    type="number"
-                    value={stepForm.time}
-                    onChange={(value) => setStepForm(prev => ({ ...prev, time: value }))}
-                    placeholder="30"
-                    min={1}
-                    required
-                  />
-                </>
-              )}
-
-              {stepForm.type === 'rotation' && (
-                <>
-                  <Input
-                    label="Rotación (°)"
-                    type="number"
-                    value={stepForm.rotation}
-                    onChange={(value) => {
-                      const n = Number(value)
-                      if (Number.isNaN(n)) {
-                        setStepForm(prev => ({ ...prev, rotation: '' }))
-                        return
-                      }
-                      const clamped = Math.max(0, Math.min(360, Math.floor(n)))
-                      setStepForm(prev => ({ ...prev, rotation: String(clamped) }))
-                    }}
-                    placeholder="45"
-                    min={0}
-                    max={360}
-                    required
-                  />
-                  <Input
-                    label="Tiempo (segundos)"
-                    type="number"
-                    value={stepForm.time}
-                    onChange={(value) => setStepForm(prev => ({ ...prev, time: value }))}
-                    placeholder="30"
-                    min={1}
-                    required
-                  />
-                </>
-              )}
-
-              {stepForm.type === 'action' && (
-                <Select
-                  label="Acción"
-                  value={stepForm.action}
-                  onChange={(value) => setStepForm(prev => ({ ...prev, action: value }))}
-                  options={actionOptions}
-                  required
-                />
-              )}
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <Button
-                onClick={() => setIsModalOpen(false)}
-                variant="secondary"
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleStepSubmit}
-                className="flex-1"
-                disabled={
-                  !stepForm.type ||
-                  (stepForm.type === 'temperature' && (!stepForm.temperature || !stepForm.time)) ||
-                  (stepForm.type === 'position' && (!stepForm.position || !stepForm.time)) ||
-                  (stepForm.type === 'action' && !stepForm.action)
-                }
-              >
-                {editingStep !== null ? 'Actualizar' : 'Añadir'}
-              </Button>
-            </div>
-          </div>
-        </Modal>
+        <StepModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          stepForm={stepForm}
+          setStepForm={setStepForm}
+          onSubmit={handleStepSubmit}
+          editingStep={editingStep}
+          actionOptions={actionOptions}
+        />
 
         {/* Create Category Modal */}
-        <Modal isOpen={isCategoryModalOpen} onClose={() => !isCreatingCategory && setIsCategoryModalOpen(false)}>
-          <div className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Crear Categoría</h3>
-            <div className="space-y-4">
-              <Input
-                label="Nombre de la categoría"
-                value={newCategoryName}
-                onChange={setNewCategoryName}
-                placeholder="Ej: Carne"
-                required
-              />
-            </div>
-            <div className="flex gap-3 mt-6">
-              <Button
-                onClick={() => setIsCategoryModalOpen(false)}
-                variant="secondary"
-                className="flex-1"
-                disabled={isCreatingCategory}
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleCreateCategory}
-                className="flex-1"
-                disabled={isCreatingCategory || !newCategoryName.trim()}
-              >
-                {isCreatingCategory ? 'Creando...' : 'Crear'}
-              </Button>
-            </div>
-          </div>
-        </Modal>
+        <CategoryModal
+          isOpen={isCategoryModalOpen}
+          onClose={() => setIsCategoryModalOpen(false)}
+          newCategoryName={newCategoryName}
+          setNewCategoryName={setNewCategoryName}
+          onCreate={handleCreateCategory}
+          isCreating={isCreatingCategory}
+        />
       </div>
     </div>
   )

@@ -17,3 +17,5 @@ app.add_middleware(
 # Include routers
 app.include_router(categories_router)
 app.include_router(programs_router)
+
+# python -m uvicorn app.main:app --reload

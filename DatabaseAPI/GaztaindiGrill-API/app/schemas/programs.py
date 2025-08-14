@@ -12,3 +12,15 @@ class CreateProgramRequest(BaseModel):
 
 class CreateCategoryRequest(BaseModel):
     name: str
+
+
+class UpdateProgramRequest(BaseModel):
+    # All fields optional; only provided fields will be updated
+    name: Optional[str] = None
+    description: Optional[str] = None
+    category_id: Optional[int] = Field(None, alias="categoryId")
+    steps_json: Optional[str] = Field(None, alias="stepsJson")
+    creator_name: Optional[str] = Field(None, alias="creatorName")
+    created_at: Optional[str] = Field(None, alias="createdAt")
+    updated_at: Optional[str] = Field(None, alias="updatedAt")
+    uses_count: Optional[int] = Field(None, alias="uses_count")

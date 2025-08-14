@@ -1,10 +1,9 @@
 
-// PROGRAMAS_PARRILLA table columns
 export interface Program {
   id: number;
   name: string;
   description?: string;
-  categoryId: number;
+  categoryId?: number;
   stepsJson: string;
   usageCount: number;
   creatorName: string;
@@ -42,3 +41,4 @@ export interface UpdateProgramRequest {
   creatorName?: string;
   isActive?: number;
 }
+

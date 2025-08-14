@@ -8,11 +8,20 @@ import { List, Clock } from 'lucide-react'
 import { ProgramCard } from './components/ProgramCard'
 import { StepsModal } from './components/StepsModal'
 import { ConfirmExecuteModal } from './components/ConfirmExecuteModal'
+import { FiltersBar } from './components/FiltersBar'
 import { parseSteps } from '@/lib/utils'
 import type { Program } from '@/lib/types'
 
 type Category = { id: number; name: string }
-type ApiCategory = { id: number; name: string } | { categoryId: number; name: string } | Record<string, unknown>
+
+type ApiCategory = { id: number; name: string }
+
+type ApiProgram = Record<string, unknown> & {
+  id: number; name: string; steps_json: string;
+  usage_count: number; creator_name: string; creation_date: string; update_date: string; is_active: number;
+  category_id?: number | null;
+  description?: string | null;
+}
 
 export default function ProgramsPage() {
   const router = useRouter()
@@ -48,31 +57,27 @@ export default function ProgramsPage() {
         const arr = Array.isArray(data) ? (data as Record<string, unknown>[]) : []
 
         const mapped: Program[] = arr
-          .filter((p): p is Record<string, unknown> & {
-            id: number; name: string; category_id: number; steps_json: string;
-            usage_count: number; creator_name: string; creation_date: string; update_date: string; is_active: boolean | number;
-          } =>
+          .filter((p): p is ApiProgram =>
             typeof p.id === 'number' &&
             typeof p.name === 'string' &&
-            typeof p.category_id === 'number' &&
             typeof p.steps_json === 'string' &&
             typeof p.usage_count === 'number' &&
             typeof p.creator_name === 'string' &&
             typeof p.creation_date === 'string' &&
             typeof p.update_date === 'string' &&
-            (typeof p.is_active === 'boolean' || typeof p.is_active === 'number')
+            typeof p.is_active === 'number'
           )
           .map((p) => ({
             id: p.id,
             name: p.name,
             description: typeof p.description === 'string' ? p.description : undefined,
-            categoryId: p.category_id,
+            categoryId: typeof p.category_id === 'number' ? p.category_id : undefined,
             stepsJson: p.steps_json,
             usageCount: p.usage_count,
             creatorName: p.creator_name,
             creationDate: p.creation_date,
             updateDate: p.update_date,
-            isActive: typeof p.is_active === 'boolean' ? p.is_active : p.is_active === 1,
+            isActive: p.is_active === 1,
           }))
         setPrograms(mapped)
       } catch (e) {
@@ -174,37 +179,17 @@ export default function ProgramsPage() {
             </div>
           ) : (
             <div className="space-y-4">
-            
+
               {/* Filtros */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <input
-                  type="text"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Filtrar por nombre"
-                  value={searchName}
-                  onChange={(e) => setSearchName(e.target.value)}
-                />
-                <select
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                  value={selectedCategory}
-                  onChange={(e) => {
-                    const val = e.target.value
-                    setSelectedCategory(val === 'all' ? 'all' : Number(val))
-                  }}
-                >
-                  <option value="all">Todas las categorías</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-                <input
-                  type="text"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Filtrar por creador"
-                  value={searchCreator}
-                  onChange={(e) => setSearchCreator(e.target.value)}
-                />
-              </div>
+              <FiltersBar
+                categories={categories}
+                searchName={searchName}
+                onSearchNameChange={setSearchName}
+                searchCreator={searchCreator}
+                onSearchCreatorChange={setSearchCreator}
+                selectedCategory={selectedCategory}
+                onCategoryChange={setSelectedCategory}
+              />
 
               {/* Lista filtrada */}
               {filteredPrograms.length === 0 ? (

@@ -47,7 +47,7 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
   return (
 
     <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-3 items-start">
 
         {/* Left: title + description */}
         <div className="md:col-span-2 min-w-0">
@@ -71,11 +71,11 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
           ) : null}
 
           {/* Meta grid */}
-          <div className="my-5 flex flex-wrap justify-between gap-x-4 gap-y-2 text-xs text-gray-700">
+          <div className="my-6 flex flex-wrap justify-between gap-x-4 gap-y-2 text-xs text-gray-700">
 
             <div className="flex items-center gap-2">
-              <BarChart3 className="h-3.5 w-3.5 text-gray-500" />
-              <span className="font-medium">Usos:</span> {p.usageCount ?? 0}
+              <User className="h-3.5 w-3.5 text-gray-500" />
+              <span className="font-medium">Creador:</span> {p.creatorName}
             </div>
 
             <div className="flex items-center gap-2">
@@ -84,9 +84,15 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
             </div>
 
             <div className="flex items-center gap-2">
-              <User className="h-3.5 w-3.5 text-gray-500" />
-              <span className="font-medium">Creador:</span> {p.creatorName}
+              <BarChart3 className="h-3.5 w-3.5 text-gray-500" />
+              <span className="font-medium">Usos:</span> {p.usageCount ?? 0}
             </div>
+
+            <div className="flex items-center gap-2">
+              <Calendar className="h-3.5 w-3.5 text-gray-500" />
+              <span className="font-medium">Creación:</span> {formatDate(p.creationDate)}
+            </div>
+            
           </div>
         </div>
 

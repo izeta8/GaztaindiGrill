@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { List, Clock } from 'lucide-react'
 
@@ -25,6 +25,7 @@ type ApiProgram = Record<string, unknown> & {
 
 export default function ProgramsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [programs, setPrograms] = useState<Program[]>([])
   const [loading, setLoading] = useState(true)
@@ -42,9 +43,55 @@ export default function ProgramsPage() {
   const [categories, setCategories] = useState<Category[]>([])
   
   // Filters
+  const [searchId, setSearchId] = useState('')
   const [searchName, setSearchName] = useState('')
   const [searchCreator, setSearchCreator] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<'all' | number>('all')
+  const [initializedFromUrl, setInitializedFromUrl] = useState(false)
+
+  // Initialize filters from URL query params once
+  useEffect(() => {
+    if (initializedFromUrl) return
+    try {
+      const id = searchParams.get('id') || ''
+      const name = searchParams.get('name') || ''
+      const creator = searchParams.get('creator') || ''
+      const categoryStr = searchParams.get('category') || ''
+      const category: 'all' | number = categoryStr && !Number.isNaN(Number(categoryStr))
+        ? Number(categoryStr)
+        : 'all'
+
+      if (id) setSearchId(id)
+      if (name) setSearchName(name)
+      if (creator) setSearchCreator(creator)
+      setSelectedCategory(category)
+    } finally {
+      setInitializedFromUrl(true)
+    }
+  }, [searchParams, initializedFromUrl])
+
+  // Reflect filters to URL query params
+  useEffect(() => {
+    if (!initializedFromUrl) return
+    const params = new URLSearchParams()
+    if (searchId.trim()) params.set('id', searchId.trim())
+    if (searchName.trim()) params.set('name', searchName.trim())
+    if (searchCreator.trim()) params.set('creator', searchCreator.trim())
+    if (selectedCategory !== 'all') params.set('category', String(selectedCategory))
+
+    const qs = params.toString()
+    const path = typeof window !== 'undefined' ? window.location.pathname : '/programs/list'
+    router.replace(qs ? `${path}?${qs}` : path)
+  }, [searchId, searchName, searchCreator, selectedCategory, initializedFromUrl, router])
+
+  const handleClearFilters = () => {
+    setSearchId('')
+    setSearchName('')
+    setSearchCreator('')
+    setSelectedCategory('all')
+    const path = typeof window !== 'undefined' ? window.location.pathname : '/programs/list'
+    router.replace(path)
+  }
 
   useEffect(() => {
     const loadPrograms = async () => {
@@ -148,10 +195,11 @@ export default function ProgramsPage() {
   const filteredPrograms = programs
     .filter((p) => p.isActive)
     .filter((p) => {
+      const idOk = !searchId.trim() || String(p.id) === searchId.trim()
       const nameOk = !searchName.trim() || p.name.toLowerCase().includes(searchName.toLowerCase())
       const creatorOk = !searchCreator.trim() || (p.creatorName || '').toLowerCase().includes(searchCreator.toLowerCase())
       const categoryOk = selectedCategory === 'all' || p.categoryId === selectedCategory
-      return nameOk && creatorOk && categoryOk
+      return idOk && nameOk && creatorOk && categoryOk
     })
 
   return (
@@ -183,12 +231,15 @@ export default function ProgramsPage() {
               {/* Filtros */}
               <FiltersBar
                 categories={categories}
+                searchId={searchId}
+                onSearchIdChange={setSearchId}
                 searchName={searchName}
                 onSearchNameChange={setSearchName}
                 searchCreator={searchCreator}
                 onSearchCreatorChange={setSearchCreator}
                 selectedCategory={selectedCategory}
                 onCategoryChange={setSelectedCategory}
+                onClearFilters={handleClearFilters}
               />
 
               {/* Lista filtrada */}

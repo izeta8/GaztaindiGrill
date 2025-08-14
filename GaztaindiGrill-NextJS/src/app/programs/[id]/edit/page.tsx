@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { ProgramForm, type ProgramFormInitialValues, type ProgramFormSubmitPayload } from '@/app/programs/_components/ProgramForm'
 import { parseSteps } from '@/lib/utils'
@@ -9,6 +9,7 @@ import { parseSteps } from '@/lib/utils'
 export default function EditProgramPage() {
   const params = useParams<{ id: string }>()
   const id = params?.id
+  const router = useRouter()
 
   const [loading, setLoading] = useState(true)
   const [initial, setInitial] = useState<ProgramFormInitialValues | null>(null)
@@ -77,11 +78,12 @@ export default function EditProgramPage() {
           return
         }
         toast.success('Programa actualizado correctamente')
+        router.push(`/programs/list?id=${encodeURIComponent(String(id))}`)
       } catch {
         toast.error('Error de conexión al actualizar el programa')
       }
     },
-    [apiBase, id]
+    [apiBase, id, router]
   )
 
   if (!apiBase) {

@@ -31,6 +31,11 @@ export default function ProgramsPage() {
   
   // Categories
   const [categories, setCategories] = useState<Category[]>([])
+  
+  // Filters
+  const [searchName, setSearchName] = useState('')
+  const [searchCreator, setSearchCreator] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<'all' | number>('all')
 
   useEffect(() => {
     const loadPrograms = async () => {
@@ -135,6 +140,15 @@ export default function ProgramsPage() {
     return categories.find(c => c.id === categoryId)?.name || `Categoría #${categoryId}`
   }
 
+  const filteredPrograms = programs
+    .filter((p) => p.isActive)
+    .filter((p) => {
+      const nameOk = !searchName.trim() || p.name.toLowerCase().includes(searchName.toLowerCase())
+      const creatorOk = !searchCreator.trim() || (p.creatorName || '').toLowerCase().includes(searchCreator.toLowerCase())
+      const categoryOk = selectedCategory === 'all' || p.categoryId === selectedCategory
+      return nameOk && creatorOk && categoryOk
+    })
+
   return (
     <div className="min-h-screen bg-gray-50 py-4 px-4">
       <div className="max-w-2xl mx-auto">
@@ -158,30 +172,64 @@ export default function ProgramsPage() {
             <div className="text-center py-10 text-red-500">
               {error}
             </div>
-          ) : programs.length === 0 ? (
-            <div className="text-center py-10 text-gray-500">
-              <List className="h-10 w-10 mx-auto mb-3 text-gray-300" />
-              No hay programas creados
-            </div>
           ) : (
-            <div className="space-y-3">
-              {programs.map((p) => {
+            <div className="space-y-4">
+            
+              {/* Filtros */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <input
+                  type="text"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Filtrar por nombre"
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
+                />
+                <select
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                  value={selectedCategory}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    setSelectedCategory(val === 'all' ? 'all' : Number(val))
+                  }}
+                >
+                  <option value="all">Todas las categorías</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Filtrar por creador"
+                  value={searchCreator}
+                  onChange={(e) => setSearchCreator(e.target.value)}
+                />
+              </div>
 
-                if (!p.isActive) return null
-
-                const steps = parseSteps(p.stepsJson)
-                return (
-                  <ProgramCard
-                    key={p.id}
-                    program={p}
-                    categoryName={getCategoryName(p.categoryId)}
-                    stepsCount={steps.length}
-                    onViewSteps={openStepsModal}
-                    onExecute={handleExecuteClick}
-                    onEdit={handleEdit}
-                  />
-                )
-              })}
+              {/* Lista filtrada */}
+              {filteredPrograms.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <List className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                  No hay programas que coincidan con el filtro
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredPrograms.map((p) => {
+                    const steps = parseSteps(p.stepsJson)
+                    return (
+                      <ProgramCard
+                        key={p.id}
+                        program={p}
+                        categoryName={getCategoryName(p.categoryId)}
+                        stepsCount={steps.length}
+                        onViewSteps={openStepsModal}
+                        onExecute={handleExecuteClick}
+                        onEdit={handleEdit}
+                      />
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>

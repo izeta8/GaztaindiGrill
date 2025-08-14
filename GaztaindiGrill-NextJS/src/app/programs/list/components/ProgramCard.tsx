@@ -21,6 +21,7 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [confirmChecked, setConfirmChecked] = useState(false)
 
   const confirmDelete = async () => {
     if (!p?.id) {
@@ -41,6 +42,7 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
     } finally {
       setDeleting(false)
       setIsDeleteOpen(false)
+      setConfirmChecked(false)
     }
   }
 
@@ -54,20 +56,25 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
 
           {/* Header row */}
           <div className="flex justify-between items-center gap-2">
-
-            <div className="flex text-md px-4 gap-2 py-0.5 rounded-full bg-gray-200 w-fit text-base items-center">
-              <h3 className="italic font-semibold text-gray-900 truncate">{p.name}</h3>
-              <span className="italic opacity-75 text-xs"># {p.id}</span>
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex text-md px-4 gap-2 py-0.5 rounded-full bg-gray-200 w-fit text-base items-center">
+                <h3 className="italic font-semibold text-gray-900 truncate" title={p.name}>{p.name}</h3>
+                <span className="italic opacity-75 text-xs"># {p.id}</span>
+              </div>
             </div>
-
-            <span className="justify-self-left w-fit text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 inline-flex items-center gap-1">
+            <span className="w-fit text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 inline-flex items-center gap-1" aria-label={`Categoría ${categoryName}`}>
               <Tag className="h-3.5 w-3.5" /> {categoryName}
             </span>
-
           </div>
 
           {p.description ? (
-            <p className="text-sm text-gray-700 my-5">{truncate(p.description, 140)}</p>
+            <p
+              className="text-sm text-gray-700 my-5 line-clamp-2"
+              style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+              title={p.description}
+            >
+              {truncate(p.description, 240)}
+            </p>
           ) : null}
 
           {/* Meta grid */}
@@ -80,7 +87,7 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
 
             <div className="flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5 text-gray-500" />
-              <span className="font-medium">Actualiz.:</span> {formatDate(p.updateDate)}
+              <span className="font-medium">Actualiz.:</span> <span title={formatDate(p.updateDate)}>{formatDate(p.updateDate)}</span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -90,7 +97,7 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
 
             <div className="flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5 text-gray-500" />
-              <span className="font-medium">Creación:</span> {formatDate(p.creationDate)}
+              <span className="font-medium">Creación:</span> <span title={formatDate(p.creationDate)}>{formatDate(p.creationDate)}</span>
             </div>
             
           </div>
@@ -101,9 +108,6 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
           <Button onClick={() => onExecute(p)} size="sm" ariaLabel={`Ejecutar ${p.name}`} className="w-full md:w-auto">
             <Play className="h-4 w-4 mr-2" /> Ejecutar
           </Button>
-          <Button variant="secondary" onClick={() => onEdit(p)} size="sm" ariaLabel={`Editar ${p.name}`} className="w-full md:w-auto">
-            <Pencil className="h-4 w-4 mr-2" /> Editar
-          </Button>
           <Button
             variant="secondary"
             size="sm"
@@ -111,6 +115,9 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
             ariaLabel={`Ver pasos de ${p.name}`}
           >
             <Eye className="h-4 w-4 mr-2" /> Ver pasos ({stepsCount})
+          </Button>
+          <Button variant="secondary" onClick={() => onEdit(p)} size="sm" ariaLabel={`Editar ${p.name}`} className="w-full md:w-auto">
+            <Pencil className="h-4 w-4 mr-2" /> Editar
           </Button>
           {/* Botón elminar */}
           <Button
@@ -133,8 +140,20 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
             Confirmar eliminación
           </h2>
           <p className="text-sm text-gray-700 mb-4">
-            ¿Seguro que deseas eliminar el programa {p.name}? Esta acción no se puede deshacer.
+            ¿Seguro que deseas eliminar el programa <span className="font-medium">{p.name}</span>?
+            {` `}Tiene <span className="font-medium">{stepsCount}</span> {stepsCount === 1 ? 'paso' : 'pasos'}. Esta acción no se puede deshacer.
           </p>
+          <label className="flex items-start gap-2 text-sm text-gray-700 mb-4 select-none">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4"
+              checked={confirmChecked}
+              onChange={(e) => setConfirmChecked(e.target.checked)}
+              disabled={deleting}
+              aria-label="Confirmar eliminación"
+            />
+            <span>Entiendo que esta acción es irreversible.</span>
+          </label>
           <div className="flex justify-end gap-2">
             <Button
               variant="secondary"
@@ -148,7 +167,8 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
               variant="danger"
               size="sm"
               onClick={confirmDelete}
-              disabled={deleting}
+              disabled={deleting || !confirmChecked}
+              ariaLabel={`Confirmar eliminación de ${p.name}`}
             >
               {deleting ? 'Eliminando...' : 'Eliminar'}
             </Button>

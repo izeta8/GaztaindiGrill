@@ -7,6 +7,7 @@ _connection = mysql.connector.connect(
     user=DB_USER,
     password=DB_PASSWORD,
     database=DB_NAME,
+    autocommit=True,
 )
 
 if _connection.is_connected():
@@ -17,4 +18,5 @@ def get_connection():
     """Return the shared MySQL connection.
     Keep it simple: one connection during app lifetime, as in the original code.
     """
+    _connection.ping(reconnect=True, attempts=1, delay=0)
     return _connection

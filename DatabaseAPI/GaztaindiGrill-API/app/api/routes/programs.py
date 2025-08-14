@@ -37,7 +37,7 @@ async def update_program(program_id: int, payload: UpdateProgramRequest):
         "creator_name": payload.creator_name,
         "creation_date": payload.creation_date,
         "update_date": payload.update_date,
-        "uses_count": payload.uses_count,
+        "usage_count": payload.usage_count,
     }
 
     set_parts = []

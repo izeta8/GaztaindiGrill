@@ -23,4 +23,4 @@ class UpdateProgramRequest(BaseModel):
     creator_name: Optional[str] = Field(None, alias="creatorName")
     creation_date: Optional[str] = Field(None, alias="creationDate")
     update_date: Optional[str] = Field(None, alias="updateDate")
-    uses_count: Optional[int] = Field(None, alias="usesCount")
+    usage_count: Optional[int] = Field(None, alias="usageCount")

@@ -26,7 +26,7 @@ async def get_programs():
             cursor.close()
 
 
-@router.put("/{program_id}/update")
+@router.patch("/{program_id}")
 async def update_program(program_id: int, payload: UpdateProgramRequest):
     # Build dynamic SET clause only for provided fields
     fields_map = {
@@ -35,8 +35,8 @@ async def update_program(program_id: int, payload: UpdateProgramRequest):
         "category_id": payload.category_id,
         "steps_json": payload.steps_json,
         "creator_name": payload.creator_name,
-        "created_at": payload.created_at,
-        "updated_at": payload.updated_at,
+        "creation_date": payload.creation_date,
+        "update_date": payload.update_date,
         "uses_count": payload.uses_count,
     }
 

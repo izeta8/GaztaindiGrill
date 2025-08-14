@@ -38,6 +38,27 @@ export function StepModal({
   editingStep,
   actionOptions
 }: StepModalProps) {
+  
+  const totalSeconds = Number(stepForm.time)
+  const hasTime = !Number.isNaN(totalSeconds) && stepForm.time !== ''
+  const minutesStr = hasTime ? String(Math.floor(totalSeconds / 60)) : ''
+  const secondsStr = hasTime ? String(totalSeconds % 60) : ''
+
+  const onMinutesChange = (value: string) => {
+    const minutes = value === '' ? 0 : Math.max(0, Math.floor(Number(value)))
+    const currentSeconds = hasTime ? (totalSeconds % 60) : 0
+    const newTotal = minutes * 60 + currentSeconds
+    setStepForm(prev => ({ ...prev, time: String(newTotal) }))
+  }
+
+  const onSecondsChange = (value: string) => {
+    let secs = value === '' ? 0 : Math.floor(Number(value))
+    if (Number.isNaN(secs)) secs = 0
+    secs = Math.max(0, Math.min(59, secs))
+    const currentMinutes = hasTime ? Math.floor(totalSeconds / 60) : 0
+    const newTotal = currentMinutes * 60 + secs
+    setStepForm(prev => ({ ...prev, time: String(newTotal) }))
+  }
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="p-6">
@@ -71,15 +92,27 @@ export function StepModal({
                 max={500}
                 required
               />
-              <Input
-                label="Tiempo (segundos)"
-                type="number"
-                value={stepForm.time}
-                onChange={(value) => setStepForm(prev => ({ ...prev, time: value }))}
-                placeholder="60"
-                min={1}
-                required
-              />
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="Minutos"
+                  type="number"
+                  value={minutesStr}
+                  onChange={onMinutesChange}
+                  placeholder="1"
+                  min={0}
+                  required
+                />
+                <Input
+                  label="Segundos"
+                  type="number"
+                  value={secondsStr}
+                  onChange={onSecondsChange}
+                  placeholder="0"
+                  min={0}
+                  max={59}
+                  required
+                />
+              </div>
             </>
           )}
 
@@ -103,15 +136,27 @@ export function StepModal({
                 max={100}
                 required
               />
-              <Input
-                label="Tiempo (segundos)"
-                type="number"
-                value={stepForm.time}
-                onChange={(value) => setStepForm(prev => ({ ...prev, time: value }))}
-                placeholder="30"
-                min={1}
-                required
-              />
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="Minutos"
+                  type="number"
+                  value={minutesStr}
+                  onChange={onMinutesChange}
+                  placeholder="0"
+                  min={0}
+                  required
+                />
+                <Input
+                  label="Segundos"
+                  type="number"
+                  value={secondsStr}
+                  onChange={onSecondsChange}
+                  placeholder="30"
+                  min={0}
+                  max={59}
+                  required
+                />
+              </div>
             </>
           )}
 
@@ -135,15 +180,27 @@ export function StepModal({
                 max={360}
                 required
               />
-              <Input
-                label="Tiempo (segundos)"
-                type="number"
-                value={stepForm.time}
-                onChange={(value) => setStepForm(prev => ({ ...prev, time: value }))}
-                placeholder="30"
-                min={1}
-                required
-              />
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="Minutos"
+                  type="number"
+                  value={minutesStr}
+                  onChange={onMinutesChange}
+                  placeholder="0"
+                  min={0}
+                  required
+                />
+                <Input
+                  label="Segundos"
+                  type="number"
+                  value={secondsStr}
+                  onChange={onSecondsChange}
+                  placeholder="30"
+                  min={0}
+                  max={59}
+                  required
+                />
+              </div>
             </>
           )}
 

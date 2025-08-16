@@ -4,10 +4,13 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { List, Clock } from 'lucide-react'
+import { useMqtt } from '@/lib/mqtt/useMqtt'
 
 import { ProgramCard } from './components/ProgramCard'
 import { StepsModal } from './components/StepsModal'
 import { ConfirmExecuteModal } from './components/ConfirmExecuteModal'
+import { SelectGrillModal } from './components/SelectGrillModal'
+import { ProcessingModal } from './components/ProcessingModal'
 import { FiltersBar } from './components/FiltersBar'
 import { parseSteps } from '@/lib/utils'
 import type { Program } from '@/lib/types'
@@ -26,6 +29,7 @@ type ApiProgram = Record<string, unknown> & {
 export default function ProgramsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { publish } = useMqtt()
 
   const [programs, setPrograms] = useState<Program[]>([])
   const [loading, setLoading] = useState(true)
@@ -38,6 +42,9 @@ export default function ProgramsPage() {
   // Execute confirmation modal
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [programToExecute, setProgramToExecute] = useState<Program | null>(null)
+  // Select grill modal
+  const [isSelectOpen, setIsSelectOpen] = useState(false)
+  const [isExecuting, setIsExecuting] = useState(false)
   
   // Categories
   const [categories, setCategories] = useState<Category[]>([])
@@ -176,11 +183,30 @@ export default function ProgramsPage() {
   }
 
   const confirmExecute = () => {
+    // After confirming, ask which grill to use
     if (!programToExecute) return
-    // Simulated execution: show toast (same pattern used in create page)
-    toast.success(`Ejecución iniciada para "${programToExecute.name}" (simulado)`) 
     setIsConfirmOpen(false)
-    setProgramToExecute(null)
+    setIsSelectOpen(true)
+  }
+
+  const handleSelectGrill = async (side: 0 | 1) => {
+    try {
+      setIsExecuting(true)
+      if (!programToExecute) return
+      const stepsJson = programToExecute.stepsJson || '[]'
+
+      const topic = `grill/${side}/ejecutar_programa`
+      await publish(topic, stepsJson, { qos: 1 })
+
+      toast.success(`Ejecución iniciada en parrilla ${side === 0 ? 'izquierda' : 'derecha'} para "${programToExecute.name}"`)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Error desconocido ejecutando programa'
+      toast.error(msg)
+    } finally {
+      setIsSelectOpen(false)
+      setProgramToExecute(null)
+      setIsExecuting(false)
+    }
   }
 
   const handleEdit = (program: Program) => {
@@ -282,6 +308,19 @@ export default function ProgramsPage() {
           onClose={() => setIsConfirmOpen(false)}
           onConfirm={confirmExecute}
           program={programToExecute}
+        />
+
+        <SelectGrillModal
+          isOpen={isSelectOpen}
+          onClose={() => (isExecuting ? null : setIsSelectOpen(false))}
+          onSelect={handleSelectGrill}
+          program={programToExecute}
+        />
+
+        <ProcessingModal
+          isOpen={isExecuting}
+          title="Procesando..."
+          message="Conectando al broker y publicando el programa. Por favor, espera."
         />
       </div>
     </div>

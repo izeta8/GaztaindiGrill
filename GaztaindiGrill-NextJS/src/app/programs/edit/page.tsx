@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { ProgramForm, type ProgramFormInitialValues, type ProgramFormSubmitPayload } from '@/app/programs/_components/ProgramForm'
@@ -50,7 +50,7 @@ function Status({
   )
 }
 
-export default function EditProgramPage() {
+function EditProgramPageContent() {
   const searchParams = useSearchParams()
   const id = searchParams.get('id') ?? undefined
   const router = useRouter()
@@ -177,5 +177,17 @@ export default function EditProgramPage() {
       onSubmit={onSubmit}
       submitLabel="Guardar cambios"
     />
+  )
+}
+
+export default function EditProgramPage() {
+  return (
+    <Suspense fallback={<Status
+      type="loading"
+      title="Cargando programa"
+      description="Por favor, espera mientras obtenemos los datos."
+    />}>
+      <EditProgramPageContent />
+    </Suspense>
   )
 }

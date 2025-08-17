@@ -210,7 +210,7 @@ export default function ProgramsPage() {
   }
 
   const handleEdit = (program: Program) => {
-    router.push(`/programs/${program.id}/edit`)
+    router.push(`/programs/edit?id=${program.id}`)
   }
 
   const getCategoryName = (categoryId?: number) => {

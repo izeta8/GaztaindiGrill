@@ -42,3 +42,16 @@ export interface UpdateProgramRequest {
   isActive?: number;
 }
 
+// Grill control types
+export interface GrillState {
+  position: number; // 0-100
+  temperature: number; // degrees celsius
+  rotation: number; // 0-360 (only for left grill)
+  isConnected: boolean;
+  lastUpdate: Date | null;
+}
+
+export type GrillMode = 'normal' | 'burruntzi' | 'dual';
+export type GrillDirection = 'subir' | 'bajar' | 'parar';
+export type GrillRotation = 'horario' | 'antihorario' | 'parar';
+

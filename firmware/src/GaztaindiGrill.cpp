@@ -75,11 +75,28 @@ void connect_to_wifi() {
 }
 
 void connect_to_mqtt() {
+    
     client.setServer(mqttServer, mqttPort);
+    client.setKeepAlive(8); // Time that will trigger LWT.
+
     while (!client.connected()) {
         Serial.print("Attempting MQTT connection...");
-        if (client.connect("ESP32Client", mqttUser, mqttPassword)) {
-            Serial.println("connected");
+        
+        // LWT configuration
+        const char* willTopic   = "grill/status";
+        const char* willMessage = "offline";
+        int willQoS             = 1;
+        bool willRetain         = true;
+
+        if (client.connect(
+            "ESP32Client",      // clientID
+            mqttUser, mqttPassword,
+            willTopic, willQoS, willRetain, willMessage
+        )) {
+            
+            Serial.println("connected to mqtt");
+            client.publish("grill/status", "online", true);
+            
         } else {
             Serial.print("failed, rc=");
             Serial.print(client.state());

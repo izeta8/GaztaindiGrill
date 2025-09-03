@@ -3,7 +3,7 @@
 import { BarChart3, Calendar, Pencil, Play, Tag, Eye, Trash2, User } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 import type { Program } from "@/lib/types"
-import { truncate, formatDate } from "@/lib/utils"
+import { formatDate } from "@/lib/utils"
 import { useState } from "react"
 import { Modal } from "@/components/ui/Modal"
 import { toast } from "sonner"
@@ -67,18 +67,12 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
             </span>
           </div>
 
-          {p.description ? (
-            <p
-              className="text-sm text-gray-700 my-5 line-clamp-2"
-              style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-              title={p.description}
-            >
-              {truncate(p.description, 240)}
-            </p>
-          ) : null}
+          <p className="text-sm text-gray-700 my-5">
+            {p.description}
+          </p>
 
           {/* Meta grid */}
-          <div className="my-6 flex flex-wrap justify-between gap-x-4 gap-y-2 text-xs text-gray-700">
+          <div className="my-6 grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-gray-700">
 
             <div className="flex items-center gap-2">
               <User className="h-3.5 w-3.5 text-gray-500" />

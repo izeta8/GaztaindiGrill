@@ -8,9 +8,9 @@ import { useMqtt } from '@/lib/mqtt/useMqtt'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { GrillStatusDisplay } from '../components/GrillStatusDisplay'
-import { ModeSelector } from '../components/ModeSelector'
 import { ConnectionStatus } from '../components/ConnectionStatus'
 import type { GrillState, GrillMode, GrillDirection, GrillRotation } from '@/lib/types'
+import { PAYLOAD_CLOCKWISE, PAYLOAD_COUNTER_CLOCKWISE, PAYLOAD_DOWN, PAYLOAD_STOP, PAYLOAD_UP, TOPIC_CANCEL_PROGRAM, TOPIC_MOVE, TOPIC_SET_POSITION, TOPIC_SET_TEMPERATURE, TOPIC_SET_TILT, TOPIC_TILT, TOPIC_UPDATE_POSITION, TOPIC_UPDATE_TEMPERATURE, TOPIC_UPDATE_TILT } from '@/constants/mqtt'
 
 function GrillControlContent() {
   const searchParams = useSearchParams()
@@ -31,7 +31,6 @@ function GrillControlContent() {
     lastUpdate: null
   })
   
-  const [currentMode, setCurrentMode] = useState<GrillMode>('normal')
   const [targetPosition, setTargetPosition] = useState('')
   const [targetTemperature, setTargetTemperature] = useState('')
   const [targetRotation, setTargetRotation] = useState('')
@@ -50,7 +49,7 @@ function GrillControlContent() {
 
     const setupSubscriptions = async () => {
       try {
-        const unsubPos = await subscribe(`grill/${grillIndex}/posicion`, (topic, payload) => {
+        const unsubPos = await subscribe(`grill/${grillIndex}/${TOPIC_UPDATE_POSITION}`, (topic, payload) => {
           const position = parseInt(payload.toString())
           if (!isNaN(position)) {
             setGrillState(prev => ({ ...prev, position, isConnected: true, lastUpdate: new Date() }))
@@ -58,7 +57,7 @@ function GrillControlContent() {
         })
         subscriptions.push(unsubPos)
 
-        const unsubTemp = await subscribe(`grill/${grillIndex}/temperatura`, (topic, payload) => {
+        const unsubTemp = await subscribe(`grill/${grillIndex}/${TOPIC_UPDATE_TEMPERATURE}`, (topic, payload) => {
           const temperature = parseInt(payload.toString())
           if (!isNaN(temperature)) {
             setGrillState(prev => ({ ...prev, temperature, isConnected: true, lastUpdate: new Date() }))
@@ -66,7 +65,7 @@ function GrillControlContent() {
         })
         subscriptions.push(unsubTemp)
 
-        const unsubRot = await subscribe(`grill/${grillIndex}/inclinacion`, (topic, payload) => {
+        const unsubRot = await subscribe(`grill/${grillIndex}/${TOPIC_UPDATE_TILT}`, (topic, payload) => {
           const rotation = parseInt(payload.toString())
           if (!isNaN(rotation)) {
             setGrillState(prev => ({ ...prev, rotation, isConnected: true, lastUpdate: new Date() }))
@@ -107,12 +106,12 @@ function GrillControlContent() {
   }
 
   const handleDirectionCommand = (direction: GrillDirection) => {
-    sendCommand('dirigir', direction)
+    sendCommand(TOPIC_MOVE, direction)
   }
 
   const handleRotationCommand = (rotation: GrillRotation) => {
     if (!isLeftGrill) return
-    sendCommand('inclinar', rotation)
+    sendCommand(TOPIC_TILT, rotation)
   }
 
   const handleSetPosition = () => {
@@ -121,7 +120,7 @@ function GrillControlContent() {
       toast.error('Posición debe estar entre 0 y 100')
       return
     }
-    sendCommand('establecer_posicion', targetPosition)
+    sendCommand(TOPIC_SET_POSITION, targetPosition)
     setTargetPosition('')
   }
 
@@ -131,7 +130,7 @@ function GrillControlContent() {
       toast.error('Temperatura debe estar entre 0 y 500°C')
       return
     }
-    sendCommand('establecer_temperatura', targetTemperature)
+    sendCommand(TOPIC_SET_TEMPERATURE, targetTemperature)
     setTargetTemperature('')
   }
 
@@ -142,24 +141,13 @@ function GrillControlContent() {
       toast.error('Rotación debe estar entre 0 y 360°')
       return
     }
-    sendCommand('establecer_inclinacion', targetRotation)
+    sendCommand(TOPIC_SET_TILT, targetRotation)
     setTargetRotation('')
   }
 
   const handleCancelProgram = () => {
     if (confirm(`¿Estás seguro de cancelar el programa en la parrilla ${grillName.toLowerCase()}?`)) {
-      sendCommand('cancelar_programa', '')
-    }
-  }
-
-  const handleModeChange = async (mode: GrillMode) => {
-    try {
-      const topic = `grill/${grillIndex}/establecer_modo`
-      await publish(topic, mode, { qos: 1 })
-      setCurrentMode(mode)
-    } catch (error) {
-      toast.error('Error al cambiar modo')
-      throw error
+      sendCommand(TOPIC_CANCEL_PROGRAM, '')
     }
   }
 
@@ -203,7 +191,7 @@ function GrillControlContent() {
             <h4 className="text-sm font-medium text-gray-700 mb-3">Dirección</h4>
             <div className="grid grid-cols-3 gap-2">
               <Button
-                onClick={() => handleDirectionCommand('subir')}
+                onClick={() => handleDirectionCommand(PAYLOAD_UP)}
                 disabled={!isConnected || isExecuting}
                 variant="primary"
                 className="flex flex-col items-center py-4"
@@ -212,7 +200,7 @@ function GrillControlContent() {
                 <span className="text-xs">Subir</span>
               </Button>
               <Button
-                onClick={() => handleDirectionCommand('parar')}
+                onClick={() => handleDirectionCommand(PAYLOAD_STOP)}
                 disabled={!isConnected || isExecuting}
                 variant="secondary"
                 className="flex flex-col items-center py-4"
@@ -221,7 +209,7 @@ function GrillControlContent() {
                 <span className="text-xs">Parar</span>
               </Button>
               <Button
-                onClick={() => handleDirectionCommand('bajar')}
+                onClick={() => handleDirectionCommand(PAYLOAD_DOWN)}
                 disabled={!isConnected || isExecuting}
                 variant="primary"
                 className="flex flex-col items-center py-4"
@@ -232,9 +220,49 @@ function GrillControlContent() {
             </div>
           </div>
 
-          {/* Position Control */}
-          <div className="mb-6">
-            <div className="flex items-center space-x-2 mb-2">
+
+          {/* Rotation Controls (only for left grill) */}
+          {isLeftGrill && (
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Rotación</h4>
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                <Button
+                  onClick={() => handleRotationCommand(PAYLOAD_COUNTER_CLOCKWISE)}
+                  disabled={!isConnected || isExecuting}
+                  variant="primary"
+                  className="flex flex-col items-center py-4"
+                >
+                  <RotateCcw className="h-5 w-5 mb-1" />
+                  <span className="text-xs">Anti-horario</span>
+                </Button>
+                <Button
+                  onClick={() => handleRotationCommand(PAYLOAD_STOP)}
+                  disabled={!isConnected || isExecuting}
+                  variant="secondary"
+                  className="flex flex-col items-center py-4"
+                >
+                  <Square className="h-5 w-5 mb-1" />
+                  <span className="text-xs">Parar</span>
+                </Button>
+                <Button
+                  onClick={() => handleRotationCommand(PAYLOAD_CLOCKWISE)}
+                  disabled={!isConnected || isExecuting}
+                  variant="primary"
+                  className="flex flex-col items-center py-4"
+                >
+                  <RotateCw className="h-5 w-5 mb-1" />
+                  <span className="text-xs">Horario</span>
+                </Button>
+              </div>
+              
+            </div>
+          )}
+
+          {/* Go-To controls */}
+          <div className=' w-full grid grid-cols-3 grid-auto-col mb-4'>
+      
+            {/* Position Control */}
+            <div className="flex items-center flex-col">
               <Input
                 label="Posición (%)"
                 type="number"
@@ -248,92 +276,55 @@ function GrillControlContent() {
                 onClick={handleSetPosition}
                 disabled={!isConnected || isExecuting || !targetPosition}
                 variant="primary"
-                className="mt-6"
+                className="mt-2 w-1/2"
               >
                 Ir
               </Button>
             </div>
-          </div>
-
-          {/* Temperature Control */}
-          <div className="mb-6">
-            <div className="flex items-center space-x-2 mb-2">
-              <Input
-                label="Temperatura (°C)"
-                type="number"
-                value={targetTemperature}
-                onChange={setTargetTemperature}
-                placeholder="0-500"
-                min={0}
-                max={500}
-              />
-              <Button
-                onClick={handleSetTemperature}
-                disabled={!isConnected || isExecuting || !targetTemperature}
-                variant="primary"
-                className="mt-6"
-              >
-                Ir
-              </Button>
-            </div>
-          </div>
-
-          {/* Rotation Controls (only for left grill) */}
-          {isLeftGrill && (
-            <div className="mb-6">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">Rotación</h4>
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                <Button
-                  onClick={() => handleRotationCommand('antihorario')}
-                  disabled={!isConnected || isExecuting}
-                  variant="primary"
-                  className="flex flex-col items-center py-4"
-                >
-                  <RotateCcw className="h-5 w-5 mb-1" />
-                  <span className="text-xs">Anti-horario</span>
-                </Button>
-                <Button
-                  onClick={() => handleRotationCommand('parar')}
-                  disabled={!isConnected || isExecuting}
-                  variant="secondary"
-                  className="flex flex-col items-center py-4"
-                >
-                  <Square className="h-5 w-5 mb-1" />
-                  <span className="text-xs">Parar</span>
-                </Button>
-                <Button
-                  onClick={() => handleRotationCommand('horario')}
-                  disabled={!isConnected || isExecuting}
-                  variant="primary"
-                  className="flex flex-col items-center py-4"
-                >
-                  <RotateCw className="h-5 w-5 mb-1" />
-                  <span className="text-xs">Horario</span>
-                </Button>
-              </div>
-              
-              {/* Set specific rotation */}
-              <div className="flex items-center space-x-2">
+            
+            {/* Temperature Control */}
+            <div className="flex items-center flex-col">
                 <Input
-                  label="Grados (0-360)"
+                  label="Temperatura (°C)"
                   type="number"
-                  value={targetRotation}
-                  onChange={setTargetRotation}
-                  placeholder="0-360"
+                  value={targetTemperature}
+                  onChange={setTargetTemperature}
+                  placeholder="0-500"
                   min={0}
-                  max={360}
+                  max={500}
                 />
                 <Button
-                  onClick={handleSetRotation}
-                  disabled={!isConnected || isExecuting || !targetRotation}
+                  onClick={handleSetTemperature}
+                  disabled={!isConnected || isExecuting || !targetTemperature}
                   variant="primary"
-                  className="mt-6"
+                  className="mt-2 w-1/2"
                 >
                   Ir
                 </Button>
-              </div>
             </div>
-          )}
+
+            {/* Set specific rotation */}
+            <div className="flex items-center flex-col">
+              <Input
+                label="Grados (0-360)"
+                type="number"
+                value={targetRotation}
+                onChange={setTargetRotation}
+                placeholder="0-360"
+                min={0}
+                max={360}
+              />
+              <Button
+                onClick={handleSetRotation}
+                disabled={!isConnected || isExecuting || !targetRotation}
+                variant="primary"
+                className="mt-2 w-1/2"
+              >
+                Ir
+              </Button>
+            </div>
+
+          </div>
 
           {/* System Controls */}
           <div className="border-t pt-4">
@@ -352,16 +343,6 @@ function GrillControlContent() {
           </div>
         </div>
 
-        {/* Mode Selector - Only Normal/Spinning */}
-        <div className="mb-6">
-          <ModeSelector 
-            currentMode={currentMode}
-            onModeChange={handleModeChange}
-            isConnected={isConnected}
-            isExecuting={false}
-            showDualMode={false}
-          />
-        </div>
       </div>
     </div>
   )

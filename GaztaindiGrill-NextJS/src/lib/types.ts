@@ -1,4 +1,6 @@
 
+import { PAYLOAD_CLOCKWISE, PAYLOAD_COUNTER_CLOCKWISE, PAYLOAD_STOP, PAYLOAD_UP, PAYLOAD_DOWN, PAYLOAD_NORMAL, PAYLOAD_SPINNING, PAYLOAD_DUAL } from "@/constants/mqtt";
+
 export interface Program {
   id: number;
   name: string;
@@ -51,7 +53,7 @@ export interface GrillState {
   lastUpdate: Date | null;
 }
 
-export type GrillMode = 'normal' | 'burruntzi' | 'dual';
-export type GrillDirection = 'subir' | 'bajar' | 'parar';
-export type GrillRotation = 'horario' | 'antihorario' | 'parar';
+export type GrillMode = typeof PAYLOAD_NORMAL | typeof PAYLOAD_SPINNING | typeof PAYLOAD_DUAL;
+export type GrillDirection = typeof PAYLOAD_UP | typeof PAYLOAD_DOWN | typeof PAYLOAD_STOP;
+export type GrillRotation = typeof PAYLOAD_CLOCKWISE | typeof PAYLOAD_COUNTER_CLOCKWISE | typeof PAYLOAD_STOP;
 

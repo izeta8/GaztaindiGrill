@@ -26,16 +26,6 @@ export function GrillStatusDisplay({ title, grillState, showRotation }: GrillSta
     <div className="bg-white rounded-lg shadow-sm p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-        <div className="flex items-center space-x-2">
-          {isConnected ? (
-            <Wifi className="h-4 w-4 text-green-600" />
-          ) : (
-            <WifiOff className="h-4 w-4 text-red-600" />
-          )}
-          <span className={`text-xs ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
-            {isConnected ? 'Online' : 'Offline'}
-          </span>
-        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-4">

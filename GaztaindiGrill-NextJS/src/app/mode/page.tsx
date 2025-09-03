@@ -2,13 +2,14 @@
 
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Settings, Users, ChefHat } from 'lucide-react'
+import { Settings, Users } from 'lucide-react'
 import { useMqtt } from '@/lib/mqtt/useMqtt'
 import { ConnectionStatus } from '../control/components/ConnectionStatus'
 import { ModeCard } from './components/ModeCard'
 import { CurrentModeDisplay } from './components/CurrentModeDisplay'
 import { ModeApplyButton } from './components/ModeApplyButton'
 import type { GrillMode } from '@/lib/types'
+import { TOPIC_SET_MODE } from '@/constants/mqtt'
 
 export default function ModePage() {
   const { publish, isConnected } = useMqtt()
@@ -42,8 +43,8 @@ export default function ModePage() {
     try {
       setIsExecuting(true)
       // Send mode to both grills
-      await publish('grill/0/establecer_modo', selectedMode, { qos: 1 })
-      await publish('grill/1/establecer_modo', selectedMode, { qos: 1 })
+      await publish(`grill/0/${TOPIC_SET_MODE}`, selectedMode, { qos: 1 })
+      await publish(`grill/1/${TOPIC_SET_MODE}`, selectedMode, { qos: 1 })
       setCurrentMode(selectedMode)
       
       const modeLabel = selectedMode === 'dual' ? 'Dual' : 'Independiente'

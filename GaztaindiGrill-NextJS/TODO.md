@@ -1,11 +1,15 @@
 
+DOING: 
+
+- Implementar el sistema de conextion/desconexion del ESP32 (topic grill/status -> online/offline)
+
+TODO: 
+
 - Bloquear la posibilidad de ejecutar un programa que contenga rotación en la parrilla derecha.
 
 - Fix last update del control de las parrillas
 
 - La barra de posición ponerla en veritcal en la pantalla del control
-
-- Actualizar en tiempo real si el movil está contectado a mqtt.
 
 - Actualizar en tiempo real si la parrilla tiene Wifi o no (recivir mensaje desde esp)
 

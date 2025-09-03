@@ -25,7 +25,7 @@ void GrillSensor::update_encoder() {
     lastEncoderValue = encoderValue;
 
     String encoderValueStr = String(encoderValue);
-    String stringTopicEncoder = mqtt->parse_topic("posicion");
+    String stringTopicEncoder = mqtt->parse_topic(GrillConstants::TOPIC_UPDATE_POSITION);
     Serial.println("Encoder " + String(grillIndex) + " = " + encoderValue);
     mqtt->publish_message(stringTopicEncoder, encoderValueStr);
 }
@@ -63,7 +63,7 @@ void GrillSensor::update_rotor_encoder() {
     if (rotorEncoderValue % 5 == 0)
     {
         Serial.println("Rotor Encoder = " + String(rotorEncoderValue));
-        String topic = mqtt->parse_topic("inclinacion");
+        String topic = mqtt->parse_topic(GrillConstants::TOPIC_UPDATE_TILT);
         mqtt->publish_message(topic, String(rotorEncoderValue));
     }
 }
@@ -87,7 +87,7 @@ void GrillSensor::update_temperature() {
 
     String temperatureStr = String(temperature);
     Serial.println("Temperature = " + temperatureStr);
-    String topic = mqtt->parse_topic("temperatura");
+    String topic = mqtt->parse_topic(GrillConstants::TOPIC_UPDATE_TEMPERATURE);
     mqtt->publish_message(topic, temperatureStr);
 }
 

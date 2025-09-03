@@ -48,11 +48,10 @@ String GrillMQTT::parse_topic(String action) {
     return "grill/" + String(grillIndex) + "/" + action;
 }
 
-bool GrillMQTT::publish_message(const String& topic, const String& payload, bool retain = false) {
+bool GrillMQTT::publish_message(const String& topic, const String& payload) {
     if (!client.connected()) {
         extern void connect_to_mqtt();
         connect_to_mqtt();
     }
-    // Ahora pasamos el valor de 'retain' a la llamada de publish
-    return client.publish(topic.c_str(), payload.c_str(), retain);
+    return client.publish(topic.c_str(), payload.c_str(), true);
 }

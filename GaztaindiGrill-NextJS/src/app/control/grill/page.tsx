@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { ChevronUp, ChevronDown, RotateCcw, RotateCw, Square, Pause } from 'lucide-react'
@@ -12,7 +12,7 @@ import { ModeSelector } from '../components/ModeSelector'
 import { ConnectionStatus } from '../components/ConnectionStatus'
 import type { GrillState, GrillMode, GrillDirection, GrillRotation } from '@/lib/types'
 
-export default function GrillControlPage() {
+function GrillControlContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { publish, subscribe, isConnected } = useMqtt()
@@ -85,7 +85,7 @@ export default function GrillControlPage() {
     return () => {
       subscriptions.forEach(unsub => unsub())
     }
-  }, [isConnected, subscribe, grillIndex])
+  }, [isConnected, subscribe, grillIndex, grillParam, router])
 
   const sendCommand = async (topic: string, payload: string) => {
     if (!isConnected) {
@@ -364,5 +364,24 @@ export default function GrillControlPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function GrillControlPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 py-4 px-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Cargando control de parrilla...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <GrillControlContent />
+    </Suspense>
   )
 }

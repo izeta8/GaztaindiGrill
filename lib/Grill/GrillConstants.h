@@ -37,41 +37,40 @@ public:
     static constexpr const char* JSON_ROTATION = "rotation";
     static constexpr const char* JSON_ACTION = "action";
     
-    // MQTT Topics
+    // Sensor update topics
+    static constexpr const char* TOPIC_UPDATE_POSITION = "update_position";
+    static constexpr const char* TOPIC_UPDATE_TEMPERATURE = "update_temperature";
+    static constexpr const char* TOPIC_UPDATE_TILT = "update_tilt";
+
+    // Movement topics
+    static constexpr const char* TOPIC_MOVE = "move";
+    static constexpr const char* TOPIC_TILT = "tilt";
+
+    // Set position topics
+    static constexpr const char* TOPIC_SET_POSITION = "set_position";
+    static constexpr const char* TOPIC_SET_TILT = "set_tilt";
+
+    // Program topics
+    static constexpr const char* TOPIC_EXECUTE_PROGRAM = "execute_program";
+    static constexpr const char* TOPIC_CANCEL_PROGRAM = "cancel_program";
+    
+    // Mode topic
+    static constexpr const char* TOPIC_SET_MODE = "set_mode";
+    
+    // Miscellaneous topics
     static constexpr const char* TOPIC_LOG = "log";
-    static constexpr const char* TOPIC_REINICIAR = "reiniciar";
-    static constexpr const char* TOPIC_DIRIGIR = "dirigir";
-    static constexpr const char* TOPIC_INCLINAR = "inclinar";
-    static constexpr const char* TOPIC_ESTABLECER_POSICION = "establecer_posicion";
-    static constexpr const char* TOPIC_EJECUTAR_PROGRAMA = "ejecutar_programa";
-    static constexpr const char* TOPIC_CANCELAR_PROGRAMA = "cancelar_programa";
-    static constexpr const char* TOPIC_ESTABLECER_INCLINACION = "establecer_inclinacion";
-    static constexpr const char* TOPIC_ESTABLECER_MODO = "establecer_modo";
-    
-    // Grill Commands
-    static constexpr const char* CMD_MOVE = "dirigir";
-    static constexpr const char* PAYLOAD_UP = "subir";
-    static constexpr const char* PAYLOAD_DOWN = "bajar";
-    static constexpr const char* PAYLOAD_STOP = "parar";
+    static constexpr const char* TOPIC_RESTART = "restart";
 
-    static constexpr const char* CMD_ROTATE = "inclinar";
-    static constexpr const char* PAYLOAD_CLOCKWISE = "horario";
-    static constexpr const char* PAYLOAD_COUNTER_CLOCKWISE = "antihorario";
+    // Command payloads
+    static constexpr const char* PAYLOAD_UP = "up";
+    static constexpr const char* PAYLOAD_DOWN = "down";
+    static constexpr const char* PAYLOAD_STOP = "stop";
 
-    static constexpr const char* CMD_SET_POSITION = "establecer_posicion";
+    static constexpr const char* PAYLOAD_CLOCKWISE = "clockwise";
+    static constexpr const char* PAYLOAD_COUNTER_CLOCKWISE = "counter_clockwise";
 
-    static constexpr const char* CMD_RESTART = "reiniciar";
-
-    static constexpr const char* CMD_EXECUTE_PROGRAM = "ejecutar_programa";
-
-    static constexpr const char* CMD_CANCEL_PROGRAM = "cancel_program";
-
-    static constexpr const char* CMD_SET_TILT = "establecer_inclinacion";
-
-    static constexpr const char* CMD_SET_MODE = "establecer_modo";
-    
     static constexpr const char* PAYLOAD_NORMAL = "normal";
-    static constexpr const char* PAYLOAD_SPINNING = "burruntzi";
+    static constexpr const char* PAYLOAD_SPINNING = "spinning";
     static constexpr const char* PAYLOAD_DUAL = "dual";
 };
 

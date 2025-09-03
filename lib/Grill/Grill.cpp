@@ -135,7 +135,7 @@ void Grill::handle_mqtt_message(const char* pAction, const char* pPayload) {
         
     }
 
-    if (topic == GrillConstants::CMD_MOVE) {
+    if (topic == GrillConstants::TOPIC_MOVE) {
         if (payload == GrillConstants::PAYLOAD_UP) {
             movement->go_up();
         } else if (payload == GrillConstants::PAYLOAD_DOWN) {
@@ -145,7 +145,7 @@ void Grill::handle_mqtt_message(const char* pAction, const char* pPayload) {
         }
     }  
 
-     if (topic == GrillConstants::CMD_ROTATE) {
+     if (topic == GrillConstants::TOPIC_TILT) {
         if (payload == GrillConstants::PAYLOAD_CLOCKWISE) {
             movement->rotate_clockwise();
         } else if (payload == GrillConstants::PAYLOAD_COUNTER_CLOCKWISE) {
@@ -155,32 +155,32 @@ void Grill::handle_mqtt_message(const char* pAction, const char* pPayload) {
         }
     }  
 
-    if (topic == GrillConstants::CMD_SET_POSITION) {
+    if (topic == GrillConstants::TOPIC_SET_POSITION) {
         int posicion = payload.toInt();
         movement->go_to(posicion);
     }
     
-    if (topic == GrillConstants::CMD_RESTART) {
+    if (topic == GrillConstants::TOPIC_RESTART) {
         mqtt->print("Reiniciando sistema");
     }
     
-    if (topic == GrillConstants::CMD_EXECUTE_PROGRAM) {
+    if (topic == GrillConstants::TOPIC_EXECUTE_PROGRAM) {
         mqtt->print("Ejecutando un programa..."); 
         programManager->execute_program(pPayload);
     }
     
-    if (topic == GrillConstants::CMD_CANCEL_PROGRAM) {
+    if (topic == GrillConstants::TOPIC_CANCEL_PROGRAM) {
         programManager->cancel_program();
         mqtt->print("Programa cancelado");
     }
     
-    if (topic == GrillConstants::CMD_SET_TILT)
+    if (topic == GrillConstants::TOPIC_SET_TILT)
     {
         int grades = payload.toInt();
         movement->go_to_rotor(grades);
     }
     
-    if (topic == GrillConstants::CMD_SET_MODE)
+    if (topic == GrillConstants::TOPIC_SET_MODE)
     {
         if (payload == GrillConstants::PAYLOAD_NORMAL)
         {

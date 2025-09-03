@@ -12,7 +12,7 @@ export function CurrentModeDisplay({ currentMode }: CurrentModeDisplayProps) {
         <div>
           <p className="text-sm font-medium text-blue-900">Modo Actual</p>
           <p className="text-lg font-semibold text-blue-800">
-            {currentMode === 'dual' ? 'Dual' : 'Singular'}
+            {currentMode === 'dual' ? 'Dual' : 'Individual'}
           </p>
         </div>
       </div>

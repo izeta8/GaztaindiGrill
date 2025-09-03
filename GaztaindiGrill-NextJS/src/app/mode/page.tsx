@@ -63,7 +63,6 @@ export default function ModePage() {
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="text-center mb-4">
-            <ChefHat className="h-12 w-12 mx-auto mb-4 text-blue-600" />
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
               Modo de Funcionamiento
             </h1>

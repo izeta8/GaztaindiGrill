@@ -5,6 +5,8 @@ DOING:
 
 TODO: 
 
+- Pausuak gehitzeako garaian "acciones" option-a kendu eta zegun zer dan value input-an albuan jarri. Aukeratzekuan inputai baliyua emateko.
+
 - Bloquear la posibilidad de ejecutar un programa que contenga rotación en la parrilla derecha.
 
 - Fix last update del control de las parrillas

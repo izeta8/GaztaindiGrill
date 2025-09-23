@@ -18,7 +18,9 @@ function buildUrlAndOptions() {
   const host = process.env.NEXT_PUBLIC_MQTT_SERVER
   const envPort = process.env.NEXT_PUBLIC_MQTT_PORT
   const envProtocol = process.env.NEXT_PUBLIC_MQTT_PROTOCOL
-  const protocol = envProtocol || (typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss' : 'ws')
+  const protocol =
+    envProtocol ||
+    (typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss' : 'ws')
   const path = process.env.NEXT_PUBLIC_MQTT_PATH || ''
   const username = process.env.NEXT_PUBLIC_MQTT_USER
   const password = process.env.NEXT_PUBLIC_MQTT_PASSWORD
@@ -47,7 +49,9 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false)
   const [isConnecting, setIsConnecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const handlersRef = useRef(new Map<string, Set<(topic: string, payload: Uint8Array) => void>>())
+  const handlersRef = useRef(
+    new Map<string, Set<(topic: string, payload: Uint8Array) => void>>()
+  )
 
   useEffect(() => {
     let mounted = true
@@ -58,51 +62,92 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
       if (process.env.NODE_ENV !== 'production') {
         console.info('[MQTT] Global connect', { url })
       }
-      c.on('connect', () => { if (!mounted) return; setIsConnected(true); setIsConnecting(false); setError(null) })
-      c.on('reconnect', () => { if (!mounted) return; setIsConnecting(true) })
-      c.on('close', () => { if (!mounted) return; setIsConnected(false) })
-      c.on('error', (err) => { if (!mounted) return; setError(err?.message || 'MQTT error') })
+      c.on('connect', () => {
+        if (!mounted) return
+        setIsConnected(true)
+        setIsConnecting(false)
+        setError(null)
+
+        // Make sure we listen to "status" for LWT
+        c.subscribe('status')
+      })
+      c.on('reconnect', () => {
+        if (!mounted) return
+        setIsConnecting(true)
+      })
+      c.on('close', () => {
+        if (!mounted) return
+        setIsConnected(false)
+      })
+      c.on('error', (err) => {
+        if (!mounted) return
+        setError(err?.message || 'MQTT error')
+      })
       c.on('message', (topic, payload) => {
+        const msg = payload.toString()
+
+        // Detect LWT
+        if (topic === 'status' && msg === 'offline') {
+          if (!mounted) return
+          setIsConnected(false)
+          setIsConnecting(true)
+        }
+
         const set = handlersRef.current.get(topic)
         if (!set) return
-        set.forEach(fn => fn(topic, payload))
+        set.forEach((fn) => fn(topic, payload))
       })
       setClient(c)
-      return () => { mounted = false; try { c.end(true) } catch { /* noop */ } }
+      return () => {
+        mounted = false
+        try {
+          c.end(true)
+        } catch {
+          /* noop */
+        }
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Config error')
     }
   }, [])
 
-  const value = useMemo<MqttContextValue>(() => ({
-    client,
-    isConnected,
-    isConnecting,
-    error,
-    publish: async (topic, payload, options) => {
-      if (!client || !isConnected) throw new Error('MQTT no conectado')
-      await new Promise<void>((resolve, reject) => {
-        client.publish(topic, payload, { qos: 1, ...options }, (err?: Error | null) => {
-          if (err) return reject(err)
-          resolve()
+  const value = useMemo<MqttContextValue>(
+    () => ({
+      client,
+      isConnected,
+      isConnecting,
+      error,
+      publish: async (topic, payload, options) => {
+        if (!client || !isConnected) throw new Error('MQTT no conectado')
+        await new Promise<void>((resolve, reject) => {
+          client.publish(topic, payload, { qos: 1, ...options }, (err?: Error | null) => {
+            if (err) return reject(err)
+            resolve()
+          })
         })
-      })
-    },
-    subscribe: async (topic, handler) => {
-      if (!client) throw new Error('MQTT no inicializado')
-      await new Promise<void>((resolve, reject) => {
-        client.subscribe(topic, { qos: 0 }, (err) => err ? reject(err) : resolve())
-      })
-      let set = handlersRef.current.get(topic)
-      if (!set) { set = new Set(); handlersRef.current.set(topic, set) }
-      set.add(handler)
-      return () => {
-        const s = handlersRef.current.get(topic)
-        if (s) { s.delete(handler); if (s.size === 0) handlersRef.current.delete(topic) }
-        // We keep the subscription open; advanced optimization omitted to keep it simple.
-      }
-    },
-  }), [client, isConnected, isConnecting, error])
+      },
+      subscribe: async (topic, handler) => {
+        if (!client) throw new Error('MQTT no inicializado')
+        await new Promise<void>((resolve, reject) => {
+          client.subscribe(topic, { qos: 0 }, (err) => (err ? reject(err) : resolve()))
+        })
+        let set = handlersRef.current.get(topic)
+        if (!set) {
+          set = new Set()
+          handlersRef.current.set(topic, set)
+        }
+        set.add(handler)
+        return () => {
+          const s = handlersRef.current.get(topic)
+          if (s) {
+            s.delete(handler)
+            if (s.size === 0) handlersRef.current.delete(topic)
+          }
+        }
+      },
+    }),
+    [client, isConnected, isConnecting, error]
+  )
 
   return <MqttContext.Provider value={value}>{children}</MqttContext.Provider>
 }

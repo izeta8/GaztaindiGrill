@@ -1,6 +1,6 @@
 "use client"
 
-import { Thermometer, ArrowUp, RotateCw, Wifi, WifiOff } from 'lucide-react'
+import { Thermometer, ArrowUp, RotateCw } from 'lucide-react'
 import type { GrillState } from '@/lib/types'
 
 interface GrillStatusDisplayProps {
@@ -10,7 +10,7 @@ interface GrillStatusDisplayProps {
 }
 
 export function GrillStatusDisplay({ title, grillState, showRotation }: GrillStatusDisplayProps) {
-  const { position, temperature, rotation, isConnected, lastUpdate } = grillState
+  const { position, temperature, rotation, lastUpdate } = grillState
   
   const formatLastUpdate = (date: Date | null) => {
     if (!date) return 'Nunca'
@@ -29,17 +29,19 @@ export function GrillStatusDisplay({ title, grillState, showRotation }: GrillSta
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-4">
-        {/* Position */}
-        <div className="bg-blue-50 rounded-lg p-4">
-          <div className="flex items-center space-x-2 mb-2">
-            <ArrowUp className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium text-blue-800">Posición</span>
+        <div className="bg-blue-50 rounded-lg p-4 flex justify-between items-center">
+          <div>
+            <div className="flex items-center space-x-2 mb-2">
+              <ArrowUp className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-800">Posición</span>
+            </div>
+            <div className="text-2xl font-bold text-blue-900">{position}%</div>
           </div>
-          <div className="text-2xl font-bold text-blue-900">{position}%</div>
-          <div className="w-full bg-blue-200 rounded-full h-2 mt-2">
+          {/* Vertical Bar */}
+          <div className="w-2 bg-blue-200 rounded-full h-24 flex flex-col justify-end">
             <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${position}%` }}
+              className="bg-blue-600 rounded-full w-full transition-all duration-300"
+              style={{ height: `${position}%` }}
             />
           </div>
         </div>

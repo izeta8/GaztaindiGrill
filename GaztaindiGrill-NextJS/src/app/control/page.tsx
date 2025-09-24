@@ -2,13 +2,10 @@
 
 import { useRouter } from 'next/navigation'
 import { ChefHat } from 'lucide-react'
-import { useMqtt } from '@/lib/mqtt/useMqtt'
 import { Button } from '@/components/ui/Button'
-import { ConnectionStatus } from './components/ConnectionStatus'
 
 export default function ControlPage() {
   const router = useRouter()
-  const { isConnected } = useMqtt()
 
   const selectGrill = (index: 0 | 1) => {
     router.push(`/control/grill?index=${index}`)
@@ -29,9 +26,6 @@ export default function ControlPage() {
               Selecciona la parrilla que deseas controlar
             </p>
           </div>
-          
-          {/* Connection Status */}
-          <ConnectionStatus isConnected={isConnected} />
         </div>
 
         {/* Quick Access */}

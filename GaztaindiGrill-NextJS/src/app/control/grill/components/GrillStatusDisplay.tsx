@@ -30,15 +30,15 @@ export function GrillStatusDisplay({ title, grillState, showRotation }: GrillSta
 
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="bg-blue-50 rounded-lg p-4 flex justify-between items-center">
-          <div>
+          <div className='h-full'>
             <div className="flex items-center space-x-2 mb-2">
               <ArrowUp className="h-4 w-4 text-blue-600" />
               <span className="text-sm font-medium text-blue-800">Posición</span>
             </div>
-            <div className="text-2xl font-bold text-blue-900">{position}%</div>
+            <p className="text-2xl font-bold text-blue-900">{position}%</p>
           </div>
           {/* Vertical Bar */}
-          <div className="w-2 bg-blue-200 rounded-full h-24 flex flex-col justify-end">
+          <div className="w-2 bg-blue-200 rounded-full h-15 flex flex-col justify-end">
             <div 
               className="bg-blue-600 rounded-full w-full transition-all duration-300"
               style={{ height: `${position}%` }}
@@ -52,10 +52,7 @@ export function GrillStatusDisplay({ title, grillState, showRotation }: GrillSta
             <Thermometer className="h-4 w-4 text-red-600" />
             <span className="text-sm font-medium text-red-800">Temperatura</span>
           </div>
-          <div className="text-2xl font-bold text-red-900">{temperature}°C</div>
-          <div className="text-xs text-red-600 mt-1">
-            {temperature > 200 ? 'Muy caliente' : temperature > 100 ? 'Caliente' : 'Normal'}
-          </div>
+          <p className="text-2xl font-bold text-red-900">{temperature}°C</p>
         </div>
       </div>
 
@@ -66,17 +63,20 @@ export function GrillStatusDisplay({ title, grillState, showRotation }: GrillSta
             <RotateCw className="h-4 w-4 text-purple-600" />
             <span className="text-sm font-medium text-purple-800">Rotación</span>
           </div>
-          <div className="text-2xl font-bold text-purple-900">{rotation}°</div>
-          <div className="flex items-center justify-center mt-2">
-            <div className="relative w-16 h-16">
-              <div className="absolute inset-0 rounded-full border-4 border-purple-200" />
-              <div 
-                className="absolute inset-2 rounded-full bg-purple-600 transition-transform duration-300"
-                style={{ transform: `rotate(${rotation}deg)` }}
-              >
-                <div className="absolute top-0 left-1/2 w-1 h-2 bg-white transform -translate-x-1/2" />
+          <div className='grid grid-cols-3'>
+            <div className="text-2xl font-bold text-purple-900">{rotation}°</div>
+            <div className="flex items-center justify-center mt-2">
+              <div className="relative w-14 h-14">
+                <div className="absolute inset-0 rounded-full border-4 border-purple-200" />
+                <div 
+                  className="absolute inset-2 rounded-full bg-purple-600 transition-transform duration-300"
+                  style={{ transform: `rotate(${rotation}deg)` }}
+                >
+                  <div className="absolute top-0 left-1/2 w-1 h-2 bg-white transform -translate-x-1/2" />
+                </div>
               </div>
             </div>
+            <div></div>
           </div>
         </div>
       )}

@@ -1,13 +1,15 @@
 
 DOING: 
 
-- Hacer el sistema de los modos.
+- Pausuak gehitzeako garaian "acciones" option-a kendu eta zegun zer dan value input-an albuan jarri. Aukeratzekuan inputai baliyua emateko.
 
-TODO: 
+PARA REVISAR: 
 
 - Ver si esto esta bieN: __Implementar el sistema de conextion/desconexion del ESP32 (topic grill/status -> online/offline)__
 
-- Pausuak gehitzeako garaian "acciones" option-a kendu eta zegun zer dan value input-an albuan jarri. Aukeratzekuan inputai baliyua emateko.
+TODO: 
+
+- Hacer el sistema de los modos.
 
 - Bloquear la posibilidad de ejecutar un programa que contenga rotación en la parrilla derecha.
 

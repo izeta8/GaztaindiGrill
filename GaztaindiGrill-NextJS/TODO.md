@@ -1,15 +1,13 @@
 
 DOING: 
 
-- Pausuak gehitzeako garaian "acciones" option-a kendu eta zegun zer dan value input-an albuan jarri. Aukeratzekuan inputai baliyua emateko.
+- Hacer el sistema de los modos.
 
 PARA REVISAR: 
 
 - Ver si esto esta bieN: __Implementar el sistema de conextion/desconexion del ESP32 (topic grill/status -> online/offline)__
 
 TODO: 
-
-- Hacer el sistema de los modos.
 
 - Cuando se está ejecutando un programa en vez de los controles mostrar el boton "Cancelar programa" y si no está ejecutando un programa quitar ese botón.
 

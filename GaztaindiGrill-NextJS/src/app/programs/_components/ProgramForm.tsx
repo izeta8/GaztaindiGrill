@@ -9,9 +9,9 @@ import { Textarea } from '@/components/ui/Textarea'
 import { Select } from '@/components/ui/Select'
 import type { ProgramStep } from '@/lib/types'
 import { toDateInputValue, fromDateInputValue } from '@/lib/utils'
-import { StepsList } from '../create/components/StepsList'
-import { StepModal, type StepFormState } from '../create/components/StepModal'
-import { CategoryModal } from '../create/components/CategoryModal'
+import { StepsList } from './StepsList'
+import { StepModal, type StepFormState } from './StepModal'
+import { CategoryModal } from './CategoryModal'
 
 export type Category = { id: number; name: string }
 

@@ -7,9 +7,9 @@ import { ChevronUp, ChevronDown, RotateCcw, RotateCw, Square, Pause } from 'luci
 import { useMqtt } from '@/lib/mqtt/useMqtt'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { GrillStatusDisplay } from '../components/GrillStatusDisplay'
-import { ConnectionStatus } from '../components/ConnectionStatus'
-import type { GrillState, GrillMode, GrillDirection, GrillRotation } from '@/lib/types'
+import { GrillStatusDisplay } from './components/GrillStatusDisplay'
+import { ConnectionStatus } from './components/ConnectionStatus'
+import type { GrillState, GrillDirection, GrillRotation } from '@/lib/types'
 import { PAYLOAD_CLOCKWISE, PAYLOAD_COUNTER_CLOCKWISE, PAYLOAD_DOWN, PAYLOAD_STOP, PAYLOAD_UP, TOPIC_CANCEL_PROGRAM, TOPIC_MOVE, TOPIC_SET_POSITION, TOPIC_SET_TEMPERATURE, TOPIC_SET_TILT, TOPIC_TILT, TOPIC_UPDATE_POSITION, TOPIC_UPDATE_TEMPERATURE, TOPIC_UPDATE_TILT } from '@/constants/mqtt'
 
 function GrillControlContent() {
@@ -202,7 +202,7 @@ function GrillControlContent() {
               <Button
                 onClick={() => handleDirectionCommand(PAYLOAD_STOP)}
                 disabled={!isConnected || isExecuting}
-                variant="secondary"
+                variant="primarylight"
                 className="flex flex-col items-center py-4"
               >
                 <Square className="h-5 w-5 mb-1" />
@@ -229,7 +229,7 @@ function GrillControlContent() {
                 <Button
                   onClick={() => handleRotationCommand(PAYLOAD_COUNTER_CLOCKWISE)}
                   disabled={!isConnected || isExecuting}
-                  variant="primary"
+                  variant="primarylight"
                   className="flex flex-col items-center py-4"
                 >
                   <RotateCcw className="h-5 w-5 mb-1" />
@@ -238,7 +238,7 @@ function GrillControlContent() {
                 <Button
                   onClick={() => handleRotationCommand(PAYLOAD_STOP)}
                   disabled={!isConnected || isExecuting}
-                  variant="secondary"
+                  variant="primary"
                   className="flex flex-col items-center py-4"
                 >
                   <Square className="h-5 w-5 mb-1" />
@@ -247,7 +247,7 @@ function GrillControlContent() {
                 <Button
                   onClick={() => handleRotationCommand(PAYLOAD_CLOCKWISE)}
                   disabled={!isConnected || isExecuting}
-                  variant="primary"
+                  variant="primarylight"
                   className="flex flex-col items-center py-4"
                 >
                   <RotateCw className="h-5 w-5 mb-1" />

@@ -87,20 +87,8 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
     time: '',
     temperature: '',
     position: '',
-    rotation: '',
-    action: ''
+    rotation: ''
   })
-
-  const actionOptions = useMemo(
-    () => [
-      { value: 'rotate_90', label: 'Girar 90°' },
-      { value: 'rotate_180', label: 'Girar 180°' },
-      { value: 'move_up', label: 'Subir arriba' },
-      { value: 'move_down', label: 'Bajar abajo' },
-      { value: 'reset_position', label: 'Resetear posición' }
-    ],
-    []
-  )
 
   // Load categories on mount
   useEffect(() => {
@@ -144,7 +132,7 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
 
   // Step helpers
   const resetStepForm = () => {
-    setStepForm({ type: '', time: '', temperature: '', position: '', rotation: '', action: '' })
+    setStepForm({ type: '', time: '', temperature: '', position: '', rotation: '' })
   }
   const openAddStepModal = () => {
     resetStepForm()
@@ -154,46 +142,44 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
   const openEditStepModal = (index: number) => {
     const step = steps[index]
     setStepForm({
-      type: step.action ? 'action' : step.temperature ? 'temperature' : step.rotation ? 'rotation' : 'position',
+      type: step.temperature ? 'temperature' : step.rotation ? 'rotation' : 'position',
       time: step.time?.toString() || '',
       temperature: step.temperature?.toString() || '',
       position: step.position?.toString() || '',
-      rotation: step.rotation?.toString() || '',
-      action: step.action || ''
+      rotation: step.rotation?.toString() || ''
     })
     setEditingStep(index)
     setIsModalOpen(true)
   }
   const handleStepSubmit = () => {
     if (!stepForm.type) return
+
     const newStep: ProgramStep = {}
-    if (stepForm.type === 'action') {
-      if (!stepForm.action) return
-      newStep.action = stepForm.action
-    } else {
-      if (!stepForm.time) return
-      newStep.time = parseInt(stepForm.time)
-      if (stepForm.type === 'temperature') {
-        if (!stepForm.temperature) return
-        newStep.temperature = parseInt(stepForm.temperature)
-      } else if (stepForm.type === 'position') {
-        if (!stepForm.position) return
-        const pos = parseInt(stepForm.position)
-        if (isNaN(pos) || pos < 0 || pos > 100) {
-          toast.error('La posición debe estar entre 0 y 100')
-          return
-        }
-        newStep.position = pos
-      } else if (stepForm.type === 'rotation') {
-        if (!stepForm.rotation) return
-        const inc = parseInt(stepForm.rotation)
-        if (isNaN(inc) || inc < 0 || inc > 360) {
-          toast.error('La rotación debe estar entre 0 y 360')
-          return
-        }
-        newStep.rotation = inc
+    
+    if (!stepForm.time) return
+    newStep.time = parseInt(stepForm.time)
+    
+    if (stepForm.type === 'temperature') {
+      if (!stepForm.temperature) return
+      newStep.temperature = parseInt(stepForm.temperature)
+    } else if (stepForm.type === 'position') {
+      if (!stepForm.position) return
+      const pos = parseInt(stepForm.position)
+      if (isNaN(pos) || pos < 0 || pos > 100) {
+        toast.error('La posición debe estar entre 0 y 100')
+        return
       }
+      newStep.position = pos
+    } else if (stepForm.type === 'rotation') {
+      if (!stepForm.rotation) return
+      const inc = parseInt(stepForm.rotation)
+      if (isNaN(inc) || inc < 0 || inc > 360) {
+        toast.error('La rotación debe estar entre 0 y 360')
+        return
+      }
+      newStep.rotation = inc
     }
+    
     if (editingStep !== null) {
       const updatedSteps = [...steps]
       updatedSteps[editingStep] = newStep
@@ -397,7 +383,6 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
               onMove={moveStep}
               onEdit={openEditStepModal}
               onDelete={(idx) => deleteStep(idx)}
-              actionOptions={actionOptions}
             />
           </div>
 
@@ -422,7 +407,6 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
           setStepForm={setStepForm}
           onSubmit={handleStepSubmit}
           editingStep={editingStep}
-          actionOptions={actionOptions}
         />
 
         {/* Create Category Modal */}

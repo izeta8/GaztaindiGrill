@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, Thermometer, Target, ArrowUp, MoveVertical, RotateCw, Edit2, Trash2 } from 'lucide-react'
+import { Clock, Thermometer, MoveVertical, RotateCw, Edit2, Trash2, ArrowUp } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import type { ProgramStep } from '@/lib/types'
 import type { ReactNode } from 'react'
@@ -10,11 +10,9 @@ export type StepsListProps = {
   onMove: (index: number, direction: 'up' | 'down') => void
   onEdit: (index: number) => void
   onDelete: (index: number) => void
-  actionOptions: { value: string; label: string }[]
 }
 
 function getStepIcon(step: ProgramStep) {
-  if (step.action) return <Target className="h-5 w-5" />
   if (step.temperature) return <Thermometer className="h-7 w-7" />
   if (step.position) return <MoveVertical className="h-5 w-5" />
   if (step.rotation) return <RotateCw className="h-5 w-5" />
@@ -22,23 +20,16 @@ function getStepIcon(step: ProgramStep) {
 }
 
 function formatSeconds(seconds: number) {
-  if (seconds > 60) {
+  if (seconds >= 60) {
     const m = Math.floor(seconds / 60)
     const s = seconds % 60
+    if (s === 0) return `${m}m`
     return `${m}m ${s}s`
   }
   return `${seconds}s`
 }
 
-function getStepDescription(step: ProgramStep, actionOptions: { value: string; label: string }[]): ReactNode {
-  if (step.action) {
-    const actionLabel = actionOptions.find(opt => opt.value === step.action)?.label || step.action
-    return (
-      <div className="leading-tight">
-        <div><span className="font-medium">Acción:</span> {actionLabel}</div>
-      </div>
-    )
-  }
+function getStepDescription(step: ProgramStep): ReactNode {
   if (step.temperature) {
     return (
       <div className="leading-tight">
@@ -66,7 +57,7 @@ function getStepDescription(step: ProgramStep, actionOptions: { value: string; l
   return <div className="leading-tight">Paso desconocido</div>
 }
 
-export function StepsList({ steps, onMove, onEdit, onDelete, actionOptions }: StepsListProps) {
+export function StepsList({ steps, onMove, onEdit, onDelete }: StepsListProps) {
   if (steps.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -91,7 +82,7 @@ export function StepsList({ steps, onMove, onEdit, onDelete, actionOptions }: St
           <div className="flex items-center gap-2 flex-1">
             <span className="max-[360px]:hidden">{getStepIcon(step)}</span>
             <span className="text-sm font-medium">
-              {getStepDescription(step, actionOptions)}
+              {getStepDescription(step)}
             </span>
           </div>
 

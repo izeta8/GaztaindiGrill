@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import type { Dispatch, SetStateAction } from 'react'
 
-export type StepType = 'temperature' | 'position' | 'rotation' | 'action' | ''
+export type StepType = 'temperature' | 'position' | 'rotation' | ''
 
 export type StepFormState = {
   type: StepType
@@ -14,10 +14,7 @@ export type StepFormState = {
   temperature: string
   position: string
   rotation: string
-  action: string
 }
-
-type Option = { value: string; label: string }
 
 type StepModalProps = {
   isOpen: boolean
@@ -26,7 +23,6 @@ type StepModalProps = {
   setStepForm: Dispatch<SetStateAction<StepFormState>>
   onSubmit: () => void
   editingStep: number | null
-  actionOptions: Option[]
 }
 
 export function StepModal({
@@ -35,8 +31,7 @@ export function StepModal({
   stepForm,
   setStepForm,
   onSubmit,
-  editingStep,
-  actionOptions
+  editingStep
 }: StepModalProps) {
   
   const totalSeconds = Number(stepForm.time)
@@ -74,8 +69,7 @@ export function StepModal({
             options={[
               { value: 'temperature', label: 'Temperatura' },
               { value: 'position', label: 'Posición' },
-              { value: 'rotation', label: 'Rotación' },
-              { value: 'action', label: 'Acción' }
+              { value: 'rotation', label: 'Rotación' }
             ]}
             required
           />
@@ -203,16 +197,6 @@ export function StepModal({
               </div>
             </>
           )}
-
-          {stepForm.type === 'action' && (
-            <Select
-              label="Acción"
-              value={stepForm.action}
-              onChange={(value) => setStepForm(prev => ({ ...prev, action: value }))}
-              options={actionOptions}
-              required
-            />
-          )}
         </div>
 
         <div className="flex gap-3 mt-6">
@@ -230,7 +214,7 @@ export function StepModal({
               !stepForm.type ||
               (stepForm.type === 'temperature' && (!stepForm.temperature || !stepForm.time)) ||
               (stepForm.type === 'position' && (!stepForm.position || !stepForm.time)) ||
-              (stepForm.type === 'action' && !stepForm.action)
+              (stepForm.type === 'rotation' && (!stepForm.rotation || !stepForm.time))
             }
           >
             {editingStep !== null ? 'Actualizar' : 'Añadir'}

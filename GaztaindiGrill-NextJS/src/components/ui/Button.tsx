@@ -5,7 +5,7 @@ import React from "react";
 export interface ButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
-  variant?: "primary" | "secondary" | "danger";
+  variant?: "primary" | "secondary" | "primarylight" | "danger";
   size?: "sm" | "md" | "lg";
   className?: string;
   type?: "button" | "submit";
@@ -30,6 +30,7 @@ export const Button: React.FC<ButtonProps> = ({
     primary: "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500",
     secondary: "bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500",
     danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
+    primarylight: "bg-blue-400 text-white hover:bg-blue-600 focus:ring-blue-400",
   };
 
   const sizes: Record<NonNullable<ButtonProps["size"]>, string> = {

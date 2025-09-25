@@ -65,7 +65,7 @@ bool GrillSystem::is_dual_mode_active() {
 
 void GrillSystem::handle_dual_mode() {
     if (dualCoordinator) {
-        dualCoordinator->handle_dual_movement();
+        dualCoordinator->update();
     }
 }
 

@@ -70,7 +70,6 @@ public:
     static constexpr const char* PAYLOAD_COUNTER_CLOCKWISE = "counter_clockwise";
 
     static constexpr const char* PAYLOAD_NORMAL = "normal";
-    static constexpr const char* PAYLOAD_SPINNING = "spinning";
     static constexpr const char* PAYLOAD_DUAL = "dual";
 };
 

@@ -5,7 +5,6 @@
 
 enum Mode {
     NORMAL,
-    SPINNING,
     DUAL
 };
 

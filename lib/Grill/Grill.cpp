@@ -161,7 +161,7 @@ void Grill::handle_mqtt_message(const char* pAction, const char* pPayload) {
     }
     
     if (topic == GrillConstants::TOPIC_RESTART) {
-        mqtt->print("Reiniciando sistema");
+        mqtt->print("Reiniciando sistema (no está hecho aún)");
     }
     
     if (topic == GrillConstants::TOPIC_EXECUTE_PROGRAM) {
@@ -186,19 +186,12 @@ void Grill::handle_mqtt_message(const char* pAction, const char* pPayload) {
         {
             modeManager->mode = NORMAL;
             movement->stop_lineal_actuator();
-            movement->reset_rotor();
-        }
-        
-        if (payload == GrillConstants::PAYLOAD_SPINNING) 
-        {
-            modeManager->mode = SPINNING;
-            movement->stop_lineal_actuator();
             movement->stop_rotor();
+            // movement->reset_rotor();
         }
         
         if (payload == GrillConstants::PAYLOAD_DUAL)
         {
-            // The dual mode is controller in the main function from src/GaztaindiGrill.cpp
             modeManager->mode = DUAL;
         }
     }

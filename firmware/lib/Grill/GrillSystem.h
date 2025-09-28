@@ -4,6 +4,7 @@
 #include <GRILL_config.h>
 #include <Grill.h>
 #include <DualModeCoordinator.h>
+#include <ModeManager.h> 
 
 class GrillSystem {
 public:
@@ -18,6 +19,9 @@ public:
     
     // Access to individual grills
     Grill* get_grill(int index);
+
+    // Change the mode (individual, dual)
+    void set_system_mode(Mode newMode);
     
     // Dual mode management
     bool is_dual_mode_active();
@@ -26,6 +30,7 @@ public:
 private:
     Grill* grills[GrillConstants::NUM_GRILLS];
     DualModeCoordinator* dualCoordinator;
+    ModeManager* modeManager;
     
     void update_individual_grills();
     void handle_rotor_operations();

@@ -1,7 +1,7 @@
 #include <GrillSystem.h>
 #include <Arduino.h>
 
-GrillSystem::GrillSystem() : dualCoordinator(nullptr), previousMillisTemp(0) {
+GrillSystem::GrillSystem() : dualCoordinator(nullptr), modeManager(nullptr), previousMillisTemp(0) {
     for (int i = 0; i < GrillConstants::NUM_GRILLS; ++i) {
         grills[i] = nullptr;
     }
@@ -9,6 +9,7 @@ GrillSystem::GrillSystem() : dualCoordinator(nullptr), previousMillisTemp(0) {
 
 GrillSystem::~GrillSystem() {
     delete dualCoordinator;
+    delete modeManager;
     for (int i = 0; i < GrillConstants::NUM_GRILLS; ++i) {
         delete grills[i];
     }
@@ -16,9 +17,12 @@ GrillSystem::~GrillSystem() {
 
 bool GrillSystem::initialize_system() {
 
+    // Create the mode manager instance
+    modeManager = new ModeManager();
+
     // Grill instantiation & start
     for (int i = 0; i < GrillConstants::NUM_GRILLS; ++i) {
-        grills[i] = new Grill(i);
+        grills[i] = new Grill(i, modeManager);
         if (grills[i]->setup_devices()) {
             Serial.println("The grill " + String(i) + " has been configured correctly");
             grills[i]->reset_system();

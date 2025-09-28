@@ -4,11 +4,10 @@
 
 extern PubSubClient client;
 
-Grill::Grill(int index) : index(index), hardware(nullptr), mqtt(nullptr), modeManager(nullptr), sensor(nullptr), movement(nullptr), programManager(nullptr) 
+Grill::Grill(int index, ModeManager* sharedModeManager) : index(index), hardware(nullptr), mqtt(nullptr), modeManager(sharedModeManager), sensor(nullptr), movement(nullptr), programManager(nullptr) 
     {
 
         mqtt = new GrillMQTT(index);
-        modeManager = new ModeManager();
         hardware = new HardwareManager(index, mqtt);
         sensor = new GrillSensor(index, mqtt, hardware, modeManager);
         movement = new MovementManager(index, mqtt, hardware, sensor, modeManager);
@@ -182,9 +181,9 @@ void Grill::handle_mqtt_message(const char* pAction, const char* pPayload) {
     
     if (topic == GrillConstants::TOPIC_SET_MODE)
     {
-        if (payload == GrillConstants::PAYLOAD_NORMAL)
+        if (payload == GrillConstants::PAYLOAD_SINGLE)
         {
-            modeManager->mode = NORMAL;
+            modeManager->mode = SINGLE;
             movement->stop_lineal_actuator();
             movement->stop_rotor();
             // movement->reset_rotor();

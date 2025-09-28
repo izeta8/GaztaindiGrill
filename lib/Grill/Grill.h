@@ -14,13 +14,14 @@
 #include <ModeManager.h>
 #include <MovementManager.h>
 #include <ProgramManager.h>
+#include <ModeManager.h>
 
 extern PubSubClient client;
 
 class Grill {
 public:
 
-    Grill(int index);
+    Grill(int index, ModeManager* sharedModeManager);
 
     // Setup
     bool setup_devices();

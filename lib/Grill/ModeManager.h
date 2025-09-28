@@ -4,7 +4,7 @@
 #define GRILL_MODE_H
 
 enum Mode {
-    NORMAL,
+    SINGLE,
     DUAL
 };
 
@@ -18,7 +18,7 @@ class ModeManager {
 public:
 
     DualModeDirection dual_direction = STILL;
-    Mode mode = NORMAL;
+    Mode mode = SINGLE;
     
 private:
 

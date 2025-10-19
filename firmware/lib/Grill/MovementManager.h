@@ -6,10 +6,11 @@
 #include <GrillSensor.h>
 #include <ModeManager.h>
 #include <GrillConstants.h>
+#include <StatusLED.h>
 
 class MovementManager {
 public:
-    MovementManager(int index, GrillMQTT* mqtt, HardwareManager* hardware, GrillSensor* sensor, ModeManager* modeManager);
+    MovementManager(int index, GrillMQTT* mqtt, HardwareManager* hardware, GrillSensor* sensor, ModeManager* modeManager, StatusLED* statusLed);
 
     // ---------------- MOVEMENTS ----------------- //
     void go_up();
@@ -46,6 +47,7 @@ private:
 
     int grillIndex;
 
+    StatusLED* statusLed;
     GrillMQTT* mqtt;
     HardwareManager* hardware;
     GrillSensor* sensor;

@@ -15,7 +15,9 @@ GRILL_Config.h
 //   ESP32 PINOUTS
 //====================================================================================
 
-// PINS 34, 35, 36, 39 INTPUT ONLY!
+// PINS 34, 35, 36, 39 INTPUT ONLY! 
+
+const int PIN_STATUS_LED     = 32;
 
 // PINS SPI
 const int PIN_SPI_MISO       = 19;

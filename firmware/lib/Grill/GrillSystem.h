@@ -5,6 +5,7 @@
 #include <Grill.h>
 #include <DualModeCoordinator.h>
 #include <ModeManager.h> 
+#include <StatusLed.h> 
 
 class GrillSystem {
 public:
@@ -12,7 +13,7 @@ public:
     ~GrillSystem();
     
     // Setup of the system
-    bool initialize_system();
+    bool initialize_system(StatusLED* statusLed);
     
     // Main loop
     void update();

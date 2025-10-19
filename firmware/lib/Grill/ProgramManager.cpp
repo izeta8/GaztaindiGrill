@@ -1,8 +1,14 @@
 #include <ProgramManager.h>
 
-ProgramManager::ProgramManager(int index, GrillMQTT* mqtt, MovementManager* movement) : 
-    grillIndex(index), mqtt(mqtt), movement(movement),
-    programStepsCount(0), programCurrentStep(0), stepDurationStart(0) {}
+ProgramManager::ProgramManager(int index, GrillMQTT* mqtt, MovementManager* movement, StatusLED* statusLed) : 
+    grillIndex(index),
+    mqtt(mqtt),
+    movement(movement),
+    statusLed(statusLed),
+    programStepsCount(0),
+    programCurrentStep(0),
+    stepDurationStart(0)
+     {}
 
     
 void ProgramManager::execute_program(const char* program) { 
@@ -52,6 +58,9 @@ void ProgramManager::execute_program(const char* program) {
 
 void ProgramManager::cancel_program()
 {
+    // Put the status led in red.
+    statusLed->pulse(3, CRGB::Red, 250, 250, LedState::OFF);
+
     movement->targetPosition = GrillConstants::NO_TARGET;
     movement->targetDegrees = GrillConstants::NO_TARGET;
     movement->targetTemperature = GrillConstants::NO_TARGET;
@@ -72,6 +81,9 @@ void ProgramManager::update_program() {
     if (programState != PROGRAM_RUNNING) {
         return;
     }
+
+    // Blink the light to indicate a program is being executed.
+    statusLed->setState(LedState::PROGRAM_RUNNING);
     
     // Verificar si hemos completado todos los pasos
     if (programCurrentStep >= programStepsCount) {

@@ -13,6 +13,7 @@ enum class LedState {
     CONNECTING_MQTT,
     PULSING,
     RESETING,
+    PROGRAM_RUNNING,
     ERROR
 };
 

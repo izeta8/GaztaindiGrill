@@ -182,9 +182,7 @@ void MovementManager::handle_temperature_stop() {
 void MovementManager::reset_system() {
     
     // Start led indicator
-    if (statusLed) {
-        statusLed->setState(LedState::RESETING);
-    }
+    statusLed->setState(LedState::RESETING);
 
     mqtt->print("Resetting devices for grill " + String(grillIndex));   
 
@@ -204,9 +202,7 @@ void MovementManager::reset_system() {
     mqtt->print("Devices reset");  
     
     // Stop led indicator
-    if (statusLed) {
-        statusLed->setState(LedState::OFF);
-    }
+    statusLed->pulse(3, CRGB::Green, 250, 250, LedState::OFF);
     
 }
 

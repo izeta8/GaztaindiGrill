@@ -15,14 +15,14 @@ GrillSystem::~GrillSystem() {
     }
 }
 
-bool GrillSystem::initialize_system() {
+bool GrillSystem::initialize_system(StatusLED* statusLed) {
 
     // Create the mode manager instance
     modeManager = new ModeManager();
 
     // Grill instantiation & start
     for (int i = 0; i < GrillConstants::NUM_GRILLS; ++i) {
-        grills[i] = new Grill(i, modeManager);
+        grills[i] = new Grill(i, modeManager, statusLed);
         if (grills[i]->setup_devices()) {
             Serial.println("The grill " + String(i) + " has been configured correctly");
             grills[i]->reset_system();

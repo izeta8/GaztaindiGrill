@@ -4,10 +4,11 @@
 #include <ArduinoJson.h>
 #include <GrillMQTT.h>
 #include <MovementManager.h>
+#include <StatusLED.h>
 
 class ProgramManager {
 public:
-    ProgramManager(int index, GrillMQTT* mqtt, MovementManager* movement);
+    ProgramManager(int index, GrillMQTT* mqtt, MovementManager* movement, StatusLED* statusLed);
 
     // ----------------- PROGRAMS ----------------- //
     void cancel_program();
@@ -20,7 +21,8 @@ private:
 
     GrillMQTT* mqtt;
     MovementManager* movement;
-    
+    StatusLED* statusLed;
+
     enum ProgramState {
         PROGRAM_IDLE,
         PROGRAM_RUNNING,

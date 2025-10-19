@@ -63,8 +63,8 @@ void loop() {
     // Check the MQTT connection.
     if (!client.connected()) {
         Serial.println("MQTT Disconnected. Reconnecting...");
-        statusLed.setState(LedState::CONNECTING_MQTT);
         connect_to_mqtt();
+        return;
     }
 
     // Essential to maintain the MQTT connection and process messages.
@@ -96,36 +96,43 @@ void connect_to_wifi() {
     } 
     Serial.println("WiFi connected: " + WiFi.localIP().toString());
 }
-
 void connect_to_mqtt() {
     
+    statusLed.setState(LedState::CONNECTING_MQTT);
     client.setServer(mqttServer, mqttPort);
     client.setKeepAlive(8); // Time that will trigger LWT.
 
-    while (!client.connected()) {
-        Serial.print("Attempting MQTT connection...");
-        statusLed.update();
-        
-        // LWT configuration
-        const char* willTopic   = "grill/status";
-        const char* willMessage = "offline";
-        int willQoS             = 1;
-        bool willRetain         = true;
+    unsigned long lastMqttAttempt = 0; // Variable to control the time of the last attempt
 
-        if (client.connect(
-            "ESP32Client",      // clientID
-            mqttUser, mqttPassword,
-            willTopic, willQoS, willRetain, willMessage
-        )) {
+    while (!client.connected()) {
+        statusLed.update(); 
+
+        // Only attempt to connect every 5 seconds
+        if (millis() - lastMqttAttempt > 5000) {
+            lastMqttAttempt = millis(); // Updates the time of the last attempt
             
-            Serial.println("connected to mqtt");
-            client.publish("grill/status", "online", true);
+            Serial.print("Attempting MQTT connection...");
             
-        } else {
-            Serial.print("failed, rc=");
-            Serial.print(client.state());
-            Serial.println(" try again in 5 seconds");
-            delay(5000);
+            // LWT configuration
+            const char* willTopic   = "grill/status";
+            const char* willMessage = "offline";
+            int willQoS             = 1;
+            bool willRetain         = true;
+
+            if (client.connect(
+                "ESP32Client", 
+                mqttUser, mqttPassword,
+                willTopic, willQoS, willRetain, willMessage
+            )) {
+                
+                Serial.println("connected to mqtt");
+                client.publish("grill/status", "online", true);
+                
+            } else {
+                Serial.print("failed, rc=");
+                Serial.print(client.state());
+                Serial.println(" try again in 5 seconds");
+            }
         }
     }
 

@@ -93,10 +93,10 @@ void StatusLED::update() {
             fill_solid(leds, NUM_STATUS_LEDS, CRGB::Black);
             break;
         case LedState::CONNECTING_WIFI:
-            blink(CRGB::Orange, 250);
+            blink(CRGB::Orange, 300);
             break;
         case LedState::CONNECTING_MQTT:
-            blink(CRGB::Yellow, 250);
+            blink(CRGB::Yellow, 200);
             break;
         case LedState::PULSING:
             handle_pulsing_state();
@@ -105,7 +105,10 @@ void StatusLED::update() {
             blink(CRGB::Red, 150);
             break;
         case LedState::RESETING:
-            blink(CRGB::Blue, 250);
+            blink(CRGB::Teal, 250);
+            break;
+        case LedState::PROGRAM_RUNNING:
+            blink(CRGB::Purple, 1000);
             break;
     }
     FastLED.show();

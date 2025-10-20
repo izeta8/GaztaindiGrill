@@ -8,14 +8,15 @@ import { useMqtt } from '@/lib/mqtt/useMqtt'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { GrillStatusDisplay } from './components/GrillStatusDisplay'
-import { ConnectionStatus } from './components/ConnectionStatus'
 import type { GrillState, GrillDirection, GrillRotation } from '@/lib/types'
 import { PAYLOAD_CLOCKWISE, PAYLOAD_COUNTER_CLOCKWISE, PAYLOAD_DOWN, PAYLOAD_STOP, PAYLOAD_UP, TOPIC_CANCEL_PROGRAM, TOPIC_MOVE, TOPIC_SET_POSITION, TOPIC_SET_TEMPERATURE, TOPIC_SET_TILT, TOPIC_TILT, TOPIC_UPDATE_POSITION, TOPIC_UPDATE_TEMPERATURE, TOPIC_UPDATE_TILT } from '@/constants/mqtt'
+import { ConnectionStatus } from './components/ConnectionStatus'
+import { ConnectionStatus as ConnectionStatusEnum } from '@/lib/types'
 
 function GrillControlContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { publish, subscribe, isConnected } = useMqtt()
+  const { publish, subscribe, espConnectionStatus, clientConnectionStatus, error: connectionError } = useMqtt()
   
   // Get grill index from query params
   const grillParam = searchParams.get('index')
@@ -27,14 +28,15 @@ function GrillControlContent() {
     position: 0,
     temperature: 0,
     rotation: 0,
-    isConnected: false,
     lastUpdate: null
   })
-  
+
   const [targetPosition, setTargetPosition] = useState('')
   const [targetTemperature, setTargetTemperature] = useState('')
   const [targetRotation, setTargetRotation] = useState('')
   const [isExecuting, setIsExecuting] = useState(false)
+
+  const isConnected = espConnectionStatus === ConnectionStatusEnum.Connected && clientConnectionStatus === ConnectionStatusEnum.Connected;
 
   // Subscribe to current grill status updates
   useEffect(() => {
@@ -52,7 +54,7 @@ function GrillControlContent() {
         const unsubPos = await subscribe(`grill/${grillIndex}/${TOPIC_UPDATE_POSITION}`, (topic, payload) => {
           const position = parseInt(payload.toString())
           if (!isNaN(position)) {
-            setGrillState(prev => ({ ...prev, position, isConnected: true, lastUpdate: new Date() }))
+            setGrillState(prev => ({ ...prev, position, lastUpdate: new Date() }))
           }
         })
         subscriptions.push(unsubPos)
@@ -60,7 +62,7 @@ function GrillControlContent() {
         const unsubTemp = await subscribe(`grill/${grillIndex}/${TOPIC_UPDATE_TEMPERATURE}`, (topic, payload) => {
           const temperature = parseInt(payload.toString())
           if (!isNaN(temperature)) {
-            setGrillState(prev => ({ ...prev, temperature, isConnected: true, lastUpdate: new Date() }))
+            setGrillState(prev => ({ ...prev, temperature, lastUpdate: new Date() }))
           }
         })
         subscriptions.push(unsubTemp)
@@ -68,7 +70,7 @@ function GrillControlContent() {
         const unsubRot = await subscribe(`grill/${grillIndex}/${TOPIC_UPDATE_TILT}`, (topic, payload) => {
           const rotation = parseInt(payload.toString())
           if (!isNaN(rotation)) {
-            setGrillState(prev => ({ ...prev, rotation, isConnected: true, lastUpdate: new Date() }))
+            setGrillState(prev => ({ ...prev, rotation, lastUpdate: new Date() }))
           }
         })
         subscriptions.push(unsubRot)
@@ -168,7 +170,11 @@ function GrillControlContent() {
           </div>
           
           {/* Connection Status */}
-          <ConnectionStatus isConnected={isConnected} />
+          <ConnectionStatus 
+            espConnectionStatus={espConnectionStatus}
+            clientConnectionStatus={clientConnectionStatus}
+            error={connectionError}
+          />
         </div>
 
         {/* Grill Status */}
@@ -202,7 +208,7 @@ function GrillControlContent() {
               <Button
                 onClick={() => handleDirectionCommand(PAYLOAD_STOP)}
                 disabled={!isConnected || isExecuting}
-                variant="primarylight"
+                variant="primary"
                 className="flex flex-col items-center py-4"
               >
                 <Square className="h-5 w-5 mb-1" />
@@ -229,7 +235,7 @@ function GrillControlContent() {
                 <Button
                   onClick={() => handleRotationCommand(PAYLOAD_COUNTER_CLOCKWISE)}
                   disabled={!isConnected || isExecuting}
-                  variant="primarylight"
+                  variant="primary"
                   className="flex flex-col items-center py-4"
                 >
                   <RotateCcw className="h-5 w-5 mb-1" />
@@ -247,7 +253,7 @@ function GrillControlContent() {
                 <Button
                   onClick={() => handleRotationCommand(PAYLOAD_CLOCKWISE)}
                   disabled={!isConnected || isExecuting}
-                  variant="primarylight"
+                  variant="primary"
                   className="flex flex-col items-center py-4"
                 >
                   <RotateCw className="h-5 w-5 mb-1" />

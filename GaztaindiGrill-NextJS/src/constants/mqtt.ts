@@ -33,5 +33,4 @@ export const PAYLOAD_CLOCKWISE = "clockwise";
 export const PAYLOAD_COUNTER_CLOCKWISE = "counter_clockwise";
 
 export const PAYLOAD_NORMAL = "normal";
-export const PAYLOAD_SPINNING = "spinning";
 export const PAYLOAD_DUAL = "dual";

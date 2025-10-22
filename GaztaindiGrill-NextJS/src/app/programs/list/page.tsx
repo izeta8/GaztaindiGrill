@@ -15,6 +15,8 @@ import { FiltersBar } from './components/FiltersBar'
 import { parseSteps } from '@/lib/utils'
 import type { Program } from '@/lib/types'
 import { TOPIC_EXECUTE_PROGRAM } from '@/constants/mqtt'
+import { ConnectionStatus } from '@/components/shared/ConnectionStatus'
+import { useRunningPrograms } from '@/contexts/RunningProgramsContext'
 
 type Category = { id: number; name: string }
 
@@ -30,7 +32,8 @@ type ApiProgram = Record<string, unknown> & {
 function ProgramsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { publish } = useMqtt()
+  const { publish, espConnectionStatus, clientConnectionStatus } = useMqtt()
+  const { runningPrograms } = useRunningPrograms(); 
 
   const [programs, setPrograms] = useState<Program[]>([])
   const [loading, setLoading] = useState(true)
@@ -194,10 +197,16 @@ function ProgramsPageContent() {
     try {
       setIsExecuting(true)
       if (!programToExecute) return
-      const stepsJson = programToExecute.stepsJson || '[]'
 
+      const stepsJSON = JSON.parse(programToExecute.stepsJson);
+      const programToRun = {
+        programId: programToExecute.id,
+        steps: stepsJSON || '[]'
+      }
+      
+      console.log(programToRun)
       const topic = `grill/${side}/${TOPIC_EXECUTE_PROGRAM}`
-      await publish(topic, stepsJson, { qos: 1 })
+      await publish(topic, JSON.stringify(programToRun), { qos: 1 })
 
       toast.success(`Ejecución iniciada en parrilla ${side === 0 ? 'izquierda' : 'derecha'} para "${programToExecute.name}"`)
     } catch (e) {
@@ -238,7 +247,14 @@ function ProgramsPageContent() {
           <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">
             Programas
           </h1>
-          <p className="text-sm text-gray-600 text-center">Lista de programas disponibles</p>
+          <p className="text-sm text-gray-600 text-center mb-4">Lista de programas disponibles</p>
+
+          {/* Connection Status */}
+          <ConnectionStatus 
+            espConnectionStatus={espConnectionStatus}
+            clientConnectionStatus={clientConnectionStatus}
+          />
+          
         </div>
 
         {/* Content */}
@@ -316,6 +332,7 @@ function ProgramsPageContent() {
           onClose={() => (isExecuting ? null : setIsSelectOpen(false))}
           onSelect={handleSelectGrill}
           program={programToExecute}
+          runningPrograms={runningPrograms}
         />
 
         <ProcessingModal

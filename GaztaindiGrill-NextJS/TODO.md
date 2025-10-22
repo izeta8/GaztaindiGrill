@@ -1,6 +1,7 @@
 
 DOING: 
 
+- Concexto para los programas ejecutando.
 - Hacer el sistema de los modos.
 
 PARA REVISAR: 

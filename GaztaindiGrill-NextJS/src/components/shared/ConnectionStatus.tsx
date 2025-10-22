@@ -1,8 +1,8 @@
 "use client"
 
-import { AlertCircle, Cpu, Heater } from 'lucide-react'
+import { Smartphone, Heater } from 'lucide-react'
 import { ConnectionStatus as ConnectionStatusEnum } from '@/lib/types'
-import { StatusBadge } from './ConnectionStatusBadge'
+import { StatusBadge } from '@/components/shared/ConnectionStatusBadge'
 
 interface ConnectionStatusProps {
   espConnectionStatus: ConnectionStatusEnum
@@ -10,7 +10,7 @@ interface ConnectionStatusProps {
   error?: string | null
 }
 
-export function ConnectionStatus({ espConnectionStatus, clientConnectionStatus, error }: ConnectionStatusProps) {
+export function ConnectionStatus({ espConnectionStatus, clientConnectionStatus }: ConnectionStatusProps) {
   
   // For now we dont want to do anything with the errors.
   // If there is a general error, show it with priority over the other statuses.
@@ -30,7 +30,7 @@ export function ConnectionStatus({ espConnectionStatus, clientConnectionStatus, 
     <div className="flex items-center justify-center space-x-2">
       <StatusBadge 
         status={clientConnectionStatus}
-        icon={<Cpu className="w-4 h-4" />}
+        icon={<Smartphone className="w-4 h-4" />}
       />
       <StatusBadge
         status={espConnectionStatus}

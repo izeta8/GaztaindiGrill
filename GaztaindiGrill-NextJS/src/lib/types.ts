@@ -62,3 +62,18 @@ export enum ConnectionStatus {
   Connected = 'connected',
   Offline = 'offline',
 }
+
+export interface RunningProgramStatus {
+  isRunning: boolean;
+  programId: number;
+  currentStepIndex: number;
+  elapsedTime: number;
+  steps: ProgramStep[];
+}
+
+// Combines data from MQTT with data from the database
+export interface EnrichedProgramStatus extends RunningProgramStatus {
+  name?: string;
+  description?: string;
+  creatorName?: string;
+}

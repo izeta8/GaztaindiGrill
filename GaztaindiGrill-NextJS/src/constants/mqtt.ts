@@ -1,4 +1,9 @@
 
+// Execution topics
+export const TOPIC_GET_PROGRAM_STATUS = 'get_program_status';
+export const TOPIC_PROGRAM_STATUS_RESPONSE = 'program_status_response';
+export const TOPIC_PROGRAM_STEP_CHANGED = "program_step_changed";
+
 // Sensor update topics
 export const TOPIC_UPDATE_POSITION = "update_position";
 export const TOPIC_UPDATE_TEMPERATURE = "update_temperature";

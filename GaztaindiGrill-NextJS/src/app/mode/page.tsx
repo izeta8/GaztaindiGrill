@@ -4,18 +4,20 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { Settings, Users } from 'lucide-react'
 import { useMqtt } from '@/lib/mqtt/useMqtt'
-import { ConnectionStatus } from '../control/grill/components/ConnectionStatus'
+import { ConnectionStatus } from '../../components/shared/ConnectionStatus'
 import { ModeCard } from './components/ModeCard'
 import { CurrentModeDisplay } from './components/CurrentModeDisplay'
 import { ModeApplyButton } from './components/ModeApplyButton'
 import type { GrillMode } from '@/lib/types'
 import { TOPIC_SET_MODE } from '@/constants/mqtt'
+import { ConnectionStatus as ConnectionStatusEnum } from '@/lib/types'
 
 export default function ModePage() {
-  const { publish, isConnected } = useMqtt()
+  const { publish, espConnectionStatus, clientConnectionStatus } = useMqtt()
   const [currentMode, setCurrentMode] = useState<GrillMode>('normal')
   const [selectedMode, setSelectedMode] = useState<GrillMode>('normal')
   const [isExecuting, setIsExecuting] = useState(false)
+  const isConnected = espConnectionStatus !== ConnectionStatusEnum.Connected || clientConnectionStatus !== ConnectionStatusEnum.Connected;
 
   const modes = [
     {
@@ -35,7 +37,7 @@ export default function ModePage() {
   ]
 
   const handleModeChange = async () => {
-    if (!isConnected) {
+    if (isConnected) {
       toast.error('MQTT no conectado')
       return
     }
@@ -73,7 +75,10 @@ export default function ModePage() {
           </div>
           
           {/* Connection Status */}
-          <ConnectionStatus isConnected={isConnected} />
+          <ConnectionStatus 
+          espConnectionStatus={espConnectionStatus}
+          clientConnectionStatus={clientConnectionStatus}
+          />
         </div>
 
         {/* Current Mode Display */}

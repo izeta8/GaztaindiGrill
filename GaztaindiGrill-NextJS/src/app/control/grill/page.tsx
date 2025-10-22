@@ -3,15 +3,14 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { ChevronUp, ChevronDown, RotateCcw, RotateCw, Square, Pause } from 'lucide-react'
 import { useMqtt } from '@/lib/mqtt/useMqtt'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 import { GrillStatusDisplay } from './components/GrillStatusDisplay'
-import type { GrillState, GrillDirection, GrillRotation } from '@/lib/types'
-import { PAYLOAD_CLOCKWISE, PAYLOAD_COUNTER_CLOCKWISE, PAYLOAD_DOWN, PAYLOAD_STOP, PAYLOAD_UP, TOPIC_CANCEL_PROGRAM, TOPIC_MOVE, TOPIC_SET_POSITION, TOPIC_SET_TEMPERATURE, TOPIC_SET_TILT, TOPIC_TILT, TOPIC_UPDATE_POSITION, TOPIC_UPDATE_TEMPERATURE, TOPIC_UPDATE_TILT } from '@/constants/mqtt'
-import { ConnectionStatus } from './components/ConnectionStatus'
-import { ConnectionStatus as ConnectionStatusEnum } from '@/lib/types'
+import type { GrillState, GrillDirection, GrillRotation, RunningProgramStatus } from '@/lib/types'
+import { TOPIC_CANCEL_PROGRAM, TOPIC_MOVE, TOPIC_SET_POSITION, TOPIC_SET_TEMPERATURE, TOPIC_SET_TILT, TOPIC_TILT, TOPIC_UPDATE_POSITION, TOPIC_UPDATE_TEMPERATURE, TOPIC_UPDATE_TILT, TOPIC_PROGRAM_STATUS_RESPONSE, TOPIC_GET_PROGRAM_STATUS } from '@/constants/mqtt'
+import { ConnectionStatus } from '@/components/shared/ConnectionStatus'
+import { ConnectionStatus as ConnectionStatusEnum, } from '@/lib/types'
+import { ControlPanel } from './components/ControlPanel'
+import { ProgramExecutionStatus } from './components/ProgramExecutionStatus'
 
 function GrillControlContent() {
   const searchParams = useSearchParams()
@@ -34,8 +33,9 @@ function GrillControlContent() {
   const [targetPosition, setTargetPosition] = useState('')
   const [targetTemperature, setTargetTemperature] = useState('')
   const [targetRotation, setTargetRotation] = useState('')
-  const [isExecuting, setIsExecuting] = useState(false)
+  const [runningProgram, setRunningProgram] = useState<RunningProgramStatus|null>(null)
 
+  const isProgramRunnig = !!runningProgram?.isRunning;
   const isConnected = espConnectionStatus === ConnectionStatusEnum.Connected && clientConnectionStatus === ConnectionStatusEnum.Connected;
 
   // Subscribe to current grill status updates
@@ -51,6 +51,50 @@ function GrillControlContent() {
 
     const setupSubscriptions = async () => {
       try {
+
+        const fetchProgramStatus = async () => {
+          try {
+            const responseTopic = `grill/${grillIndex}/${TOPIC_PROGRAM_STATUS_RESPONSE}`;
+            const requestTopic = `grill/${grillIndex}/${TOPIC_GET_PROGRAM_STATUS}`;
+
+            // Subscribe to the response topic
+            const unsubProgramStatusResponse = await subscribe(responseTopic, (topic, payload) => {
+              
+              const responsePayload = payload.toString();
+              console.log(`[Program Status] Received: ${responsePayload}`);
+              
+              try {
+                const programData: RunningProgramStatus = JSON.parse(responsePayload);
+                
+                // Check if there is any program running.
+                if (programData.isRunning) {
+                  console.log('[Program Status] Received:', programData);
+                  setRunningProgram(programData);
+                } else {
+                  console.log('[Program Status] No program running.');
+                  setRunningProgram(null);
+                }
+              } catch (e) {
+                console.error("Error parsing program status JSON:", e);
+                toast.error("Datos del programa corruptos");
+              }
+            });
+            
+            subscriptions.push(unsubProgramStatusResponse)
+
+            // Publish a message to the request topic to request the data
+            console.log('[Program Status] Requesting status...');
+            await publish(requestTopic, '');
+
+          } catch (e) {
+            toast.error("No se pudo obtener el estado del programa");
+            console.error("Error fetching program status:", e);
+          }
+        };
+
+        fetchProgramStatus();
+
+
         const unsubPos = await subscribe(`grill/${grillIndex}/${TOPIC_UPDATE_POSITION}`, (topic, payload) => {
           const position = parseInt(payload.toString())
           if (!isNaN(position)) {
@@ -89,21 +133,19 @@ function GrillControlContent() {
   }, [isConnected, subscribe, grillIndex, grillParam, router])
 
   const sendCommand = async (topic: string, payload: string) => {
+   
     if (!isConnected) {
       toast.error('MQTT no conectado')
       return
     }
 
     try {
-      setIsExecuting(true)
       const fullTopic = `grill/${grillIndex}/${topic}`
       await publish(fullTopic, payload, { qos: 1 })
       toast.success(`Comando enviado a parrilla ${grillName.toLowerCase()}`)
     } catch (error) {
       toast.error('Error al enviar comando')
       console.error('MQTT publish error:', error)
-    } finally {
-      setIsExecuting(false)
     }
   }
 
@@ -187,167 +229,35 @@ function GrillControlContent() {
         </div>
 
         {/* Control Panel */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Control Parrilla {grillName}
-          </h3>
-
-          {/* Direction Controls */}
-          <div className="mb-6">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Dirección</h4>
-            <div className="grid grid-cols-3 gap-2">
-              <Button
-                onClick={() => handleDirectionCommand(PAYLOAD_UP)}
-                disabled={!isConnected || isExecuting}
-                variant="primary"
-                className="flex flex-col items-center py-4"
-              >
-                <ChevronUp className="h-5 w-5 mb-1" />
-                <span className="text-xs">Subir</span>
-              </Button>
-              <Button
-                onClick={() => handleDirectionCommand(PAYLOAD_STOP)}
-                disabled={!isConnected || isExecuting}
-                variant="primary"
-                className="flex flex-col items-center py-4"
-              >
-                <Square className="h-5 w-5 mb-1" />
-                <span className="text-xs">Parar</span>
-              </Button>
-              <Button
-                onClick={() => handleDirectionCommand(PAYLOAD_DOWN)}
-                disabled={!isConnected || isExecuting}
-                variant="primary"
-                className="flex flex-col items-center py-4"
-              >
-                <ChevronDown className="h-5 w-5 mb-1" />
-                <span className="text-xs">Bajar</span>
-              </Button>
-            </div>
-          </div>
+        {!isProgramRunnig && (
+          <ControlPanel
+            grillName={grillName}
+            isConnected={isConnected}
+            isProgramRunning={isProgramRunnig}
+            isLeftGrill={isLeftGrill}
+            targetPosition={targetPosition}
+            setTargetPosition={setTargetPosition}
+            targetTemperature={targetTemperature}
+            setTargetTemperature={setTargetTemperature}
+            targetRotation={targetRotation}
+            setTargetRotation={setTargetRotation}
+            onDirectionCommand={handleDirectionCommand}
+            onRotationCommand={handleRotationCommand}
+            onSetPosition={handleSetPosition}
+            onSetTemperature={handleSetTemperature}
+            onSetRotation={handleSetRotation}
+          />
+        )}
 
 
-          {/* Rotation Controls (only for left grill) */}
-          {isLeftGrill && (
-            <div className="mb-6">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">Rotación</h4>
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                <Button
-                  onClick={() => handleRotationCommand(PAYLOAD_COUNTER_CLOCKWISE)}
-                  disabled={!isConnected || isExecuting}
-                  variant="primary"
-                  className="flex flex-col items-center py-4"
-                >
-                  <RotateCcw className="h-5 w-5 mb-1" />
-                  <span className="text-xs">Anti-horario</span>
-                </Button>
-                <Button
-                  onClick={() => handleRotationCommand(PAYLOAD_STOP)}
-                  disabled={!isConnected || isExecuting}
-                  variant="primary"
-                  className="flex flex-col items-center py-4"
-                >
-                  <Square className="h-5 w-5 mb-1" />
-                  <span className="text-xs">Parar</span>
-                </Button>
-                <Button
-                  onClick={() => handleRotationCommand(PAYLOAD_CLOCKWISE)}
-                  disabled={!isConnected || isExecuting}
-                  variant="primary"
-                  className="flex flex-col items-center py-4"
-                >
-                  <RotateCw className="h-5 w-5 mb-1" />
-                  <span className="text-xs">Horario</span>
-                </Button>
-              </div>
-              
-            </div>
-          )}
-
-          {/* Go-To controls */}
-          <div className=' w-full grid grid-cols-3 grid-auto-col mb-4'>
-      
-            {/* Position Control */}
-            <div className="flex items-center flex-col">
-              <Input
-                label="Posición (%)"
-                type="number"
-                value={targetPosition}
-                onChange={setTargetPosition}
-                placeholder="0-100"
-                min={0}
-                max={100}
-              />
-              <Button
-                onClick={handleSetPosition}
-                disabled={!isConnected || isExecuting || !targetPosition}
-                variant="primary"
-                className="mt-2 w-1/2"
-              >
-                Ir
-              </Button>
-            </div>
-            
-            {/* Temperature Control */}
-            <div className="flex items-center flex-col">
-                <Input
-                  label="Temperatura (°C)"
-                  type="number"
-                  value={targetTemperature}
-                  onChange={setTargetTemperature}
-                  placeholder="0-500"
-                  min={0}
-                  max={500}
-                />
-                <Button
-                  onClick={handleSetTemperature}
-                  disabled={!isConnected || isExecuting || !targetTemperature}
-                  variant="primary"
-                  className="mt-2 w-1/2"
-                >
-                  Ir
-                </Button>
-            </div>
-
-            {/* Set specific rotation */}
-            <div className="flex items-center flex-col">
-              <Input
-                label="Grados (0-360)"
-                type="number"
-                value={targetRotation}
-                onChange={setTargetRotation}
-                placeholder="0-360"
-                min={0}
-                max={360}
-              />
-              <Button
-                onClick={handleSetRotation}
-                disabled={!isConnected || isExecuting || !targetRotation}
-                variant="primary"
-                className="mt-2 w-1/2"
-              >
-                Ir
-              </Button>
-            </div>
-
-          </div>
-
-          {/* System Controls */}
-          <div className="border-t pt-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Sistema</h4>
-            <div className="grid grid-cols-1 gap-2">
-              <Button
-                onClick={handleCancelProgram}
-                disabled={!isConnected || isExecuting}
-                variant="danger"
-                size="sm"
-              >
-                <Pause className="h-4 w-4 mr-1" />
-                Cancelar Programa
-              </Button>
-            </div>
-          </div>
-        </div>
+        {/* System Controls */}
+        {isProgramRunnig && (
+          <ProgramExecutionStatus 
+            handleCancelProgram={handleCancelProgram}
+            runningProgram={runningProgram}
+            isConnected={isConnected}
+          />
+        )}
 
       </div>
     </div>

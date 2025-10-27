@@ -3,11 +3,13 @@ from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from ...core.db import get_connection
 from ...schemas.programs import CreateProgramRequest, UpdateProgramRequest
+from ...core.mqtt_client import publish
 
 router = APIRouter(prefix="/programs", tags=["programs"])
 
 @router.get("/")
 async def get_programs():
+    print("Fetching programs list... ")
     cursor = None
     connection = get_connection()
     try:
@@ -69,10 +71,14 @@ async def update_program(program_id: int, payload: UpdateProgramRequest):
                 status_code=404,
             )
 
+        print(f"Publishing cache invalidation for program_id: {program_id}")
+        publish(f"programs/updated/{program_id}", "updated")
+
         return JSONResponse(
             {"success": True, "message": "Programa actualizado correctamente"},
             status_code=200,
         )
+    
     except Exception as e:
         return JSONResponse(
             {"success": False, "message": f"Error actualizando el programa: {e}"},

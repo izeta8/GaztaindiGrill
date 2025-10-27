@@ -68,12 +68,7 @@ export interface RunningProgramStatus {
   programId: number;
   currentStepIndex: number;
   elapsedTime: number;
-  steps: ProgramStep[];
 }
 
-// Combines data from MQTT with data from the database
-export interface EnrichedProgramStatus extends RunningProgramStatus {
-  name?: string;
-  description?: string;
-  creatorName?: string;
-}
+// Combines data from ESP32 with data from the database
+export type EnrichedProgramStatus = RunningProgramStatus & Partial<Program>;

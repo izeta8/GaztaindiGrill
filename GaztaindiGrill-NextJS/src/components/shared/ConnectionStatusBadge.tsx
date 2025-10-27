@@ -13,8 +13,6 @@ export function StatusBadge({ status, icon }: StatusBadgeProps) {
   let textColor = 'text-gray-800'
   let text = "Desconectado"
 
-  console.log("Status: " + status)
-
   switch (status) {
     case ConnectionStatusEnum.Connected:
       bgColor = 'bg-green-100'

@@ -16,7 +16,6 @@ import { parseSteps } from '@/lib/utils'
 import type { Program } from '@/lib/types'
 import { TOPIC_EXECUTE_PROGRAM } from '@/constants/mqtt'
 import { ConnectionStatus } from '@/components/shared/ConnectionStatus'
-import { useRunningPrograms } from '@/contexts/RunningProgramsContext'
 
 type Category = { id: number; name: string }
 
@@ -33,7 +32,6 @@ function ProgramsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { publish, espConnectionStatus, clientConnectionStatus } = useMqtt()
-  const { runningPrograms } = useRunningPrograms(); 
 
   const [programs, setPrograms] = useState<Program[]>([])
   const [loading, setLoading] = useState(true)
@@ -206,6 +204,7 @@ function ProgramsPageContent() {
       
       console.log(programToRun)
       const topic = `grill/${side}/${TOPIC_EXECUTE_PROGRAM}`
+      console.log(programToRun)
       await publish(topic, JSON.stringify(programToRun), { qos: 1 })
 
       toast.success(`Ejecución iniciada en parrilla ${side === 0 ? 'izquierda' : 'derecha'} para "${programToExecute.name}"`)
@@ -332,7 +331,6 @@ function ProgramsPageContent() {
           onClose={() => (isExecuting ? null : setIsSelectOpen(false))}
           onSelect={handleSelectGrill}
           program={programToExecute}
-          runningPrograms={runningPrograms}
         />
 
         <ProcessingModal

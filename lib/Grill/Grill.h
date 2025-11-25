@@ -15,13 +15,14 @@
 #include <MovementManager.h>
 #include <ProgramManager.h>
 #include <ModeManager.h>
+#include <StatusLed.h>
 
 extern PubSubClient client;
 
 class Grill {
 public:
 
-    Grill(int index, ModeManager* sharedModeManager);
+    Grill(int index, ModeManager* sharedModeManager, StatusLED* statusLed);
 
     // Setup
     bool setup_devices();
@@ -65,6 +66,7 @@ public:
 private:
     
     int index;
+    StatusLED* statusLed;
     GrillMQTT* mqtt;
     HardwareManager* hardware;
     GrillSensor* sensor;

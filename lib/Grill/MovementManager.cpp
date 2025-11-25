@@ -2,9 +2,17 @@
 
 #include <MovementManager.h>
 
-MovementManager::MovementManager(int index, GrillMQTT* mqtt, HardwareManager* hardware, GrillSensor* sensor, ModeManager* modeManager): 
-    grillIndex(index), mqtt(mqtt), hardware(hardware), sensor(sensor), modeManager(modeManager),
-    targetPosition(GrillConstants::NO_TARGET), targetDegrees(GrillConstants::NO_TARGET), targetTemperature(GrillConstants::NO_TARGET) {}
+MovementManager::MovementManager(int index, GrillMQTT* mqtt, HardwareManager* hardware, GrillSensor* sensor, ModeManager* modeManager, StatusLED* statusLed): 
+    grillIndex(index), 
+    mqtt(mqtt),
+    hardware(hardware),
+    sensor(sensor),
+    modeManager(modeManager),
+    targetPosition(GrillConstants::NO_TARGET),
+    targetDegrees(GrillConstants::NO_TARGET),
+    targetTemperature(GrillConstants::NO_TARGET),
+    statusLed(statusLed)
+     {}
 
 
 /// ----------- LINEAL ACTUATOR ----------- ///
@@ -173,6 +181,9 @@ void MovementManager::handle_temperature_stop() {
 
 void MovementManager::reset_system() {
     
+    // Start led indicator
+    statusLed->setState(LedState::RESETING);
+
     mqtt->print("Resetting devices for grill " + String(grillIndex));   
 
     // ------------- RESET ROTOR ------------- //
@@ -189,6 +200,9 @@ void MovementManager::reset_system() {
     sensor->update_encoder();
 
     mqtt->print("Devices reset");  
+    
+    // Stop led indicator
+    statusLed->pulse(3, CRGB::Green, 250, 250, LedState::OFF);
     
 }
 
@@ -222,13 +236,14 @@ void MovementManager::reset_linear_actuators()
     unsigned long previousMessageMillis = 0;
 
     while (!sensor->is_at_top()) {
-
+        
         unsigned long currentMillis = millis();
         if (currentMillis - previousMessageMillis >= GrillConstants::RESET_TIMEOUT) {
             previousMessageMillis = currentMillis;
             mqtt->print("Moving linear actuators to top...");
         }
         client.loop();
+        statusLed->update();
     }
 
     mqtt->print("Linear actuators at top");

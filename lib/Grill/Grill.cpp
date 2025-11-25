@@ -4,14 +4,22 @@
 
 extern PubSubClient client;
 
-Grill::Grill(int index, ModeManager* sharedModeManager) : index(index), hardware(nullptr), mqtt(nullptr), modeManager(sharedModeManager), sensor(nullptr), movement(nullptr), programManager(nullptr) 
+Grill::Grill(int index, ModeManager* sharedModeManager, StatusLED* statusLed) :
+        index(index),
+        hardware(nullptr),
+        mqtt(nullptr),
+        statusLed(statusLed),
+        modeManager(sharedModeManager),
+        sensor(nullptr),
+        movement(nullptr),
+        programManager(nullptr) 
     {
 
         mqtt = new GrillMQTT(index);
         hardware = new HardwareManager(index, mqtt);
         sensor = new GrillSensor(index, mqtt, hardware, modeManager);
-        movement = new MovementManager(index, mqtt, hardware, sensor, modeManager);
-        programManager = new ProgramManager(index, mqtt, movement);
+        movement = new MovementManager(index, mqtt, hardware, sensor, modeManager, statusLed);
+        programManager = new ProgramManager(index, mqtt, movement, statusLed);
 
     }
 
@@ -131,7 +139,10 @@ void Grill::handle_mqtt_message(const char* pAction, const char* pPayload) {
 
     if (topic != "log") {
         mqtt->print("An action has reached. " + topic + ": " + payload);
-        
+
+        if (statusLed && topic != GrillConstants::TOPIC_CANCEL_PROGRAM) {
+            statusLed->show_action_pulse();
+        }
     }
 
     if (topic == GrillConstants::TOPIC_MOVE) {
@@ -144,7 +155,7 @@ void Grill::handle_mqtt_message(const char* pAction, const char* pPayload) {
         }
     }  
 
-     if (topic == GrillConstants::TOPIC_TILT) {
+    if (topic == GrillConstants::TOPIC_TILT) {
         if (payload == GrillConstants::PAYLOAD_CLOCKWISE) {
             movement->rotate_clockwise();
         } else if (payload == GrillConstants::PAYLOAD_COUNTER_CLOCKWISE) {

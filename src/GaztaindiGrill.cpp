@@ -6,6 +6,7 @@
 
 #include <GRILL_config.h>
 #include <GrillSystem.h>
+#include <StatusLED.h>
 
 const char* ssid = "Gaztaindi";
 const char* password = "Gaztaindi"; 
@@ -20,8 +21,8 @@ const char* mqttPassword = "gaztaindi";
 
 WiFiClient wifiClient;
 PubSubClient client(wifiClient);
-   
 GrillSystem* grillSystem;
+StatusLED statusLed;
 
 // Functions declared from the library, otherwise error.
 void connect_to_wifi();
@@ -33,6 +34,9 @@ void setup() {
     Serial.begin(115200);
     SPI.begin();
 
+    // Start status led
+    statusLed.begin();
+
     // WIFI & MQTT connection
     connect_to_wifi();
     client.setCallback(handle_mqtt_callback);
@@ -40,70 +44,101 @@ void setup() {
   
     // Initialize GrillSystem
     grillSystem = new GrillSystem();
-    if (!grillSystem->initialize_system()) {
+    if (!grillSystem->initialize_system(&statusLed)) {
         Serial.println("Error initializing grill system");
+        statusLed.setState(LedState::ERROR);
         return;
     }
-    
+  
 }
-
 void loop() {
 
-    if (!client.connected()) {
-        connect_to_mqtt();
+    // Ensure the WiFi connection.
+    if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("WiFi Disconnected. Reconnecting...");
+        connect_to_wifi();
+        return;
     }
-    client.loop();  
- 
-    // All grill logic is now encapsulated in GrillSystem
-    grillSystem->update();
-      
-} 
 
+    // Check the MQTT connection.
+    if (!client.connected()) {
+        Serial.println("MQTT Disconnected. Reconnecting...");
+        connect_to_mqtt();
+        return;
+    }
+
+    // Essential to maintain the MQTT connection and process messages.
+    client.loop(); 
+    
+    // Here you can uncomment your additional logic.
+    grillSystem->update();
+
+    // Update the LED status to show that everything is OK.
+    statusLed.update();
+
+    // You can add a small delay to avoid saturating the loop.
+    delay(10); 
+}
 
 /// -------------------------------- ///
 ///             MQTT & WIFI          /// 
 /// -------------------------------- ///
 
 void connect_to_wifi() {
+    Serial.print("Connecting to Wifi...");
+    statusLed.setState(LedState::CONNECTING_WIFI);
     WiFi.config(local_IP, gateway, subnet);
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
         Serial.print(".");
+        statusLed.update();
     } 
     Serial.println("WiFi connected: " + WiFi.localIP().toString());
 }
-
 void connect_to_mqtt() {
     
+    statusLed.setState(LedState::CONNECTING_MQTT);
     client.setServer(mqttServer, mqttPort);
     client.setKeepAlive(8); // Time that will trigger LWT.
 
-    while (!client.connected()) {
-        Serial.print("Attempting MQTT connection...");
-        
-        // LWT configuration
-        const char* willTopic   = "grill/status";
-        const char* willMessage = "offline";
-        int willQoS             = 1;
-        bool willRetain         = true;
+    unsigned long lastMqttAttempt = 0; // Variable to control the time of the last attempt
 
-        if (client.connect(
-            "ESP32Client",      // clientID
-            mqttUser, mqttPassword,
-            willTopic, willQoS, willRetain, willMessage
-        )) {
+    while (!client.connected()) {
+        statusLed.update(); 
+
+        // Only attempt to connect every 5 seconds
+        if (millis() - lastMqttAttempt > 5000) {
+            lastMqttAttempt = millis(); // Updates the time of the last attempt
             
-            Serial.println("connected to mqtt");
-            client.publish("grill/status", "online", true);
+            Serial.print("Attempting MQTT connection...");
             
-        } else {
-            Serial.print("failed, rc=");
-            Serial.print(client.state());
-            Serial.println(" try again in 5 seconds");
-            delay(5000);
+            // LWT configuration
+            const char* willTopic   = "grill/status";
+            const char* willMessage = "offline";
+            int willQoS             = 1;
+            bool willRetain         = true;
+
+            if (client.connect(
+                "ESP32Client", 
+                mqttUser, mqttPassword,
+                willTopic, willQoS, willRetain, willMessage
+            )) {
+                
+                Serial.println("connected to mqtt");
+                client.publish("grill/status", "online", true);
+                
+            } else {
+                Serial.print("failed, rc=");
+                Serial.print(client.state());
+                Serial.println(" try again in 5 seconds");
+            }
         }
     }
+
+    // Pulse 
+    statusLed.pulse(3, CRGB::Green, 250, 250, LedState::OFF);
+
 }
 
 void handle_mqtt_callback(char* topic, byte* payload, unsigned int length) {

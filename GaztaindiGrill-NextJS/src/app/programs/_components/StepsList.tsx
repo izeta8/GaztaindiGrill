@@ -1,60 +1,15 @@
 "use client"
 
-import { Clock, Thermometer, MoveVertical, RotateCw, Edit2, Trash2, ArrowUp } from 'lucide-react'
+import { Clock, Edit2, Trash2, ArrowUp } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import type { ProgramStep } from '@/lib/types'
-import type { ReactNode } from 'react'
+import { getStepDescription, getStepIcon } from '@/lib/utils'
 
 export type StepsListProps = {
   steps: ProgramStep[]
   onMove: (index: number, direction: 'up' | 'down') => void
   onEdit: (index: number) => void
   onDelete: (index: number) => void
-}
-
-function getStepIcon(step: ProgramStep) {
-  if (step.temperature) return <Thermometer className="h-7 w-7" />
-  if (step.position) return <MoveVertical className="h-5 w-5" />
-  if (step.rotation) return <RotateCw className="h-5 w-5" />
-  return <Clock className="h-5 w-5" />
-}
-
-function formatSeconds(seconds: number) {
-  if (seconds >= 60) {
-    const m = Math.floor(seconds / 60)
-    const s = seconds % 60
-    if (s === 0) return `${m}m`
-    return `${m}m ${s}s`
-  }
-  return `${seconds}s`
-}
-
-function getStepDescription(step: ProgramStep): ReactNode {
-  if (step.temperature) {
-    return (
-      <div className="leading-tight">
-        <div><span className="font-medium">Temperatura:</span> {step.temperature}°C</div>
-        <div><span className="font-medium">Tiempo:</span> {formatSeconds(step.time as number)}</div>
-      </div>
-    )
-  }
-  if (step.position) {
-    return (
-      <div className="leading-tight">
-        <div><span className="font-medium">Posición:</span> {step.position}</div>
-        <div><span className="font-medium">Tiempo:</span> {formatSeconds(step.time as number)}</div>
-      </div>
-    )
-  }
-  if (step.rotation) {
-    return (
-      <div className="leading-tight">
-        <div><span className="font-medium">Inclinación:</span> {step.rotation}°</div>
-        <div><span className="font-medium">Tiempo:</span> {formatSeconds(step.time as number)}</div>
-      </div>
-    )
-  }
-  return <div className="leading-tight">Paso desconocido</div>
 }
 
 export function StepsList({ steps, onMove, onEdit, onDelete }: StepsListProps) {

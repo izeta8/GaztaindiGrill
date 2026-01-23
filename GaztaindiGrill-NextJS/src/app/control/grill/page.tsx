@@ -5,24 +5,35 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { useMqtt } from '@/lib/mqtt/useMqtt'
 import { GrillStatusDisplay } from './components/GrillStatusDisplay'
-import type { GrillState, GrillDirection, GrillRotation, RunningProgramStatus } from '@/lib/types'
-import { TOPIC_CANCEL_PROGRAM, TOPIC_MOVE, TOPIC_SET_POSITION, TOPIC_SET_TEMPERATURE, TOPIC_SET_TILT, TOPIC_TILT, TOPIC_UPDATE_POSITION, TOPIC_UPDATE_TEMPERATURE, TOPIC_UPDATE_TILT, TOPIC_PROGRAM_STATUS_RESPONSE, TOPIC_GET_PROGRAM_STATUS } from '@/constants/mqtt'
+// Removed RunningProgramStatus import if no longer needed directly
+import type { GrillState, GrillDirection, GrillRotation } from '@/lib/types'
+// Removed program status topics if handled globally
+import { TOPIC_CANCEL_PROGRAM, TOPIC_MOVE, TOPIC_SET_POSITION, TOPIC_SET_TEMPERATURE, TOPIC_SET_TILT, TOPIC_TILT, TOPIC_UPDATE_POSITION, TOPIC_UPDATE_TEMPERATURE, TOPIC_UPDATE_TILT } from '@/constants/mqtt'
 import { ConnectionStatus } from '@/components/shared/ConnectionStatus'
-import { ConnectionStatus as ConnectionStatusEnum, } from '@/lib/types'
+import { ConnectionStatus as ConnectionStatusEnum } from '@/lib/types'
 import { ControlPanel } from './components/ControlPanel'
 import { ProgramExecutionStatus } from './components/ProgramExecutionStatus'
+// Import the context hook
+import { useRunningPrograms } from '@/contexts/RunningProgramsContext'
 
 function GrillControlContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  // Subscribe is still needed for local state (position, temp, etc.)
   const { publish, subscribe, espConnectionStatus, clientConnectionStatus, error: connectionError } = useMqtt()
-  
+  // Get the program state hook
+  const { getProgramOnGrill } = useRunningPrograms();
+
   // Get grill index from query params
   const grillParam = searchParams.get('index')
   const grillIndex = grillParam === '1' ? 1 : 0
   const isLeftGrill = grillIndex === 0
   const grillName = isLeftGrill ? 'Izquierda' : 'Derecha'
-  
+
+  // Get program state for this specific grill
+  const programState = getProgramOnGrill(grillIndex);
+  const isProgramRunning = !!programState.data; // Check if data exists in the global state
+
   const [grillState, setGrillState] = useState<GrillState>({
     position: 0,
     temperature: 0,
@@ -30,71 +41,32 @@ function GrillControlContent() {
     lastUpdate: null
   })
 
+  // Local state for input fields remains
   const [targetPosition, setTargetPosition] = useState('')
   const [targetTemperature, setTargetTemperature] = useState('')
   const [targetRotation, setTargetRotation] = useState('')
-  const [runningProgram, setRunningProgram] = useState<RunningProgramStatus|null>(null)
+  // Removed local runningProgram state
+  // const [runningProgram, setRunningProgram] = useState<RunningProgramStatus|null>(null)
 
-  const isProgramRunnig = !!runningProgram?.isRunning;
   const isConnected = espConnectionStatus === ConnectionStatusEnum.Connected && clientConnectionStatus === ConnectionStatusEnum.Connected;
 
-  // Subscribe to current grill status updates
+  // Subscribe ONLY to local grill status updates (position, temp, tilt)
   useEffect(() => {
     // Redirect if no grill specified
     if (!grillParam) {
       router.push('/control')
       return
     }
+    // Only subscribe if connected
     if (!isConnected) return
 
     const subscriptions: (() => void)[] = []
 
     const setupSubscriptions = async () => {
       try {
+        // --- Removed fetchProgramStatus and its subscriptions ---
 
-        const fetchProgramStatus = async () => {
-          try {
-            const responseTopic = `grill/${grillIndex}/${TOPIC_PROGRAM_STATUS_RESPONSE}`;
-            const requestTopic = `grill/${grillIndex}/${TOPIC_GET_PROGRAM_STATUS}`;
-
-            // Subscribe to the response topic
-            const unsubProgramStatusResponse = await subscribe(responseTopic, (topic, payload) => {
-              
-              const responsePayload = payload.toString();
-              console.log(`[Program Status] Received: ${responsePayload}`);
-              
-              try {
-                const programData: RunningProgramStatus = JSON.parse(responsePayload);
-                
-                // Check if there is any program running.
-                if (programData.isRunning) {
-                  console.log('[Program Status] Received:', programData);
-                  setRunningProgram(programData);
-                } else {
-                  console.log('[Program Status] No program running.');
-                  setRunningProgram(null);
-                }
-              } catch (e) {
-                console.error("Error parsing program status JSON:", e);
-                toast.error("Datos del programa corruptos");
-              }
-            });
-            
-            subscriptions.push(unsubProgramStatusResponse)
-
-            // Publish a message to the request topic to request the data
-            console.log('[Program Status] Requesting status...');
-            await publish(requestTopic, '');
-
-          } catch (e) {
-            toast.error("No se pudo obtener el estado del programa");
-            console.error("Error fetching program status:", e);
-          }
-        };
-
-        fetchProgramStatus();
-
-
+        // Subscribe to position updates
         const unsubPos = await subscribe(`grill/${grillIndex}/${TOPIC_UPDATE_POSITION}`, (topic, payload) => {
           const position = parseInt(payload.toString())
           if (!isNaN(position)) {
@@ -103,6 +75,7 @@ function GrillControlContent() {
         })
         subscriptions.push(unsubPos)
 
+        // Subscribe to temperature updates
         const unsubTemp = await subscribe(`grill/${grillIndex}/${TOPIC_UPDATE_TEMPERATURE}`, (topic, payload) => {
           const temperature = parseInt(payload.toString())
           if (!isNaN(temperature)) {
@@ -111,6 +84,7 @@ function GrillControlContent() {
         })
         subscriptions.push(unsubTemp)
 
+        // Subscribe to rotation updates (tilt)
         const unsubRot = await subscribe(`grill/${grillIndex}/${TOPIC_UPDATE_TILT}`, (topic, payload) => {
           const rotation = parseInt(payload.toString())
           if (!isNaN(rotation)) {
@@ -127,18 +101,19 @@ function GrillControlContent() {
 
     setupSubscriptions()
 
+    // Cleanup function
     return () => {
-      subscriptions.forEach(unsub => unsub())
+      subscriptions.forEach(unsub => unsub?.()) // Use optional chaining for safety
     }
+    // Dependency array updated
   }, [isConnected, subscribe, grillIndex, grillParam, router])
 
+  // --- sendCommand and manual control handlers remain the same ---
   const sendCommand = async (topic: string, payload: string) => {
-   
     if (!isConnected) {
       toast.error('MQTT no conectado')
       return
     }
-
     try {
       const fullTopic = `grill/${grillIndex}/${topic}`
       await publish(fullTopic, payload, { qos: 1 })
@@ -189,7 +164,9 @@ function GrillControlContent() {
     setTargetRotation('')
   }
 
+  // Cancel program handler remains the same
   const handleCancelProgram = () => {
+    // Confirmation dialog text in Spanish
     if (confirm(`¿Estás seguro de cancelar el programa en la parrilla ${grillName.toLowerCase()}?`)) {
       sendCommand(TOPIC_CANCEL_PROGRAM, '')
     }
@@ -198,10 +175,9 @@ function GrillControlContent() {
   return (
     <div className="min-h-screen bg-gray-50 py-4 px-4">
       <div className="max-w-2xl mx-auto">
-        
+
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-                   
           <div className="text-center mb-4">
             <h1 className="text-2xl font-bold text-gray-900">
               Parrilla {grillName}
@@ -210,30 +186,28 @@ function GrillControlContent() {
               Control manual y monitoreo
             </p>
           </div>
-          
-          {/* Connection Status */}
-          <ConnectionStatus 
+          <ConnectionStatus
             espConnectionStatus={espConnectionStatus}
             clientConnectionStatus={clientConnectionStatus}
             error={connectionError}
           />
         </div>
 
-        {/* Grill Status */}
+        {/* Grill Status Display */}
         <div className="mb-6">
-          <GrillStatusDisplay 
+          <GrillStatusDisplay
             title={`Estado Actual`}
             grillState={grillState}
             showRotation={isLeftGrill}
           />
         </div>
 
-        {/* Control Panel */}
-        {!isProgramRunnig && (
+        {/* Control Panel: Render based on global state */}
+        {!isProgramRunning && (
           <ControlPanel
             grillName={grillName}
             isConnected={isConnected}
-            isProgramRunning={isProgramRunnig}
+            isProgramRunning={isProgramRunning}
             isLeftGrill={isLeftGrill}
             targetPosition={targetPosition}
             setTargetPosition={setTargetPosition}
@@ -250,12 +224,12 @@ function GrillControlContent() {
         )}
 
 
-        {/* System Controls */}
-        {isProgramRunnig && (
-          <ProgramExecutionStatus 
+        {/* Program Execution Status: Render based on global state, pass grillIndex */}
+        {isProgramRunning && (
+          <ProgramExecutionStatus
             handleCancelProgram={handleCancelProgram}
-            runningProgram={runningProgram}
             isConnected={isConnected}
+            grillIndex={grillIndex} // Pass index instead of program data
           />
         )}
 
@@ -264,6 +238,7 @@ function GrillControlContent() {
   )
 }
 
+// Default export remains the same
 export default function GrillControlPage() {
   return (
     <Suspense fallback={
@@ -282,3 +257,4 @@ export default function GrillControlPage() {
     </Suspense>
   )
 }
+

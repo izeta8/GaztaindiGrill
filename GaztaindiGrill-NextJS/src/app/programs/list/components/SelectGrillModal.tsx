@@ -2,7 +2,7 @@
 
 import { Modal } from "@/components/ui/Modal"
 import { Button } from "@/components/ui/Button"
-import type { Program } from "../../../../../types" // Remove EnrichedProgramStatus if not used elsewhere
+import type { Program } from "@/types" // Remove EnrichedProgramStatus if not used elsewhere
 import { Loader } from "lucide-react"
 import { useRunningPrograms } from "@/contexts/RunningProgramsContext" // Import the hook
 

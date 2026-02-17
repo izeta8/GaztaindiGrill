@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import mqtt, { IClientOptions, MqttClient, IClientPublishOptions } from 'mqtt'
-import { ConnectionStatus } from '../types'
+import { ConnectionStatus } from '@/types'
 import { toast } from 'sonner'
 
 type MqttContextValue = {

@@ -1,4 +1,4 @@
-import type { ProgramStep } from "../../types"
+import type { ProgramStep } from "@/types"
 import { Thermometer, MoveVertical, RotateCw, Clock, } from "lucide-react"
 import { ReactNode } from "react"
 import { formatSeconds } from "./format"

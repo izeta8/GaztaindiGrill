@@ -1,4 +1,4 @@
-import type { GrillMode } from '../../../../types'
+import type { GrillMode } from '@/types'
 
 interface CurrentModeDisplayProps {
   currentMode: GrillMode

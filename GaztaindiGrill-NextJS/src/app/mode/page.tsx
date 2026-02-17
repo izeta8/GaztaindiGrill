@@ -3,14 +3,14 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Settings, Users } from 'lucide-react'
-import { useMqtt } from '../../../hooks/useMqtt'
-import { ConnectionStatus } from '../../components/shared/ConnectionStatus'
+import { useMqtt } from '@/hooks/useMqtt'
+import { ConnectionStatus } from '@/components/shared/ConnectionStatus'
 import { ModeCard } from './components/ModeCard'
 import { CurrentModeDisplay } from './components/CurrentModeDisplay'
 import { ModeApplyButton } from './components/ModeApplyButton'
-import type { GrillMode } from '../../../types'
+import type { GrillMode } from '@/types'
 import { TOPIC_SET_MODE } from '@/constants/mqtt'
-import { ConnectionStatus as ConnectionStatusEnum } from '../../../types'
+import { ConnectionStatus as ConnectionStatusEnum } from '@/types'
 
 export default function ModePage() {
   const { publish, espConnectionStatus, clientConnectionStatus } = useMqtt()

@@ -1,7 +1,7 @@
 "use client"
 
 import { Smartphone, Heater } from 'lucide-react'
-import { ConnectionStatus as ConnectionStatusEnum } from '../../../types'
+import { ConnectionStatus as ConnectionStatusEnum } from '@/types'
 import { StatusBadge } from '@/components/shared/ConnectionStatusBadge'
 
 interface ConnectionStatusProps {

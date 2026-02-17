@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/Button";
 // Import ProgramStep if needed for detailed display, otherwise remove
-import { type EnrichedProgramStatus, type ProgramStep } from "../../../../../types";
+import { type EnrichedProgramStatus, type ProgramStep } from "@/types";
 import { Pause, Loader, AlertTriangle, Info, User, BarChart3 } from "lucide-react"; // Added Info, User, BarChart3 icons
 // Import helpers
 import { parseSteps, getStepIcon, getStepDescription, truncate } from "@/utils"; // Added truncate

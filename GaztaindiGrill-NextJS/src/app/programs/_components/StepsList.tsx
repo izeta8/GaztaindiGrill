@@ -2,7 +2,7 @@
 
 import { Clock, Edit2, Trash2, ArrowUp } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import type { ProgramStep } from '../../../../types'
+import type { ProgramStep } from '@/types'
 import { getStepDescription, getStepIcon } from '@/utils'
 
 export type StepsListProps = {

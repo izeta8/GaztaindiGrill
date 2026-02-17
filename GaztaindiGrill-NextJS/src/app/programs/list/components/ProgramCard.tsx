@@ -2,7 +2,7 @@
 
 import { BarChart3, Calendar, Pencil, Play, Tag, Eye, Trash2, User, Loader } from "lucide-react"
 import { Button } from "@/components/ui/Button"
-import type { Program } from "../../../../../types"
+import type { Program } from "@/types"
 import { formatDate } from "@/utils"
 import { useState } from "react"
 import { Modal } from "@/components/ui/Modal"

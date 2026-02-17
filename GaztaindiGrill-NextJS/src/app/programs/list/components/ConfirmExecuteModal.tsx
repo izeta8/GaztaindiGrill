@@ -2,7 +2,7 @@
 
 import { Modal } from "@/components/ui/Modal"
 import { Button } from "@/components/ui/Button"
-import type { Program } from "@/lib/types"
+import type { Program } from "../../../../../types"
 
 interface Props {
   isOpen: boolean

@@ -3,8 +3,8 @@
 import { Clock, MoveVertical, RotateCw, Target, Thermometer } from "lucide-react"
 import { Modal } from "@/components/ui/Modal"
 import { Button } from "@/components/ui/Button"
-import type { Program, ProgramStep } from "@/lib/types"
-import { formatSeconds } from "@/lib/utils"
+import type { Program, ProgramStep } from "../../../../../types"
+import { formatSeconds } from "@/utils"
 import type { ReactNode } from "react"
 
 interface Props {

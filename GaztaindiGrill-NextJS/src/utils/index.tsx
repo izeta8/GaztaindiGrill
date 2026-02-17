@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import type { ProgramStep } from "@/lib/types"
+import type { ProgramStep } from "../../types"
 import { Thermometer, MoveVertical, RotateCw, Clock, } from "lucide-react"
 import { ReactNode } from "react"
 

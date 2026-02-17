@@ -1,7 +1,7 @@
 "use client";
 
 import { RunningProgramsProvider } from '@/contexts/RunningProgramsContext';
-import { MqttProvider } from '@/lib/mqtt/useMqtt';
+import { MqttProvider } from '../../hooks/useMqtt';
 import { Toaster } from 'sonner';
 
 export function Providers({ children }: { children: React.ReactNode }) {

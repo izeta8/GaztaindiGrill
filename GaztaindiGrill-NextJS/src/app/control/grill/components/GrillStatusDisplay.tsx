@@ -1,7 +1,7 @@
 "use client"
 
 import { Thermometer, ArrowUp, RotateCw } from 'lucide-react'
-import type { GrillState } from '@/lib/types'
+import type { GrillState } from '../../../../../types'
 
 interface GrillStatusDisplayProps {
   title: string

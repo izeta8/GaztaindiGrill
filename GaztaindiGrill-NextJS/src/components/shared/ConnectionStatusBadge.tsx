@@ -1,5 +1,5 @@
 
-import { ConnectionStatus as ConnectionStatusEnum } from '@/lib/types'
+import { ConnectionStatus as ConnectionStatusEnum } from '../../../types'
 
 
 interface StatusBadgeProps {

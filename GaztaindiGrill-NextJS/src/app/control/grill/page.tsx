@@ -3,17 +3,14 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { useMqtt } from '@/lib/mqtt/useMqtt'
+import { useMqtt } from '../../../../hooks/useMqtt'
 import { GrillStatusDisplay } from './components/GrillStatusDisplay'
-// Removed RunningProgramStatus import if no longer needed directly
-import type { GrillState, GrillDirection, GrillRotation } from '@/lib/types'
-// Removed program status topics if handled globally
+import type { GrillState, GrillDirection, GrillRotation } from '../../../../types'
 import { TOPIC_CANCEL_PROGRAM, TOPIC_MOVE, TOPIC_SET_POSITION, TOPIC_SET_TEMPERATURE, TOPIC_SET_TILT, TOPIC_TILT, TOPIC_UPDATE_POSITION, TOPIC_UPDATE_TEMPERATURE, TOPIC_UPDATE_TILT } from '@/constants/mqtt'
 import { ConnectionStatus } from '@/components/shared/ConnectionStatus'
-import { ConnectionStatus as ConnectionStatusEnum } from '@/lib/types'
+import { ConnectionStatus as ConnectionStatusEnum } from '../../../../types'
 import { ControlPanel } from './components/ControlPanel'
 import { ProgramExecutionStatus } from './components/ProgramExecutionStatus'
-// Import the context hook
 import { useRunningPrograms } from '@/contexts/RunningProgramsContext'
 
 function GrillControlContent() {

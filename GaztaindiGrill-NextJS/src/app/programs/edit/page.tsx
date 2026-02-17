@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { ProgramForm, type ProgramFormInitialValues, type ProgramFormSubmitPayload } from '@/app/programs/_components/ProgramForm'
-import { parseSteps } from '@/lib/utils'
+import { parseSteps } from '@/utils'
 import { Button } from '@/components/ui/Button'
 
 function Status({

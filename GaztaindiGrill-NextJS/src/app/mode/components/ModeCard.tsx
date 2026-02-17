@@ -1,4 +1,4 @@
-import type { GrillMode } from '@/lib/types'
+import type { GrillMode } from '../../../../types'
 import type { ForwardRefExoticComponent, RefAttributes } from 'react'
 import type { LucideProps } from 'lucide-react'
 

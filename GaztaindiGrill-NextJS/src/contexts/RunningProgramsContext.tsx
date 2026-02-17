@@ -1,9 +1,9 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useMqtt } from '@/lib/mqtt/useMqtt';
+import { useMqtt } from '../../hooks/useMqtt';
 import { TOPIC_PROGRAM_STATUS_RESPONSE, TOPIC_PROGRAM_STEP_CHANGED } from '@/constants/mqtt';
-import { type RunningProgramStatus, type Program, type EnrichedProgramStatus, ConnectionStatus } from '@/lib/types';
+import { type RunningProgramStatus, type Program, type EnrichedProgramStatus, ConnectionStatus } from '../../types';
 import { toast } from 'sonner';
 
 // -----------------------------------------------------------------------------

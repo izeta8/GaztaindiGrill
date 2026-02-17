@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ChevronUp, ChevronDown, RotateCcw, RotateCw, Square } from 'lucide-react';
 import { PAYLOAD_CLOCKWISE, PAYLOAD_COUNTER_CLOCKWISE, PAYLOAD_DOWN, PAYLOAD_STOP, PAYLOAD_UP } from '@/constants/mqtt';
-import type { GrillDirection, GrillRotation } from '@/lib/types';
+import type { GrillDirection, GrillRotation } from '../../../../../types';
 
 // Definimos todas las props que el componente necesita
 interface ControlPanelProps {

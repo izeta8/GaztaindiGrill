@@ -1,7 +1,7 @@
 "use client"
 
 import { toast } from 'sonner'
-import { ProgramForm, type ProgramFormSubmitPayload } from '@/app/programs/_components/ProgramForm'
+import { ProgramForm, type ProgramFormSubmitPayload } from '@/app/programs/components/ProgramForm'
 
 export default function CreateProgram() {
 

@@ -71,9 +71,6 @@ async def update_program(program_id: int, payload: UpdateProgramRequest):
                 status_code=404,
             )
 
-        print(f"Publishing cache invalidation for program_id: {program_id}")
-        publish(f"programs/updated/{program_id}", "updated")
-
         return JSONResponse(
             {"success": True, "message": "Programa actualizado correctamente"},
             status_code=200,

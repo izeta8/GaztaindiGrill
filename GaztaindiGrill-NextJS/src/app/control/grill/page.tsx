@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { useMqtt } from '@/hooks/useMqtt'
 import { GrillStatusDisplay } from './components/GrillStatusDisplay'
 import type { GrillState, GrillDirection, GrillRotation } from '@/types'
-import { TOPIC_CANCEL_PROGRAM, TOPIC_MOVE, TOPIC_SET_POSITION, TOPIC_SET_TEMPERATURE, TOPIC_SET_TILT, TOPIC_TILT, TOPIC_UPDATE_POSITION, TOPIC_UPDATE_TEMPERATURE, TOPIC_UPDATE_TILT } from '@/constants/mqtt'
+import { TOPICS } from '@/constants/mqtt'
 import { ConnectionStatus } from '@/components/shared/ConnectionStatus'
 import { ConnectionStatus as ConnectionStatusEnum } from '@/types'
 import { ControlPanel } from './components/ControlPanel'
@@ -16,10 +16,8 @@ import { useRunningPrograms } from '@/contexts/RunningProgramsContext'
 function GrillControlContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  // Subscribe is still needed for local state (position, temp, etc.)
   const { publish, subscribe, espConnectionStatus, clientConnectionStatus, error: connectionError } = useMqtt()
-  // Get the program state hook
-  const { getProgramOnGrill } = useRunningPrograms();
+  const { runningPrograms } = useRunningPrograms();
 
   // Get grill index from query params
   const grillParam = searchParams.get('index')
@@ -28,8 +26,8 @@ function GrillControlContent() {
   const grillName = isLeftGrill ? 'Izquierda' : 'Derecha'
 
   // Get program state for this specific grill
-  const programState = getProgramOnGrill(grillIndex);
-  const isProgramRunning = !!programState.data; // Check if data exists in the global state
+  const programData = runningPrograms[grillIndex];
+  const isProgramRunning = !!programData;
 
   const [grillState, setGrillState] = useState<GrillState>({
     position: 0,
@@ -38,13 +36,10 @@ function GrillControlContent() {
     lastUpdate: null
   })
 
-  // Local state for input fields remains
   const [targetPosition, setTargetPosition] = useState('')
   const [targetTemperature, setTargetTemperature] = useState('')
   const [targetRotation, setTargetRotation] = useState('')
-  // Removed local runningProgram state
-  // const [runningProgram, setRunningProgram] = useState<RunningProgramStatus|null>(null)
-
+  
   const isConnected = espConnectionStatus === ConnectionStatusEnum.Connected && clientConnectionStatus === ConnectionStatusEnum.Connected;
 
   // Subscribe ONLY to local grill status updates (position, temp, tilt)
@@ -61,10 +56,8 @@ function GrillControlContent() {
 
     const setupSubscriptions = async () => {
       try {
-        // --- Removed fetchProgramStatus and its subscriptions ---
-
         // Subscribe to position updates
-        const unsubPos = await subscribe(`grill/${grillIndex}/${TOPIC_UPDATE_POSITION}`, (topic, payload) => {
+        const unsubPos = await subscribe(`grill/${grillIndex}/${TOPICS.STATUS.SENSOR.POSITION}`, (topic, payload) => {
           const position = parseInt(payload.toString())
           if (!isNaN(position)) {
             setGrillState(prev => ({ ...prev, position, lastUpdate: new Date() }))
@@ -73,7 +66,7 @@ function GrillControlContent() {
         subscriptions.push(unsubPos)
 
         // Subscribe to temperature updates
-        const unsubTemp = await subscribe(`grill/${grillIndex}/${TOPIC_UPDATE_TEMPERATURE}`, (topic, payload) => {
+        const unsubTemp = await subscribe(`grill/${grillIndex}/${TOPICS.STATUS.SENSOR.TEMPERATURE}`, (topic, payload) => {
           const temperature = parseInt(payload.toString())
           if (!isNaN(temperature)) {
             setGrillState(prev => ({ ...prev, temperature, lastUpdate: new Date() }))
@@ -81,8 +74,8 @@ function GrillControlContent() {
         })
         subscriptions.push(unsubTemp)
 
-        // Subscribe to rotation updates (tilt)
-        const unsubRot = await subscribe(`grill/${grillIndex}/${TOPIC_UPDATE_TILT}`, (topic, payload) => {
+        // Subscribe to rotation updates
+        const unsubRot = await subscribe(`grill/${grillIndex}/${TOPICS.STATUS.SENSOR.ROTATION}`, (topic, payload) => {
           const rotation = parseInt(payload.toString())
           if (!isNaN(rotation)) {
             setGrillState(prev => ({ ...prev, rotation, lastUpdate: new Date() }))
@@ -100,12 +93,10 @@ function GrillControlContent() {
 
     // Cleanup function
     return () => {
-      subscriptions.forEach(unsub => unsub?.()) // Use optional chaining for safety
+      subscriptions.forEach(unsub => unsub?.())
     }
-    // Dependency array updated
   }, [isConnected, subscribe, grillIndex, grillParam, router])
 
-  // --- sendCommand and manual control handlers remain the same ---
   const sendCommand = async (topic: string, payload: string) => {
     if (!isConnected) {
       toast.error('MQTT no conectado')
@@ -113,7 +104,7 @@ function GrillControlContent() {
     }
     try {
       const fullTopic = `grill/${grillIndex}/${topic}`
-      await publish(fullTopic, payload, { qos: 1 })
+      await publish(fullTopic, payload, { qos: 1, retain: false })
       toast.success(`Comando enviado a parrilla ${grillName.toLowerCase()}`)
     } catch (error) {
       toast.error('Error al enviar comando')
@@ -122,12 +113,12 @@ function GrillControlContent() {
   }
 
   const handleDirectionCommand = (direction: GrillDirection) => {
-    sendCommand(TOPIC_MOVE, direction)
+    sendCommand(TOPICS.ACTION.MOVEMENT.VERTICAL, direction);
   }
 
   const handleRotationCommand = (rotation: GrillRotation) => {
     if (!isLeftGrill) return
-    sendCommand(TOPIC_TILT, rotation)
+    sendCommand(TOPICS.ACTION.MOVEMENT.ROTATION, rotation);
   }
 
   const handleSetPosition = () => {
@@ -136,7 +127,7 @@ function GrillControlContent() {
       toast.error('Posición debe estar entre 0 y 100')
       return
     }
-    sendCommand(TOPIC_SET_POSITION, targetPosition)
+    sendCommand(TOPICS.ACTION.MOVEMENT.SET_POSITION, targetPosition)
     setTargetPosition('')
   }
 
@@ -146,7 +137,9 @@ function GrillControlContent() {
       toast.error('Temperatura debe estar entre 0 y 500°C')
       return
     }
-    sendCommand(TOPIC_SET_TEMPERATURE, targetTemperature)
+    // TODO: Implement TOPIC for setting temperature
+    // sendCommand(TOPICS.ACTION.SENSOR.SET_TEMPERATURE, targetTemperature)
+    toast.info("Funcionalidad (Set Temperature) pendiente de implementación en el firmware.");
     setTargetTemperature('')
   }
 
@@ -157,15 +150,13 @@ function GrillControlContent() {
       toast.error('Rotación debe estar entre 0 y 360°')
       return
     }
-    sendCommand(TOPIC_SET_TILT, targetRotation)
+    sendCommand(TOPICS.ACTION.MOVEMENT.SET_ROTATION, targetRotation)
     setTargetRotation('')
   }
 
-  // Cancel program handler remains the same
   const handleCancelProgram = () => {
-    // Confirmation dialog text in Spanish
     if (confirm(`¿Estás seguro de cancelar el programa en la parrilla ${grillName.toLowerCase()}?`)) {
-      sendCommand(TOPIC_CANCEL_PROGRAM, '')
+      sendCommand(TOPICS.ACTION.PROGRAM.CANCEL, '')
     }
   }
 
@@ -254,4 +245,5 @@ export default function GrillControlPage() {
     </Suspense>
   )
 }
+
 

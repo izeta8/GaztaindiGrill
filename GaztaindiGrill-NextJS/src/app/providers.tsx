@@ -11,7 +11,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ResettingOverlay />
       <RunningProgramsProvider>
         {children}
-        <Toaster position="top-right" richColors />
+        <Toaster position="top-center" richColors />
       </RunningProgramsProvider>
     </MqttProvider>
   );

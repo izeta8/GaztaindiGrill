@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import mqtt, { IClientOptions, MqttClient, IClientPublishOptions } from 'mqtt'
-import { ConnectionStatus } from '@/types'
+import { ConnectionStatus, ResetStatus } from '@/types'
 import { toast } from 'sonner'
 import { TOPICS } from '@/constants/mqtt'
 
@@ -10,6 +10,7 @@ type MqttContextValue = {
   client: MqttClient | null
   espConnectionStatus: ConnectionStatus
   clientConnectionStatus: ConnectionStatus
+  resetStatus: ResetStatus
   error: string | null
   publish: (topic: string, payload: string, options?: IClientPublishOptions) => Promise<void>
   subscribe: (topic: string, handler: (topic: string, payload: Uint8Array) => void) => Promise<() => void>
@@ -50,6 +51,7 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
   const [client, setClient] = useState<MqttClient | null>(null)
   const [espConnectionStatus, setEspConnectionStatus] = useState(ConnectionStatus.Connecting)
   const [clientConnectionStatus, setClientConnectionStatus] = useState(ConnectionStatus.Connecting)
+  const [resetStatus, setResetStatus] = useState(ResetStatus.Resetting)
   const [error, setError] = useState<string | null>(null)
   const handlersRef = useRef(new Map<string, Set<(topic: string, payload: Uint8Array) => void>>())
 
@@ -81,6 +83,11 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
         c?.subscribe(`grill/${TOPICS.GLOBAL.LWT}`, (err) => {
           if (err) console.error(`[MQTT] Failed to subscribe to grill/${TOPICS.GLOBAL.LWT}`, err)
         })
+
+        // Subscribe to reset status topic
+        c?.subscribe(`grill/${TOPICS.GLOBAL.RESET_STATUS}`, (err) => {
+          if (err) console.error(`[MQTT] Failed to subscribe to grill/${TOPICS.GLOBAL.RESET_STATUS}`, err)
+        })
       })
 
       c.on('reconnect', () => {
@@ -102,6 +109,7 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
       })
 
       c.on('message', (topic, payload) => {
+
         if (!mounted) return
         const msg = payload.toString()
         console.log(`[MQTT] Message received on topic "${topic}": ${msg.substring(0, 100)}${msg.length > 100 ? '...' : ''}`);
@@ -109,6 +117,11 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
         if (topic === `grill/${TOPICS.GLOBAL.LWT}`) {
           const connectionStatus = msg === ConnectionStatus.Online ? ConnectionStatus.Online : ConnectionStatus.Offline
           setEspConnectionStatus(connectionStatus)
+        }
+
+        if (topic === `grill/${TOPICS.GLOBAL.RESET_STATUS}`) {
+          const resetStatus = msg === ResetStatus.Ready ? ResetStatus.Ready : ResetStatus.Resetting
+          setResetStatus(resetStatus)
         }
 
         const handlersSet = handlersRef.current.get(topic)
@@ -137,9 +150,9 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
 
   const publish = useCallback(async (topic: string, payload: string, options?: IClientPublishOptions) => {
     if (!client) throw new Error('MQTT client not initialized')
-    if (clientStatusRef.current !== ConnectionStatus.Connected) throw new Error('MQTT client not connected')
+    if (clientStatusRef.current !== ConnectionStatus.Online) throw new Error('MQTT client not connected')
     
-    if (espStatusRef.current !== ConnectionStatus.Connected && topic !== TOPICS.GLOBAL.LWT) {
+    if (espStatusRef.current !== ConnectionStatus.Online && topic !== TOPICS.GLOBAL.LWT) {
       console.warn(`[MQTT] Attempting to publish to "${topic}" while ESP32 status is ${espStatusRef.current}`)
       toast.warning("Se ha enviado una orden a la parrilla pero está apagada.")
     }
@@ -188,10 +201,11 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
     client,
     espConnectionStatus,
     clientConnectionStatus,
+    resetStatus,
     error,
     publish,
     subscribe
-  }), [client, espConnectionStatus, clientConnectionStatus, error, publish, subscribe])
+  }), [client, espConnectionStatus, clientConnectionStatus, resetStatus, error, publish, subscribe])
 
   return <MqttContext.Provider value={value}>{children}</MqttContext.Provider>
 }

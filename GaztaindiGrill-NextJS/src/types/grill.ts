@@ -1,5 +1,4 @@
 import { PAYLOAD_CLOCKWISE, PAYLOAD_COUNTER_CLOCKWISE, PAYLOAD_STOP, PAYLOAD_UP, PAYLOAD_DOWN, PAYLOAD_NORMAL, PAYLOAD_DUAL } from "@/constants/mqtt";
-import type { ProgramStep } from "./program";
 
 // Grill control types
 export interface GrillState {
@@ -18,4 +17,14 @@ export enum ConnectionStatus {
   Connecting = 'connecting',
   Online = 'online',
   Offline = 'offline',
+}
+
+export enum ResetStatus {
+  Resetting = 'resetting',
+  Ready = 'ready'
+}
+
+export enum GrillLayout {
+  Single = 'single',
+  Dual = 'dual'
 }

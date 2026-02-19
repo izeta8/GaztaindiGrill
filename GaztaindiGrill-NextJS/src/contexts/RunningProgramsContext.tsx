@@ -38,8 +38,6 @@ export function RunningProgramsProvider({ children }: { children: React.ReactNod
       // Parse the data received from mqtt
       const programData: RunningProgram = JSON.parse(payload.toString());
 
-      console.log("PROGRAM DATA: ", programData)
-
       // Reset grill data to null when no program is running and prevent unnecessary re-renders.
       if (!programData.isRunning) {
         setRunningPrograms(prev => {

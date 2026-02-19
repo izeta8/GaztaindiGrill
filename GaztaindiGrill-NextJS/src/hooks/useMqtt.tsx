@@ -51,7 +51,7 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
   const [client, setClient] = useState<MqttClient | null>(null)
   const [espConnectionStatus, setEspConnectionStatus] = useState(ConnectionStatus.Connecting)
   const [clientConnectionStatus, setClientConnectionStatus] = useState(ConnectionStatus.Connecting)
-  const [resetStatus, setResetStatus] = useState(ResetStatus.Resetting)
+  const [resetStatus, setResetStatus] = useState(ResetStatus.Ready)
   const [error, setError] = useState<string | null>(null)
   const handlersRef = useRef(new Map<string, Set<(topic: string, payload: Uint8Array) => void>>())
 

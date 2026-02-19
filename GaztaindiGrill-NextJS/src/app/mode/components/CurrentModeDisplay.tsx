@@ -1,7 +1,7 @@
-import type { GrillMode } from '@/types'
+import type { GrillModeType } from '@/types'
 
 interface CurrentModeDisplayProps {
-  currentMode: GrillMode
+  currentMode: GrillModeType
 }
 
 export function CurrentModeDisplay({ currentMode }: CurrentModeDisplayProps) {

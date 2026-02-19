@@ -1,17 +1,17 @@
-import type { GrillMode } from '@/types'
+import type { GrillModeType } from '@/types'
 import type { ForwardRefExoticComponent, RefAttributes } from 'react'
 import type { LucideProps } from 'lucide-react'
 
 interface ModeCardProps {
   mode: {
-    value: GrillMode
+    value: GrillModeType
     label: string
     description: string
     icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>
     color: string
   }
   isSelected: boolean
-  onSelect: (mode: GrillMode) => void
+  onSelect: (mode: GrillModeType) => void
 }
 
 export function ModeCard({ mode, isSelected, onSelect }: ModeCardProps) {

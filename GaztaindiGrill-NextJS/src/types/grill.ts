@@ -8,7 +8,6 @@ export interface GrillState {
   lastUpdate: Date | null;
 }
 
-export type GrillMode = typeof PAYLOAD_NORMAL | typeof PAYLOAD_DUAL;
 export type GrillDirection = typeof PAYLOAD_UP | typeof PAYLOAD_DOWN | typeof PAYLOAD_STOP;
 export type GrillRotation = typeof PAYLOAD_CLOCKWISE | typeof PAYLOAD_COUNTER_CLOCKWISE | typeof PAYLOAD_STOP;
 
@@ -24,7 +23,9 @@ export enum ResetStatus {
   Ready = 'ready'
 }
 
-export enum GrillLayout {
-  Single = 'single',
-  Dual = 'dual'
-}
+export const GrillMode = {
+  Normal: 'normal',
+  Dual: 'dual'
+} as const;
+
+export type GrillModeType = typeof GrillMode[keyof typeof GrillMode];

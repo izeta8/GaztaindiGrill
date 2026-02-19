@@ -8,27 +8,27 @@ import { ConnectionStatus } from '@/components/shared/ConnectionStatus'
 import { ModeCard } from './components/ModeCard'
 import { CurrentModeDisplay } from './components/CurrentModeDisplay'
 import { ModeApplyButton } from './components/ModeApplyButton'
-import type { GrillMode } from '@/types'
+import type { GrillModeType } from '@/types'
 import { TOPICS } from '@/constants/mqtt'
 import { ConnectionStatus as ConnectionStatusEnum } from '@/types'
 
 export default function ModePage() {
   const { publish, espConnectionStatus, clientConnectionStatus } = useMqtt()
-  const [currentMode, setCurrentMode] = useState<GrillMode>('normal')
-  const [selectedMode, setSelectedMode] = useState<GrillMode>('normal')
+  const [currentMode, setCurrentMode] = useState<GrillModeType>('normal')
+  const [selectedMode, setSelectedMode] = useState<GrillModeType>('normal')
   const [isExecuting, setIsExecuting] = useState(false)
   const isConnected = espConnectionStatus !== ConnectionStatusEnum.Online || clientConnectionStatus !== ConnectionStatusEnum.Online;
 
   const modes = [
     {
-      value: 'normal' as GrillMode,
+      value: 'normal' as GrillModeType,
       label: 'Independiente',
       description: 'Funcionamiento independiente de cada parrilla',
       icon: Settings,
       color: 'blue'
     },
     {
-      value: 'dual' as GrillMode,
+      value: 'dual' as GrillModeType,
       label: 'Dual',
       description: 'Ambas parrillas sincronizadas',
       icon: Users,

@@ -20,9 +20,6 @@ export function ProgramExecutionStatus({ handleCancelProgram, isConnected, grill
     const currentStepIndex = runningProgram?.currentStepIndex ?? -1;
     const programName = runningProgram?.name || (runningProgram?.programId ? `Programa #${runningProgram.programId}` : 'Desconocido');
 
-    console.log("currentStepIndex: ")
-    console.log(currentStepIndex)
-
     // Handle case where no program is running (data is null and no error/loading)
     if (!runningProgram) {
         return (

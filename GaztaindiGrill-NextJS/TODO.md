@@ -1,13 +1,13 @@
 
 DOING: 
 
-- Concexto para los programas ejecutando.
 - Hacer el sistema de los modos.
-
 
 TODO: 
 
 - Mejorar la UI de los go to con modales. Posicion un slider vertical como en home assitant nativo y rotación un circulo. 
+
+- Sistema de notificaciones globales. Cuando se ejecute un programa avisar a todos los usuarios...
 
 - Fix last update del control de las parrillas
 

@@ -9,7 +9,7 @@ import { ModeCard } from './components/ModeCard'
 import { CurrentModeDisplay } from './components/CurrentModeDisplay'
 import { ModeApplyButton } from './components/ModeApplyButton'
 import type { GrillMode } from '@/types'
-import { TOPIC_SET_MODE } from '@/constants/mqtt'
+import { TOPICS } from '@/constants/mqtt'
 import { ConnectionStatus as ConnectionStatusEnum } from '@/types'
 
 export default function ModePage() {
@@ -45,8 +45,8 @@ export default function ModePage() {
     try {
       setIsExecuting(true)
       // Send mode to both grills
-      await publish(`grill/0/${TOPIC_SET_MODE}`, selectedMode, { qos: 1 })
-      await publish(`grill/1/${TOPIC_SET_MODE}`, selectedMode, { qos: 1 })
+      await publish(`grill/0/${TOPICS.ACTION.SYSTEM.SET_MODE}`, selectedMode, { qos: 1 })
+      await publish(`grill/1/${TOPICS.ACTION.SYSTEM.SET_MODE}`, selectedMode, { qos: 1 })
       setCurrentMode(selectedMode)
       
       const modeLabel = selectedMode === 'dual' ? 'Dual' : 'Independiente'

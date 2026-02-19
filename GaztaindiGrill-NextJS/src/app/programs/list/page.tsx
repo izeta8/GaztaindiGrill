@@ -14,7 +14,7 @@ import { ProcessingModal } from './components/ProcessingModal'
 import { FiltersBar } from './components/FiltersBar'
 import { parseSteps } from '@/utils'
 import type { Program } from '@/types'
-import { TOPIC_EXECUTE_PROGRAM } from '@/constants/mqtt'
+import { TOPICS } from '@/constants/mqtt'
 import { ConnectionStatus } from '@/components/shared/ConnectionStatus'
 
 type Category = { id: number; name: string }
@@ -199,12 +199,14 @@ function ProgramsPageContent() {
       const stepsJSON = JSON.parse(programToExecute.stepsJson);
       const programToRun = {
         programId: programToExecute.id,
-        steps: stepsJSON || '[]'
+        steps: stepsJSON || '[]',
+        name: programToExecute.name,
+        creatorName: programToExecute.creatorName,
+        description: programToExecute.description,
+        usageCount: programToExecute.usageCount
       }
       
-      console.log(programToRun)
-      const topic = `grill/${side}/${TOPIC_EXECUTE_PROGRAM}`
-      console.log(programToRun)
+      const topic = `grill/${side}/${TOPICS.ACTION.PROGRAM.EXECUTE}`
       await publish(topic, JSON.stringify(programToRun), { qos: 1 })
 
       toast.success(`Ejecución iniciada en parrilla ${side === 0 ? 'izquierda' : 'derecha'} para "${programToExecute.name}"`)

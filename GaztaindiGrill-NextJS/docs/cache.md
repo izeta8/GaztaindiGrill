@@ -1,72 +1,34 @@
-# Funcionamiento de la Caché de Programas
+# Arquitectura de la Caché en Memoria
 
-Este documento explica cómo la aplicación gestiona la información de los programas, combinando datos en tiempo real del hardware (vía MQTT) con datos estáticos de la base de datos (vía API), utilizando un sistema de caché para optimizar el rendimiento.
+La versión anterior de la aplicación utilizaba un sistema complejo de caché con peticiones a la API y lógica de invalidación. Esto ha sido **eliminado y reemplazado** por un mecanismo mucho más simple, robusto y eficiente.
 
-Toda esta lógica se centraliza en `src/contexts/RunningProgramsContext.tsx`.
+## Principio de Funcionamiento
 
-## Propósito de la Caché
+El objetivo de la caché es tener los **detalles completos de un programa** (nombre, descripción, pasos, etc.) para poder mostrarlos en la interfaz mientras se recibe el estado de progreso (ligero) desde el ESP32.
 
-El objetivo principal es **minimizar las llamadas a la API**. Los detalles de un programa (nombre, descripción, pasos, etc.) no cambian con frecuencia. No tiene sentido pedirlos a la API cada vez que el hardware envía una actualización de estado (que puede ocurrir cada pocos segundos).
+La nueva caché (`runningProgramsCache`) es un simple **objeto en memoria RAM** (un estado de React en `RunningProgramsContext`) que funciona como un diccionario.
 
-La caché permite:
-1.  Descargar los detalles de un programa **una sola vez**.
-2.  Reutilizar esa información mientras el programa esté en uso.
-3.  Tener un mecanismo para "invalidar" o "refrescar" esa información si el programa se actualiza en la base de datos.
+-   **Clave:** El `programId` del programa en ejecución.
+-   **Valor:** El objeto completo del programa, tal y como lo envió el ESP32.
 
-## Componentes Clave (Variables de Estado)
+## Flujo de Población de la Caché
 
-Dentro del `RunningProgramsProvider`, hay tres estados principales que gestionan el proceso:
+La caché se popula dinámicamente cuando un cliente necesita la información.
 
-1.  `espProgramsData`:
-    *   **Qué es:** Un objeto que almacena el estado **en tiempo real** que llega desde las parrillas vía MQTT.
-    *   **Contenido:** `isRunning`, `programId`, `currentStepIndex`, `elapsedTime`.
-    *   **Ejemplo:** `{ 0: { programId: 123, isRunning: true, ... }, 1: null }` (El programa 123 está en la parrilla 0, y no hay nada en la parrilla 1).
+1.  **Llega un mensaje de estado:** La aplicación recibe un mensaje MQTT de `grill/{id}/program_status_response` que dice, por ejemplo, `{ "programId": 123, ... }`.
 
-2.  `programApiCache`:
-    *   **Qué es:** El corazón del sistema de caché. Es un objeto que funciona como un diccionario donde se guardan los **detalles estáticos** de los programas que se han pedido a la API.
-    *   **Contenido:** La clave es el `programId` y el valor son los datos completos del programa.
-    *   **Ejemplo:** `{ 123: { id: 123, name: "Chuletón", stepsJson: "[...]", ... } }`
+2.  **Comprobación de la Caché (Cache Check):** La aplicación busca la clave `123` en el objeto `runningProgramsCache`.
 
-3.  `loadingProgramIds`:
-    *   **Qué es:** Un `Set` (conjunto) que registra los IDs de los programas que se están pidiendo a la API **en este preciso momento**.
-    *   **Propósito:** Evitar peticiones duplicadas. Si ya se está pidiendo el programa `123`, no se lanza una segunda petición.
+3.  **Cache Miss (Fallo de Caché):** Si la clave `123` no existe, significa que este cliente no tiene los detalles del programa. En este caso:
+    a. El cliente publica una petición en `grill/{id}/get_running_program_details`.
+    b. La aplicación se pone en un estado de `isLoading` para ese programa, mostrando una Carga en la UI pero usando los datos parciales que ya tiene (el ID del programa).
 
-## Flujo de Funcionamiento
+4.  **Respuesta del ESP32:** El ESP32 responde en `grill/{id}/running_program_details_response` con el JSON completo del programa que está ejecutando.
 
-Este es el proceso cuando un programa se activa en una parrilla:
+5.  **Escritura en Caché (Cache Write):** La aplicación recibe esta respuesta y **guarda el objeto completo del programa en `runningProgramsCache`** con la clave `123`.
 
-1.  **Llega un Mensaje MQTT:** La parrilla `0` empieza a ejecutar el programa `123`. Envía un mensaje por el topic `grill/0/program/status/response` con el contenido `{ "programId": 123, "isRunning": true, ... }`.
+6.  **Cache Hit (Acierto de Caché):** A partir de este momento, cualquier nuevo mensaje de estado para el programa `123` encontrará los detalles en la caché local. La aplicación combinará el estado de progreso del MQTT con los detalles de la caché para mostrar una vista completa, sin necesidad de volver a pedir los datos.
 
-2.  **Se actualiza `espProgramsData`:** El `RunningProgramsProvider` recibe este mensaje y actualiza su estado `espProgramsData` para reflejar que el programa `123` está corriendo en la parrilla `0`.
+### Invalidación o Limpieza
 
-3.  **Comprobación de la Caché:** El componente detecta que `espProgramsData` ha cambiado y necesita "enriquecer" esa información. Comprueba si los detalles del programa `123` ya existen en `programApiCache`.
-
-    *   **CASO A: Cache Hit (El programa está en la caché)**
-        Si `programApiCache[123]` existe, el sistema simplemente combina los datos en tiempo real de `espProgramsData` con los datos estáticos de `programApiCache` para formar el objeto final que consumirá la interfaz. No hay llamadas a la API.
-
-    *   **CASO B: Cache Miss (El programa NO está en la caché)**
-        Si `programApiCache[123]` no existe, se activa la función `fetchAndCacheProgram(123)`.
-
-4.  **Petición a la API (`fetchAndCacheProgram`)**:
-    a.  Añade el `123` al `Set` de `loadingProgramIds` para bloquear otras peticiones.
-    b.  Lanza una petición `fetch` a la URL `(API_URL)/programs/123`.
-    c.  **Si la petición tiene éxito:**
-        i.  Recibe los detalles del programa.
-        ii. Los guarda en la caché: `setProgramApiCache(...)`. Ahora `programApiCache[123]` contiene la información completa.
-    d.  **Si la petición falla:**
-        i.  Guarda `null` en la caché para ese ID (`programApiCache[123] = null`). Esto sirve como una marca para no volver a intentar descargar un programa que dio error o no existe.
-    e.  Finalmente, elimina el `123` del `Set` `loadingProgramIds`.
-
-5.  **Ensamblaje del Estado Final:** Una vez que `programApiCache` se actualiza, el componente vuelve a renderizar y ahora sí puede combinar los datos de `espProgramsData` y `programApiCache` para mostrar la información completa en la interfaz.
-
-## Invalidación de la Caché
-
-¿Qué pasa si alguien edita un programa en la base de datos mientras la aplicación está abierta? Aquí entra en juego la invalidación.
-
-1.  **Disparador:** El backend (o cualquier otro sistema) publica un mensaje en el topic MQTT `programs/updated/<ID>`, por ejemplo: `programs/updated/123`.
-
-2.  **Ejecución del Handler:** El `RunningProgramsProvider` está suscrito a este topic. Al recibir el mensaje, ejecuta la función `handleCacheInvalidation`.
-
-3.  **Acción:** Esta función extrae el ID (`123`) y **elimina la entrada correspondiente del objeto `programApiCache`**.
-
-4.  **Consecuencia:** La próxima vez que el programa `123` se necesite, el sistema se encontrará con un `Cache Miss` (paso 3B) y se verá obligado a pedir de nuevo la información a la API, obteniendo así los datos actualizados.
+La caché de un programa se limpia automáticamente cuando este finaliza. Dado que el estado vive en la RAM del navegador, también se limpia si el usuario cierra o refresca la página. El sistema está diseñado para repoblar la caché de forma automática y eficiente cada vez que sea necesario.

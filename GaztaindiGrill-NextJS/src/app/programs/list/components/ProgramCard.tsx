@@ -1,6 +1,6 @@
 "use client"
 
-import { BarChart3, Calendar, Pencil, Play, Tag, Eye, Trash2, User, Loader } from "lucide-react"
+import { BarChart3, Calendar, Pencil, Play, Tag, Eye, Trash2, User, FlameKindling } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 import type { Program } from "@/types"
 import { formatDate } from "@/utils"
@@ -27,7 +27,7 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
   // Check current running status using the context hook
   const grill0State = runningPrograms[0];
   const grill1State = runningPrograms[1];
-  const isAnyGrillFree = !grill0State.data || !grill1State.data; // Check if at least one grill's data is null
+  const isAnyGrillFree = !grill0State || !grill1State; // Check if at least one grill's data is null
   const { isRunning: isThisProgramRunning, grillIndex } = checkIfProgramIsRunning(p.id);
 
   // Execute button is disabled if this program is already running OR if no grills are free.
@@ -115,7 +115,7 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
           >
             {isThisProgramRunning ? (
                 <>
-                    <Loader className="h-4 w-4 mr-2 animate-spin" />
+                    <FlameKindling className="h-4 w-4 mr-2" />
                     {/* User text in Spanish */}
                     <span>En Parrilla {grillIndex === 0 ? 'Izq.' : 'Der.'}</span>
                 </>

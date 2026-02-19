@@ -40,3 +40,17 @@ export interface UpdateProgramRequest {
   creatorName?: string;
   isActive?: number;
 }
+
+// Type for the data that a grill has when executing a program
+export interface RunningProgram {
+  isRunning: boolean;
+  name: string;
+  description: string,
+  creatorName: string,
+  usageCount: number,
+  programId: number;
+  currentStepIndex: number;
+  elapsedTime: number;
+  steps: ProgramStep[];
+}
+

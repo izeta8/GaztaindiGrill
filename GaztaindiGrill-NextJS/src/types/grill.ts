@@ -1,5 +1,5 @@
 import { PAYLOAD_CLOCKWISE, PAYLOAD_COUNTER_CLOCKWISE, PAYLOAD_STOP, PAYLOAD_UP, PAYLOAD_DOWN, PAYLOAD_NORMAL, PAYLOAD_DUAL } from "@/constants/mqtt";
-import type { Program } from "./program";
+import type { ProgramStep } from "./program";
 
 // Grill control types
 export interface GrillState {
@@ -19,13 +19,3 @@ export enum ConnectionStatus {
   Connected = 'connected',
   Offline = 'offline',
 }
-
-export interface RunningProgramStatus {
-  isRunning: boolean;
-  programId: number;
-  currentStepIndex: number;
-  elapsedTime: number;
-}
-
-// Combines data from ESP32 with data from the database
-export type EnrichedProgramStatus = RunningProgramStatus & Partial<Program>;

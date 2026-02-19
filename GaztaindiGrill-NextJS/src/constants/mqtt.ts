@@ -1,7 +1,7 @@
 // This nested object provides a structured and type-safe way to access the new topic hierarchy.
 export const TOPICS = {
   GLOBAL: {
-    CONNECTION_STATUS: 'status',
+    LWT: 'status',
     LOG: 'log',
   },
   ACTION: { // Commands from Client to ESP32

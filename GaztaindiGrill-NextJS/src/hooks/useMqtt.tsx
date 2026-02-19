@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState,
 import mqtt, { IClientOptions, MqttClient, IClientPublishOptions } from 'mqtt'
 import { ConnectionStatus } from '@/types'
 import { toast } from 'sonner'
+import { TOPICS } from '@/constants/mqtt'
 
 type MqttContextValue = {
   client: MqttClient | null
@@ -75,8 +76,8 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
         console.log('[MQTT] Client connected to broker')
         setClientConnectionStatus(ConnectionStatus.Connected)
         setError(null)
-        c?.subscribe('grill/status', (err) => {
-          if (err) console.error('[MQTT] Failed to subscribe to grill/status:', err)
+        c?.subscribe(`grill/${TOPICS.GLOBAL.LWT}`, (err) => {
+          if (err) console.error(`[MQTT] Failed to subscribe to grill/${TOPICS.GLOBAL.LWT}`, err)
         })
       })
 
@@ -102,7 +103,7 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return
         const msg = payload.toString()
         console.log(`[MQTT] Message received on topic "${topic}": ${msg.substring(0, 100)}${msg.length > 100 ? '...' : ''}`);
-        if (topic === 'grill/status') {
+        if (topic === `grill/${TOPICS.GLOBAL.LWT}`) {
           const connectionStatus = msg === 'online' ? ConnectionStatus.Connected : ConnectionStatus.Offline
           setEspConnectionStatus(connectionStatus)
         }
@@ -135,7 +136,7 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
     if (!client) throw new Error('MQTT client not initialized')
     if (clientStatusRef.current !== ConnectionStatus.Connected) throw new Error('MQTT client not connected')
     
-    if (espStatusRef.current !== ConnectionStatus.Connected && topic !== 'grill/status') {
+    if (espStatusRef.current !== ConnectionStatus.Connected && topic !== TOPICS.GLOBAL.LWT) {
       console.warn(`[MQTT] Attempting to publish to "${topic}" while ESP32 status is ${espStatusRef.current}`)
       toast.warning("Se ha enviado una orden a la parrilla pero está apagada.")
     }

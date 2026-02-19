@@ -105,6 +105,8 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
 
         {/* Action Buttons Section */}
         <div className="grid grid-cols-2 md:flex-col gap-2 md:justify-start justify-end md:items-stretch items-end">
+                             
+        
           {/* Execute Button */}
           <Button
             onClick={() => onExecute(p)}
@@ -126,19 +128,7 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
                 </>
             )}
           </Button>
-          {/* View Steps Button */}
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => onViewSteps(p)}
-            aria-label={`Ver pasos de ${p.name}`} // User text in Spanish
-          >
-            <Eye className="h-4 w-4 mr-2" /> Ver pasos ({stepsCount}) {/* User text in Spanish */}
-          </Button>
-          {/* Edit Button */}
-          <Button variant="secondary" onClick={() => onEdit(p)} size="sm" aria-label={`Editar ${p.name}`} className="w-full md:w-auto">
-            <Pencil className="h-4 w-4 mr-2" /> Editar {/* User text in Spanish */}
-          </Button>
+
           {/* Delete Button */}
           <Button
             variant="danger"
@@ -149,6 +139,22 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
           >
             <Trash2 className="h-4 w-4 mr-2" /> Eliminar {/* User text in Spanish */}
           </Button>
+
+          {/* Edit Button */}
+          <Button variant="secondary" onClick={() => onEdit(p)} size="sm" aria-label={`Editar ${p.name}`} className="w-full md:w-auto">
+            <Pencil className="h-4 w-4 mr-2" /> Editar {/* User text in Spanish */}
+          </Button>
+
+          {/* View Steps Button */}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => onViewSteps(p)}
+            aria-label={`Ver pasos de ${p.name}`} // User text in Spanish
+          >
+            <Eye className="h-4 w-4 mr-2" /> Ver pasos ({stepsCount}) {/* User text in Spanish */}
+          </Button>
+
         </div>
       </div>
 

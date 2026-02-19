@@ -16,6 +16,6 @@ export type GrillRotation = typeof PAYLOAD_CLOCKWISE | typeof PAYLOAD_COUNTER_CL
 // Mqtt connection 
 export enum ConnectionStatus {
   Connecting = 'connecting',
-  Connected = 'connected',
+  Online = 'online',
   Offline = 'offline',
 }

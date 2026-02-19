@@ -40,7 +40,7 @@ function GrillControlContent() {
   const [targetTemperature, setTargetTemperature] = useState('')
   const [targetRotation, setTargetRotation] = useState('')
   
-  const isConnected = espConnectionStatus === ConnectionStatusEnum.Connected && clientConnectionStatus === ConnectionStatusEnum.Connected;
+  const isConnected = espConnectionStatus === ConnectionStatusEnum.Online && clientConnectionStatus === ConnectionStatusEnum.Online;
 
   // Subscribe ONLY to local grill status updates (position, temp, tilt)
   useEffect(() => {

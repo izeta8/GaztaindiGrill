@@ -74,8 +74,10 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
       c.on('connect', () => {
         if (!mounted) return
         console.log('[MQTT] Client connected to broker')
-        setClientConnectionStatus(ConnectionStatus.Connected)
+        setClientConnectionStatus(ConnectionStatus.Online)
         setError(null)
+        
+        // Subscribe to LWT topic
         c?.subscribe(`grill/${TOPICS.GLOBAL.LWT}`, (err) => {
           if (err) console.error(`[MQTT] Failed to subscribe to grill/${TOPICS.GLOBAL.LWT}`, err)
         })
@@ -103,8 +105,9 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return
         const msg = payload.toString()
         console.log(`[MQTT] Message received on topic "${topic}": ${msg.substring(0, 100)}${msg.length > 100 ? '...' : ''}`);
+        
         if (topic === `grill/${TOPICS.GLOBAL.LWT}`) {
-          const connectionStatus = msg === 'online' ? ConnectionStatus.Connected : ConnectionStatus.Offline
+          const connectionStatus = msg === ConnectionStatus.Online ? ConnectionStatus.Online : ConnectionStatus.Offline
           setEspConnectionStatus(connectionStatus)
         }
 

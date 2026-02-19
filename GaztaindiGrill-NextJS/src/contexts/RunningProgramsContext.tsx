@@ -60,7 +60,7 @@ export function RunningProgramsProvider({ children }: { children: React.ReactNod
 
   // --- MQTT Subscriptions ---
   useEffect(() => {
-    if (clientConnectionStatus !== ConnectionStatus.Connected || !subscribe) return;
+    if (clientConnectionStatus !== ConnectionStatus.Online || !subscribe) return;
 
     // Usamos una variable para controlar si el efecto sigue montado
     let isMounted = true;

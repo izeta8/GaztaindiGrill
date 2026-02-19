@@ -17,7 +17,7 @@ export default function ModePage() {
   const [currentMode, setCurrentMode] = useState<GrillMode>('normal')
   const [selectedMode, setSelectedMode] = useState<GrillMode>('normal')
   const [isExecuting, setIsExecuting] = useState(false)
-  const isConnected = espConnectionStatus !== ConnectionStatusEnum.Connected || clientConnectionStatus !== ConnectionStatusEnum.Connected;
+  const isConnected = espConnectionStatus !== ConnectionStatusEnum.Online || clientConnectionStatus !== ConnectionStatusEnum.Online;
 
   const modes = [
     {

@@ -1,28 +1,20 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ChevronUp, ChevronDown, RotateCcw, RotateCw, Square } from 'lucide-react';
 import { PAYLOAD_CLOCKWISE, PAYLOAD_COUNTER_CLOCKWISE, PAYLOAD_DOWN, PAYLOAD_STOP, PAYLOAD_UP } from '@/constants/mqtt';
 import type { GrillDirection, GrillRotation } from '@/types';
 
-// Definimos todas las props que el componente necesita
 interface ControlPanelProps {
   grillName: string;
   isConnected: boolean;
   isProgramRunning: boolean;
   isLeftGrill: boolean;
-  targetPosition: string;
-  setTargetPosition: (value: string) => void;
-  targetTemperature: string;
-  setTargetTemperature: (value: string) => void;
-  targetRotation: string;
-  setTargetRotation: (value: string) => void;
   onDirectionCommand: (direction: GrillDirection) => void;
   onRotationCommand: (rotation: GrillRotation) => void;
-  onSetPosition: () => void;
-  onSetTemperature: () => void;
-  onSetRotation: () => void;
+  onSetPosition: (value: string) => void;
+  onSetTemperature: (value: string) => void;
+  onSetRotation: (value: string) => void;
 }
 
 export function ControlPanel({
@@ -30,18 +22,33 @@ export function ControlPanel({
   isConnected,
   isProgramRunning,
   isLeftGrill,
-  targetPosition,
-  setTargetPosition,
-  targetTemperature,
-  setTargetTemperature,
-  targetRotation,
-  setTargetRotation,
   onDirectionCommand,
   onRotationCommand,
   onSetPosition,
   onSetTemperature,
   onSetRotation,
 }: ControlPanelProps) {
+
+  const [targetPosition, setTargetPosition] = useState('');
+  const [targetTemperature, setTargetTemperature] = useState('');
+  const [targetRotation, setTargetRotation] = useState('');
+
+  // Funciones locales para limpiar el input al enviar
+  const handlePositionSubmit = () => {
+    onSetPosition(targetPosition);
+    setTargetPosition('');
+  };
+
+  const handleTemperatureSubmit = () => {
+    onSetTemperature(targetTemperature);
+    setTargetTemperature('');
+  };
+
+  const handleRotationSubmit = () => {
+    onSetRotation(targetRotation);
+    setTargetRotation('');
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -83,18 +90,18 @@ export function ControlPanel({
       )}
 
       {/* Go-To controls */}
-      <div className='w-full grid grid-cols-3 grid-auto-col mb-4'>
+      <div className='w-full grid grid-cols-3 grid-auto-col mb-4 gap-2'>
         <div className="flex items-center flex-col">
           <Input label="Posición (%)" type="number" value={targetPosition} onChange={setTargetPosition} placeholder="0-100" min={0} max={100} />
-          <Button onClick={onSetPosition} disabled={!isConnected || isProgramRunning || !targetPosition} variant="primary" className="mt-2 w-1/2">Ir</Button>
+          <Button onClick={handlePositionSubmit} disabled={!isConnected || isProgramRunning || !targetPosition} variant="primary" className="mt-2 w-full">Ir</Button>
         </div>
         <div className="flex items-center flex-col">
           <Input label="Temperatura (°C)" type="number" value={targetTemperature} onChange={setTargetTemperature} placeholder="0-500" min={0} max={500} />
-          <Button onClick={onSetTemperature} disabled={!isConnected || isProgramRunning || !targetTemperature} variant="primary" className="mt-2 w-1/2">Ir</Button>
+          <Button onClick={handleTemperatureSubmit} disabled={!isConnected || isProgramRunning || !targetTemperature} variant="primary" className="mt-2 w-full">Ir</Button>
         </div>
         <div className="flex items-center flex-col">
           <Input label="Grados (0-360)" type="number" value={targetRotation} onChange={setTargetRotation} placeholder="0-360" min={0} max={360} />
-          <Button onClick={onSetRotation} disabled={!isConnected || isProgramRunning || !targetRotation} variant="primary" className="mt-2 w-1/2">Ir</Button>
+          <Button onClick={handleRotationSubmit} disabled={!isConnected || isProgramRunning || !targetRotation} variant="primary" className="mt-2 w-full">Ir</Button>
         </div>
       </div>
 

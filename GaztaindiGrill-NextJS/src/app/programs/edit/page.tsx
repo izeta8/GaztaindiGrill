@@ -7,48 +7,6 @@ import { ProgramForm, type ProgramFormInitialValues, type ProgramFormSubmitPaylo
 import { parseSteps } from '@/utils'
 import { Button } from '@/components/ui/Button'
 
-function Status({
-  type,
-  title,
-  description,
-}: {
-  type: 'loading' | 'error' | 'info'
-  title: string
-  description?: string
-}) {
-  const router = useRouter()
-  const color = type === 'error' ? 'text-red-700 border-red-200 bg-red-50' : 'text-slate-700 border-slate-200 bg-slate-50'
-  return (
-    <div className="flex min-h-[40vh] items-center justify-center p-6">
-      <div className={`w-full max-w-xl rounded-lg border ${color} p-5 shadow-sm`}>        
-        <div className="flex items-start gap-3">
-          {type === 'loading' ? (
-            <svg className="mt-1 h-5 w-5 animate-spin text-slate-500" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-            </svg>
-          ) : (
-            <svg className={`mt-1 h-5 w-5 ${type === 'error' ? 'text-red-600' : 'text-slate-600'}`} viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-5a1 1 0 112 0 1 1 0 01-2 0zm1-8a1 1 0 00-1 1v5a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-          )}
-          <div className="flex flex-1 flex-col">
-            <h2 className="text-base font-semibold leading-6">{title}</h2>
-            {description ? <p className="mt-1 text-sm opacity-90">{description}</p> : null}
-            <div className="mt-3">
-              <Button
-                onClick={() => router.push('/programs/list')}
-                variant={type === 'loading' ? 'secondary' : 'primary'}
-              >
-                Volver a la lista
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 function EditProgramPageContent() {
   const searchParams = useSearchParams()
@@ -189,5 +147,48 @@ export default function EditProgramPage() {
     />}>
       <EditProgramPageContent />
     </Suspense>
+  )
+}
+
+function Status({
+  type,
+  title,
+  description,
+}: {
+  type: 'loading' | 'error' | 'info'
+  title: string
+  description?: string
+}) {
+  const router = useRouter()
+  const color = type === 'error' ? 'text-red-700 border-red-200 bg-red-50' : 'text-slate-700 border-slate-200 bg-slate-50'
+  return (
+    <div className="flex min-h-[40vh] items-center justify-center p-6">
+      <div className={`w-full max-w-xl rounded-lg border ${color} p-5 shadow-sm`}>        
+        <div className="flex items-start gap-3">
+          {type === 'loading' ? (
+            <svg className="mt-1 h-5 w-5 animate-spin text-slate-500" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+          ) : (
+            <svg className={`mt-1 h-5 w-5 ${type === 'error' ? 'text-red-600' : 'text-slate-600'}`} viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-5a1 1 0 112 0 1 1 0 01-2 0zm1-8a1 1 0 00-1 1v5a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          )}
+          <div className="flex flex-1 flex-col">
+            <h2 className="text-base font-semibold leading-6">{title}</h2>
+            {description ? <p className="mt-1 text-sm opacity-90">{description}</p> : null}
+            <div className="mt-3">
+              <Button
+                onClick={() => router.push('/programs/list')}
+                variant={type === 'loading' ? 'secondary' : 'primary'}
+              >
+                Volver a la lista
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

@@ -12,3 +12,14 @@ export const formatSeconds = (seconds?: number): string => {
   }
   return `${seconds}s`
 }
+
+export const parseGrillIndex = (topic: string): (undefined | 0 | 1) => {
+
+  const grillIndexMatch = topic.match(/grill\/(\d+)\//);
+  if (!grillIndexMatch) return;
+
+  const grillIndex = parseInt(grillIndexMatch[1], 10);
+  if (isNaN(grillIndex) || (grillIndex !== 0 && grillIndex !== 1)) return;
+
+  return grillIndex
+}

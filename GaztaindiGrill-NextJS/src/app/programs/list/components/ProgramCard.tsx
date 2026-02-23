@@ -19,7 +19,7 @@ interface Props {
 }
 
 export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps, onExecute, onEdit }: Props) {
-  const { runningPrograms, checkIfProgramIsRunning } = useRunningPrograms();
+  const { runningPrograms, isProgramRunning } = useRunningPrograms();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [confirmChecked, setConfirmChecked] = useState(false)
@@ -28,7 +28,7 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
   const grill0State = runningPrograms[0];
   const grill1State = runningPrograms[1];
   const isAnyGrillFree = !grill0State || !grill1State; // Check if at least one grill's data is null
-  const { isRunning: isThisProgramRunning, grillIndex } = checkIfProgramIsRunning(p.id);
+  const { isRunning: isThisProgramRunning, grillIndex } = isProgramRunning(p.id);
 
   // Execute button is disabled if this program is already running OR if no grills are free.
   const canExecute = !isThisProgramRunning && isAnyGrillFree;

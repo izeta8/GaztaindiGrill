@@ -5,16 +5,19 @@ import { useMqtt } from '@/hooks/useMqtt';
 import { TOPICS } from '@/constants/mqtt';
 import { type RunningProgram, ConnectionStatus } from '@/types';
 import { toast } from 'sonner';
+import { parseGrillIndex } from '@/utils';
 
 // Final state consumed by the UI
 type RunningPrograms = {
-  [grillIndex: number]: RunningProgram | null;
+  0: RunningProgram | null;
+  1: RunningProgram | null;
 };
 
 // Context value provided to consumers
 interface RunningProgramsContextValue {
   runningPrograms: RunningPrograms;
-  checkIfProgramIsRunning: (programId: number) => { isRunning: boolean; grillIndex: number | null };
+  isProgramRunning: (programId: number) => { isRunning: boolean; grillIndex: number | null };
+  isAnyProgramRunning: () => boolean
 }
 
 const RunningProgramsContext = createContext<RunningProgramsContextValue | undefined>(undefined);
@@ -29,11 +32,9 @@ export function RunningProgramsProvider({ children }: { children: React.ReactNod
   const handleProgramCurrentStatus = useCallback((topic: string, payload: Uint8Array) => {
     try {
 
-      // Get the grill index.
-      const grillIndexMatch = topic.match(/grill\/(\d+)\//);
-      if (!grillIndexMatch) return;
-      const grillIndex = parseInt(grillIndexMatch[1], 10);
-      if (isNaN(grillIndex) || (grillIndex !== 0 && grillIndex !== 1)) return;
+       // Get the grill index.
+        const grillIndex = parseGrillIndex(topic)
+        if (!grillIndex) return
 
       // Parse the data received from mqtt
       const programData: RunningProgram = JSON.parse(payload.toString());
@@ -66,8 +67,7 @@ export function RunningProgramsProvider({ children }: { children: React.ReactNod
 
     const setupSubscriptions = async () => {
       try {
-        const grillIndex = 0; 
-        const programStatusTopic = `grill/${grillIndex}/${TOPICS.STATUS.PROGRAM.CURRENT}`;
+        const programStatusTopic = `grill/+/${TOPICS.STATUS.PROGRAM.CURRENT}`;
         
         const unsub = await subscribe(programStatusTopic, handleProgramCurrentStatus);
         
@@ -90,10 +90,11 @@ export function RunningProgramsProvider({ children }: { children: React.ReactNod
     };
   }, [clientConnectionStatus, subscribe, handleProgramCurrentStatus]);
 
-  const checkIfProgramIsRunning = useCallback((programId: number): { isRunning: boolean; grillIndex: number | null } => {
+  const isProgramRunning = useCallback((programId: number): { isRunning: boolean; grillIndex: number | null } => {
     for (const key in runningPrograms) {
       if (Object.prototype.hasOwnProperty.call(runningPrograms, key)) {
           const index = parseInt(key, 10);
+          if (index != 0 && index != 1) continue
           if (runningPrograms[index]?.programId === programId) {
               return { isRunning: true, grillIndex: index };
           }
@@ -102,9 +103,14 @@ export function RunningProgramsProvider({ children }: { children: React.ReactNod
     return { isRunning: false, grillIndex: null };
   }, [runningPrograms]);
 
+  const isAnyProgramRunning = useCallback(() => {
+    return Object.values(runningPrograms).some(program => program !== null);
+  }, [runningPrograms]);
+
   const value = {
     runningPrograms,
-    checkIfProgramIsRunning,
+    isProgramRunning,
+    isAnyProgramRunning
   };
 
   return (

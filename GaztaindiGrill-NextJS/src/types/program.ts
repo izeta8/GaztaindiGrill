@@ -41,6 +41,10 @@ export interface UpdateProgramRequest {
   isActive?: number;
 }
 
+export interface RunningProgramStep extends ProgramStep {
+  stepStartUnix?: number;
+}
+
 // Type for the data that a grill has when executing a program
 export interface RunningProgram {
   isRunning: boolean;
@@ -51,6 +55,6 @@ export interface RunningProgram {
   programId: number;
   currentStepIndex: number;
   elapsedTime: number;
-  steps: ProgramStep[];
+  steps: RunningProgramStep[];
 }
 

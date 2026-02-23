@@ -4,6 +4,7 @@ export const TOPICS = {
     LWT: 'connection',
     LOG: 'log',
     RESET_STATUS: 'reset_status',
+    CURRENT_MODE: 'current_mode'
   },
   ACTION: { // Commands from Client to ESP32
     MOVEMENT: {

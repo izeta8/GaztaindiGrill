@@ -23,9 +23,9 @@ export enum ResetStatus {
   Ready = 'ready'
 }
 
-export const GrillMode = {
+export const GrillModes = {
   Normal: 'normal',
   Dual: 'dual'
 } as const;
 
-export type GrillModeType = typeof GrillMode[keyof typeof GrillMode];
+export type GrillMode = typeof GrillModes[keyof typeof GrillModes];

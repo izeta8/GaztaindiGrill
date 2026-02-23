@@ -1,7 +1,7 @@
 import type { ProgramStep } from "@/types"
 import { Thermometer, MoveVertical, RotateCw, Clock, } from "lucide-react"
 import { ReactNode } from "react"
-import { formatSeconds } from "./format"
+import { formatSeconds } from "./parse"
 
 export const parseSteps = (stepsJson: string): ProgramStep[] => {
   try {

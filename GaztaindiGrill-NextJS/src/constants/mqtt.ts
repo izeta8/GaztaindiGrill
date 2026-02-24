@@ -47,5 +47,5 @@ export const PAYLOAD_STOP = "stop";
 export const PAYLOAD_CLOCKWISE = "clockwise";
 export const PAYLOAD_COUNTER_CLOCKWISE = "counter_clockwise";
 
-export const PAYLOAD_NORMAL = "normal";
+export const PAYLOAD_SINGLE = "single";
 export const PAYLOAD_DUAL = "dual";

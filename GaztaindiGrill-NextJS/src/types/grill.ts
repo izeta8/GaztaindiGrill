@@ -1,4 +1,4 @@
-import { PAYLOAD_CLOCKWISE, PAYLOAD_COUNTER_CLOCKWISE, PAYLOAD_STOP, PAYLOAD_UP, PAYLOAD_DOWN, PAYLOAD_NORMAL, PAYLOAD_DUAL } from "@/constants/mqtt";
+import { PAYLOAD_CLOCKWISE, PAYLOAD_COUNTER_CLOCKWISE, PAYLOAD_STOP, PAYLOAD_UP, PAYLOAD_DOWN } from "@/constants/mqtt";
 
 // Grill control types
 export interface GrillState {

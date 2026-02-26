@@ -58,3 +58,8 @@ export interface RunningProgram {
   steps: RunningProgramStep[];
 }
 
+// Final state consumed in RunningProgramsContext 
+export type RunningPrograms = {
+  0: RunningProgram | null;
+  1: RunningProgram | null;
+};

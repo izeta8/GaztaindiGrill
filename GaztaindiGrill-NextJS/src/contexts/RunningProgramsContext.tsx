@@ -3,15 +3,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useMqtt } from '@/hooks/useMqtt';
 import { TOPICS } from '@/constants/mqtt';
-import { type RunningProgram, ConnectionStatus } from '@/types';
+import { type RunningProgram, ConnectionStatus, RunningPrograms } from '@/types';
 import { toast } from 'sonner';
 import { parseGrillIndex } from '@/utils';
-
-// Final state consumed by the UI
-type RunningPrograms = {
-  0: RunningProgram | null;
-  1: RunningProgram | null;
-};
 
 // Context value provided to consumers
 interface RunningProgramsContextValue {

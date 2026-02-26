@@ -22,7 +22,7 @@ import { COLORS } from "@/constants";
 
 interface SystemMonitorProps {
   pageTitle: string;
-  pageDescription: string;
+  pageDescription?: string;
 }
 
 export const SystemMonitor = ({pageTitle, pageDescription}: SystemMonitorProps) => {

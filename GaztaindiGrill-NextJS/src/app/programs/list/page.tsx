@@ -15,7 +15,7 @@ import { FiltersBar } from './components/FiltersBar'
 import { parseSteps } from '@/utils'
 import type { Program } from '@/types'
 import { TOPICS } from '@/constants/mqtt'
-import { ConnectionStatus } from '@/components/shared/ConnectionStatus'
+import { SystemMonitor } from '@/components/shared/SystemMonitor'
 
 type Category = { id: number; name: string }
 
@@ -31,7 +31,7 @@ type ApiProgram = Record<string, unknown> & {
 function ProgramsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { publish, espConnectionStatus, clientConnectionStatus } = useMqtt()
+  const { publish } = useMqtt()
 
   const [programs, setPrograms] = useState<Program[]>([])
   const [loading, setLoading] = useState(true)
@@ -47,10 +47,10 @@ function ProgramsPageContent() {
   // Select grill modal
   const [isSelectOpen, setIsSelectOpen] = useState(false)
   const [isExecuting, setIsExecuting] = useState(false)
-  
+
   // Categories
   const [categories, setCategories] = useState<Category[]>([])
-  
+
   // Filters
   const [searchId, setSearchId] = useState('')
   const [searchName, setSearchName] = useState('')
@@ -205,7 +205,7 @@ function ProgramsPageContent() {
         description: programToExecute.description,
         usageCount: programToExecute.usageCount
       }
-      
+
       const topic = `grill/${side}/${TOPICS.ACTION.PROGRAM.EXECUTE}`
       await publish(topic, JSON.stringify(programToRun), { qos: 1 })
 
@@ -244,19 +244,10 @@ function ProgramsPageContent() {
       <div className="max-w-2xl mx-auto">
 
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">
-            Programas
-          </h1>
-          <p className="text-sm text-gray-600 text-center mb-4">Lista de programas disponibles</p>
-
-          {/* Connection Status */}
-          <ConnectionStatus 
-            espConnectionStatus={espConnectionStatus}
-            clientConnectionStatus={clientConnectionStatus}
-          />
-          
-        </div>
+        <SystemMonitor
+          pageTitle='Programas'
+          pageDescription='Lista de programas disponibles'
+        />
 
         {/* Content */}
         <div className="bg-white rounded-lg shadow-sm p-4">

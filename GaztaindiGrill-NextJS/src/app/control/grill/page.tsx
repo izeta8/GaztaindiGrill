@@ -12,9 +12,9 @@ import { useGrillCommands } from '@/app/control/grill/hooks/useGrillCommands'
 
 // UI Components
 import { GrillStatusDisplay } from './components/GrillStatusDisplay'
-import { ConnectionStatus } from '@/components/shared/ConnectionStatus'
 import { ControlPanel } from './components/ControlPanel'
 import { ProgramExecutionStatus } from './components/ProgramExecutionStatus'
+import { SystemMonitor } from '@/components/shared/SystemMonitor'
 
 function GrillControlContent() {
   const searchParams = useSearchParams()
@@ -34,7 +34,7 @@ function GrillControlContent() {
   }, [grillParam, router])
 
   // Global states and contexts
-  const { espConnectionStatus, clientConnectionStatus, error: connectionError } = useMqtt()
+  const { espConnectionStatus, clientConnectionStatus } = useMqtt()
   const { runningPrograms } = useRunningPrograms()
   
   const isConnected = espConnectionStatus === ConnectionStatusEnum.Online && clientConnectionStatus === ConnectionStatusEnum.Online
@@ -51,21 +51,10 @@ function GrillControlContent() {
       <div className="max-w-2xl mx-auto">
 
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="text-center mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">
-              Parrilla {grillName}
-            </h1>
-            <p className="text-sm text-gray-600">
-              Control manual y monitoreo
-            </p>
-          </div>
-          <ConnectionStatus
-            espConnectionStatus={espConnectionStatus}
-            clientConnectionStatus={clientConnectionStatus}
-            error={connectionError}
-          />
-        </div>
+        <SystemMonitor 
+          pageTitle={`Parrilla ${grillName}`}
+          pageDescription='Control manual y monitoreo'
+        />
 
         {/* Grill Status Display */}
         <div className="mb-6">

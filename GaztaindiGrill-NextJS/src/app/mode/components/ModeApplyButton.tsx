@@ -8,7 +8,7 @@ interface ModeApplyButtonProps {
 export function ModeApplyButton({ onApply, isConnected }: ModeApplyButtonProps) {
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
+    <>
       <Button
         onClick={onApply}
         disabled={!isConnected}
@@ -23,6 +23,6 @@ export function ModeApplyButton({ onApply, isConnected }: ModeApplyButtonProps) 
           El móvil o la parrilla no está conectada al sistema domótico.
         </p>
       )}
-    </div>
+    </>
   )
 }

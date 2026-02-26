@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { ArrowsUpFromLine, ArrowDownUp } from 'lucide-react'
 import { useMqtt } from '@/hooks/useMqtt'
-import { ConnectionStatus } from '@/components/shared/ConnectionStatus'
 import { ModeCard } from './components/ModeCard'
 import { CurrentModeDisplay } from './components/CurrentModeDisplay'
 import { ModeApplyButton } from './components/ModeApplyButton'
@@ -13,6 +12,8 @@ import { TOPICS } from '@/constants/mqtt'
 import { ConnectionStatus as ConnectionStatusEnum, GrillModes } from '@/types'
 import { useRunningPrograms } from '@/contexts/RunningProgramsContext'
 import { useCurrentMode } from '@/contexts/CurrentModeContext'
+import { SystemMonitor } from '@/components/shared/SystemMonitor'
+import { COLORS } from '@/constants'
 
 export default function ModePage() {
 
@@ -29,14 +30,14 @@ export default function ModePage() {
       label: 'Independiente',
       description: 'Funcionamiento independiente de cada parrilla',
       icon: ArrowDownUp,
-      color: 'emerald'
+      color: COLORS.SINGLE_MODE
     },
     {
       value: 'dual' as GrillMode,
       label: 'Dual',
       description: 'Ambas parrillas sincronizadas',
       icon: ArrowsUpFromLine,
-      color: 'amber'
+      color: COLORS.DUAL_MODE
     }
   ]
 
@@ -66,66 +67,40 @@ export default function ModePage() {
   return (
     <div className="min-h-screen bg-gray-50 py-4 px-4">
       <div className="max-w-2xl mx-auto">
-        
+
         {/* Header */}
-        <Header
-          clientConnectionStatus={clientConnectionStatus}
-          espConnectionStatus={espConnectionStatus}
-        />
+        <SystemMonitor
+          pageTitle='Modo de Funcionamiento'
+          pageDescription='Selecciona cómo quieres que funcionen las parrillas'
+        /> 
 
         <CurrentModeDisplay currentMode={currentMode} />
 
-        {currentMode !== undefined && ( 
-        <>
-          {/* Mode Selection */}
-          <div className="space-y-4 mb-6">
-            {modes.map((mode) => (
-              <ModeCard
-                key={mode.value}
-                mode={mode}
-                isSelected={selectedMode === mode.value}
-                onSelect={setSelectedMode}
-              />
-            ))}
-          </div>
+        <hr className='bg-zinc-400 my-6' />
 
-          {/* Apply Button */}
-          <ModeApplyButton
-            onApply={() => handleModeChange(selectedMode)}
-            isConnected={isTrulyConnected}
-          />
-        </>
+        {currentMode !== undefined && (
+          <>
+            {/* Mode Selection */}
+            <div className="space-y-4 mb-6">
+              {modes.map((mode) => (
+                <ModeCard
+                  key={mode.value}
+                  mode={mode}
+                  isSelected={selectedMode === mode.value}
+                  onSelect={setSelectedMode}
+                />
+              ))}
+            </div>
+
+            {/* Apply Button */}
+            <ModeApplyButton
+              onApply={() => handleModeChange(selectedMode)}
+              isConnected={isTrulyConnected}
+            />
+          </>
         )}
-        
+
       </div>
     </div>
   )
-}
-
-interface HeaderProps {
-  espConnectionStatus: ConnectionStatusEnum;
-  clientConnectionStatus: ConnectionStatusEnum;
-}
-
-const Header = ({espConnectionStatus, clientConnectionStatus}: HeaderProps) => {
-
-  return (
-    <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <div className="text-center mb-4">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Modo de Funcionamiento
-          </h1>
-          <p className="text-sm text-gray-600">
-            Selecciona cómo quieres que funcionen las parrillas
-          </p>
-        </div>
-        
-        {/* Connection Status */}
-        <ConnectionStatus 
-          espConnectionStatus={espConnectionStatus}
-          clientConnectionStatus={clientConnectionStatus}
-        />
-      </div>
-  )
-
 }

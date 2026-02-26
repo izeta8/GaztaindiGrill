@@ -7,7 +7,7 @@ interface CurrentModeDisplayProps {
 
 export function CurrentModeDisplay({ currentMode }: CurrentModeDisplayProps) {
   return (
-    <div className="bg-blue-100 border-blue-300 border-1 rounded-lg p-4 mb-6">
+    <div className="bg-blue-100 border-blue-300 border-1 rounded-lg p-4">
       <div className="flex items-center space-x-3">
         <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
         <div>

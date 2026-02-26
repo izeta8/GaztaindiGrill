@@ -12,7 +12,7 @@ const CurrentModeContext = createContext<CurrentModeContextValue | undefined>(un
 
 export function CurrentModeProvider({ children }: { children: React.ReactNode }) {
 
-  const [currentMode, setCurrentMode] = useState<GrillMode | undefined>(GrillModes.Single);
+  const [currentMode, setCurrentMode] = useState<GrillMode | undefined>(undefined);
   const { subscribe, publish, clientConnectionStatus, espConnectionStatus } = useMqtt();
 
   const value = {

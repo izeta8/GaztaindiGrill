@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { useMqtt } from '@/hooks/useMqtt';
-import { TOPICS } from '@/constants/mqtt';
+import { TOPICS } from '@/constants';
 import type { GrillDirection, GrillRotation } from '@/types';
 
 // Centralizamos los límites para validaciones

@@ -5,51 +5,58 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { toast } from "sonner";
 
 interface CurrentModeContextValue {
-  currentMode: GrillMode;
+  currentMode: GrillMode | undefined;
 }
 
 const CurrentModeContext = createContext<CurrentModeContextValue | undefined>(undefined);
 
 export function CurrentModeProvider({ children }: { children: React.ReactNode }) {
 
-  const [currentMode, setCurrentMode] = useState<GrillMode>(GrillModes.Normal);
-  const { subscribe, clientConnectionStatus } = useMqtt();
+  const [currentMode, setCurrentMode] = useState<GrillMode | undefined>(GrillModes.Single);
+  const { subscribe, publish, clientConnectionStatus, espConnectionStatus } = useMqtt();
 
   const value = {
     currentMode,
   };
 
   const handleCurrentMode = useCallback((topic: string, payload: Uint8Array) => {
-      try {
-  
-        // Parse the data received from mqtt
-        const currentMode = payload.toString();
+    try {
 
-        // Validate MQTT input
-        if (currentMode != GrillModes.Dual && currentMode != GrillModes.Normal) return
+      // Parse the data received from mqtt
+      const mode = payload.toString();
 
-        setCurrentMode(currentMode)
+      // Validate MQTT input
+      if (mode != GrillModes.Dual && mode != GrillModes.Single) return
+
+      setCurrentMode(mode)
+
+    } catch (error) {
+      console.error("[MQTT Handler] Error processing status message:", error);
+      toast.error("Error processing MQTT data.");
+    }
+  }, []);
   
-      } catch (error) {
-        console.error("[MQTT Handler] Error processing status message:", error);
-        toast.error("Error processing MQTT data.");
-      }
-    }, []);
+  // Request ESP32 to publish the current mode 
+  const requestCurrentMode = useCallback(async () => {
+    if (clientConnectionStatus === ConnectionStatus.Online && espConnectionStatus === ConnectionStatus.Online) {
+        await publish(`grill/${TOPICS.MODE.REQUEST_CURRENT_MODE}`, "requestCurrentMode", { qos: 1 })
+    }
+  }, [publish, clientConnectionStatus, espConnectionStatus]);
+
 
   // --- MQTT Subscriptions ---
   useEffect(() => {
     if (clientConnectionStatus !== ConnectionStatus.Online || !subscribe) return;
 
-    // Usamos una variable para controlar si el efecto sigue montado
+    // Use a variable to control if the effect is still mounted
     let isMounted = true;
     let unsubscribeFn: (() => void) | null = null;
 
+    // Listen to ESP32 response.
     const setupSubscriptions = async () => {
       try {
 
-        console.log("llega aqui")
-
-        const currentModeTopic = `grill/${TOPICS.GLOBAL.CURRENT_MODE}`;
+        const currentModeTopic = `grill/${TOPICS.MODE.CURRENT_MODE}`;
 
         const unsub = await subscribe(currentModeTopic, handleCurrentMode);
 
@@ -58,6 +65,9 @@ export function CurrentModeProvider({ children }: { children: React.ReactNode })
           unsub();
         } else {
           unsubscribeFn = unsub;
+
+          // After subscribing request to ESP32 the current mode
+          requestCurrentMode();
         }
       } catch (error) {
         console.error("[MQTT Sub] Error during subscription:", error);
@@ -70,9 +80,7 @@ export function CurrentModeProvider({ children }: { children: React.ReactNode })
       isMounted = false;
       if (unsubscribeFn) unsubscribeFn();
     };
-  }, [clientConnectionStatus, subscribe, handleCurrentMode]);
-
-
+  }, [clientConnectionStatus, subscribe, handleCurrentMode, requestCurrentMode]);
 
   return (
     <CurrentModeContext.Provider value={value}>

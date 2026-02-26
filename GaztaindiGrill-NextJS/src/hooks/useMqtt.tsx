@@ -154,7 +154,7 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
     
     if (espStatusRef.current !== ConnectionStatus.Online && topic !== TOPICS.GLOBAL.LWT) {
       console.warn(`[MQTT] Attempting to publish to "${topic}" while ESP32 status is ${espStatusRef.current}`)
-      toast.warning("Se ha enviado una orden a la parrilla pero está apagada.")
+      toast.warning(`Se ha enviado una orden a la parrilla pero está apagada: ${topic}`)
     }
 
     console.log(`[MQTT] Publishing to "${topic}": ${payload.substring(0, 50)}${payload.length > 50 ? '...' : ''}`)

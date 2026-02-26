@@ -4,7 +4,11 @@ export const TOPICS = {
     LWT: 'connection',
     LOG: 'log',
     RESET_STATUS: 'reset_status',
-    CURRENT_MODE: 'current_mode'
+  },
+  MODE: {
+    CURRENT_MODE: 'current_mode',
+    REQUEST_CURRENT_MODE: 'request_current_mode',
+    REQUEST_MODE_CHANGE: 'request_mode_change',
   },
   ACTION: { // Commands from Client to ESP32
     MOVEMENT: {
@@ -16,10 +20,6 @@ export const TOPICS = {
     PROGRAM: {
       EXECUTE: 'action/program/execute',
       CANCEL: 'action/program/cancel',
-    },
-    SYSTEM: {
-      SET_MODE: 'action/system/set_mode',
-      RESTART: 'action/system/restart',
     },
     REQUEST: {
       PROGRAM_STATUS: 'action/request/program_status'

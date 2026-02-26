@@ -24,7 +24,7 @@ export enum ResetStatus {
 }
 
 export const GrillModes = {
-  Normal: 'normal',
+  Single: 'single',
   Dual: 'dual'
 } as const;
 

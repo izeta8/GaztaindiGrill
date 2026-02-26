@@ -28,7 +28,7 @@ export function ModeCard({ mode, isSelected, onSelect }: ModeCardProps) {
       }`}
     >
 
-      <div className="flex items-start space-x-4">
+      <div className="flex items-center space-x-4">
         
         {/* Icon */}
         <Icon className={`h-8 w-8 mt-1 ${
@@ -45,13 +45,6 @@ export function ModeCard({ mode, isSelected, onSelect }: ModeCardProps) {
 
               {mode.label}
             </h3>
-
-            {isSelected && (
-              <div className={`w-6 h-6 rounded-full bg-${mode.color}-600 flex items-center justify-center`}>
-                <div className="w-2 h-2 bg-white rounded-full"></div>
-              </div>
-            )}
-
           </div>
 
           {/* Description */}
@@ -60,6 +53,16 @@ export function ModeCard({ mode, isSelected, onSelect }: ModeCardProps) {
           }`}>
             {mode.description}
           </p>
+
+        </div>
+
+        {/* Selected Circle */}
+        <div>
+          {isSelected && (
+            <div className={`w-6 h-6 rounded-full bg-${mode.color}-600 flex items-center justify-center`}>
+              <div className="w-2 h-2 bg-white rounded-full"></div>
+            </div>
+          )}
 
         </div>
         

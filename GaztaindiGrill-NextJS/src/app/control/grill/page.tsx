@@ -15,17 +15,6 @@ import { GrillStatusDisplay } from './components/GrillStatusDisplay'
 import { ControlPanel } from './components/ControlPanel'
 import { ProgramExecutionStatus } from './components/ProgramExecutionStatus'
 import { SystemMonitor } from '@/components/shared/SystemMonitor'
-import dynamic from 'next/dynamic'
-
-// Importar el componente 3D de forma dinámica (solo cliente)
-const GrillScene = dynamic(() => import('@/components/three/GrillScene'), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-[400px] bg-white rounded-xl shadow-inner border border-gray-100 flex items-center justify-center animate-pulse">
-      <div className="text-gray-400">Preparando escena 3D...</div>
-    </div>
-  ),
-})
 
 function GrillControlContent() {
   const searchParams = useSearchParams()
@@ -66,11 +55,6 @@ function GrillControlContent() {
           pageTitle={`Parrilla ${grillName}`}
           pageDescription='Control manual y monitoreo'
         />
-
-        {/* 3D Model View */}
-        <div className="mb-6">
-          <GrillScene grillState={grillState} />
-        </div>
 
         {/* Grill Status Display */}
         <div className="mb-6">

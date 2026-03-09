@@ -14,8 +14,9 @@ import { useGrillCommands } from '@/app/control/grill/hooks/useGrillCommands'
 import { GrillStatusDisplay } from './grill/components/GrillStatusDisplay'
 import { ControlPanel } from './grill/components/ControlPanel'
 import { ProgramExecutionStatus } from './grill/components/ProgramExecutionStatus'
-import { SystemMonitor } from '@/components/shared/SystemMonitor'
+import { PageHeader } from '@/components/shared/PageHeader'
 import dynamic from 'next/dynamic'
+import { GlobalStatusDock } from '@/components/shared/GlobalStatusDock'
 
 // Importar el componente 3D de forma dinámica (solo cliente)
 const GrillScene = dynamic(() => import('@/components/three/GrillScene'), {
@@ -48,8 +49,11 @@ function GrillControlContent() {
     <div className="min-h-screen bg-gray-50 py-4 px-4">
       <div className="max-w-2xl mx-auto">
 
+        {/* Status Bar */}
+        <GlobalStatusDock />
+
         {/* Header */}
-        <SystemMonitor 
+        <PageHeader 
           pageTitle={`Parrilla ${grillName}`}
           pageDescription='Control manual y monitoreo'
         />

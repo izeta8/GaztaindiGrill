@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useRunningPrograms } from '@/contexts/RunningProgramsContext';
+import { GlobalStatusDock } from '@/components/shared/GlobalStatusDock';
 
 function GrillStatusCard({ grillIndex }: { grillIndex: number }) {
   
@@ -45,6 +46,10 @@ export default function GrillDashboard() {
   return (
 
     <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-gray-50">
+        
+        {/* Status Bar */}
+        <GlobalStatusDock />
+
         <h1 className="text-3xl font-bold mb-8">Estado de Parrillas</h1>
         <div className="flex flex-col md:flex-row gap-8">
           

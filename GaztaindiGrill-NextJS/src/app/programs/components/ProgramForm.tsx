@@ -12,7 +12,8 @@ import { toDateInputValue, fromDateInputValue } from '@/utils'
 import { StepsList } from './StepsList'
 import { StepModal, type StepFormState } from './StepModal'
 import { CategoryModal } from './CategoryModal'
-import { SystemMonitor } from '@/components/shared/SystemMonitor'
+import { PageHeader } from '@/components/shared/PageHeader'
+import { GlobalStatusDock } from '@/components/shared/GlobalStatusDock'
 
 export type Category = { id: number; name: string }
 
@@ -283,11 +284,11 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
       <div className="max-w-2xl mx-auto">
 
         {/* Header */}
-        <SystemMonitor
-          pageTitle={mode === 'edit' ? 'Editar Programa' : 'Crear Nuevo Programa'}
+        <PageHeader
+           pageTitle={mode === 'edit' ? 'Editar Programa' : 'Crear Nuevo Programa'}
         /> 
 
-S        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Información Básica</h2>

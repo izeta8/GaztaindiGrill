@@ -12,8 +12,9 @@ import { TOPICS } from '@/constants/mqtt'
 import { ConnectionStatus as ConnectionStatusEnum, GrillModes } from '@/types'
 import { useRunningPrograms } from '@/contexts/RunningProgramsContext'
 import { useCurrentMode } from '@/contexts/CurrentModeContext'
-import { SystemMonitor } from '@/components/shared/SystemMonitor'
+import { PageHeader } from '@/components/shared/PageHeader'
 import { COLORS } from '@/constants'
+import { GlobalStatusDock } from '@/components/shared/GlobalStatusDock'
 
 export default function ModePage() {
 
@@ -68,8 +69,11 @@ export default function ModePage() {
     <div className="min-h-screen bg-gray-50 py-4 px-4">
       <div className="max-w-2xl mx-auto">
 
+        {/* Status Bar */}
+        <GlobalStatusDock />
+
         {/* Header */}
-        <SystemMonitor
+        <PageHeader
           pageTitle='Modo de Funcionamiento'
           pageDescription='Selecciona cómo quieres que funcionen las parrillas'
         /> 

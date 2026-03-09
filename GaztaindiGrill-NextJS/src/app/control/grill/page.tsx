@@ -14,7 +14,8 @@ import { useGrillCommands } from '@/app/control/grill/hooks/useGrillCommands'
 import { GrillStatusDisplay } from './components/GrillStatusDisplay'
 import { ControlPanel } from './components/ControlPanel'
 import { ProgramExecutionStatus } from './components/ProgramExecutionStatus'
-import { SystemMonitor } from '@/components/shared/SystemMonitor'
+import { PageHeader } from '@/components/shared/PageHeader'
+import { GlobalStatusDock } from '@/components/shared/GlobalStatusDock'
 
 function GrillControlContent() {
   const searchParams = useSearchParams()
@@ -50,8 +51,11 @@ function GrillControlContent() {
     <div className="min-h-screen bg-gray-50 py-4 px-4">
       <div className="max-w-2xl mx-auto">
 
+        {/* Status Bar */}
+        <GlobalStatusDock />
+
         {/* Header */}
-        <SystemMonitor 
+        <PageHeader 
           pageTitle={`Parrilla ${grillName}`}
           pageDescription='Control manual y monitoreo'
         />

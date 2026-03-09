@@ -15,7 +15,8 @@ import { FiltersBar } from './components/FiltersBar'
 import { parseSteps } from '@/utils'
 import type { Program } from '@/types'
 import { TOPICS } from '@/constants/mqtt'
-import { SystemMonitor } from '@/components/shared/SystemMonitor'
+import { PageHeader } from '@/components/shared/PageHeader'
+import { GlobalStatusDock } from '@/components/shared/GlobalStatusDock'
 
 type Category = { id: number; name: string }
 
@@ -244,10 +245,12 @@ function ProgramsPageContent() {
       <div className="max-w-2xl mx-auto">
 
         {/* Header */}
-        <SystemMonitor
+        <PageHeader
           pageTitle='Programas'
           pageDescription='Lista de programas disponibles'
         />
+
+        <GlobalStatusDock />
 
         {/* Content */}
         <div className="bg-white rounded-lg shadow-sm p-4">

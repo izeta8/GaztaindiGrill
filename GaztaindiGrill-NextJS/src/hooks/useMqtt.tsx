@@ -124,16 +124,19 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
           setResetStatus(resetStatus)
         }
 
-        const handlersSet = handlersRef.current.get(topic)
-        if (handlersSet) {
-          handlersSet.forEach((fn) => {
-            try {
-              fn(topic, payload)
-            } catch (handlerError) {
-              console.error(`[MQTT] Error executing handler for topic ${topic}:`, handlerError)
-            }
-          })
-        }
+        handlersRef.current.forEach((handlersSet, registeredTopic) => {
+          const pattern = new RegExp('^' + registeredTopic.replace(/\+/g, '[^/]+').replace(/#/g, '.+') + '$');
+          
+          if (pattern.test(topic)) {
+            handlersSet.forEach((fn) => {
+              try {
+                fn(topic, payload)
+              } catch (handlerError) {
+                console.error(`[MQTT] Error executing handler for topic ${topic}:`, handlerError)
+              }
+            })
+          }
+        })
       })
 
       setClient(c)

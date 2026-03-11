@@ -28,7 +28,7 @@ export function RunningProgramsProvider({ children }: { children: React.ReactNod
 
        // Get the grill index.
         const grillIndex = parseGrillIndex(topic)
-        if (!grillIndex) return
+        if (grillIndex === undefined) return
 
       // Parse the data received from mqtt
       const programData: RunningProgram = JSON.parse(payload.toString());

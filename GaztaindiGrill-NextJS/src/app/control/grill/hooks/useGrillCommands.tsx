@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { useMqtt } from '@/hooks/useMqtt';
 import { TOPICS } from '@/constants';
+import { ConnectionStatus as ConnectionStatusEnum } from '@/types';
 import type { GrillDirection, GrillRotation } from '@/types';
 
 // Centralizamos los límites para validaciones
@@ -11,9 +12,12 @@ const LIMITS = {
   ROTATION_MAX: 360,
 };
 
-export function useGrillCommands(grillIndex: number, isConnected: boolean, grillName: string, isLeftGrill: boolean) {
-
-  const { publish } = useMqtt();
+export function useGrillCommands(grillIndex: number) {
+  const { publish, espConnectionStatus, clientConnectionStatus } = useMqtt();
+  
+  const isConnected = espConnectionStatus === ConnectionStatusEnum.Online && clientConnectionStatus === ConnectionStatusEnum.Online;
+  const isLeftGrill = grillIndex === 0;
+  const grillName = isLeftGrill ? 'Izquierda' : 'Derecha';
 
   const sendCommand = useCallback(async (topic: string, payload: string) => {
     if (!isConnected) {

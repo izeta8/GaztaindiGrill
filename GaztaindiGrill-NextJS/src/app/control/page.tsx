@@ -19,8 +19,8 @@ function GrillControlContent() {
   const state0 = useGrillState(0)
   const state1 = useGrillState(1)
   
-  const commands0 = useGrillCommands(0, isConnected, 'Izquierda', true)
-  const commands1 = useGrillCommands(1, isConnected, 'Derecha', false)
+  const commands0 = useGrillCommands(0)
+  const commands1 = useGrillCommands(1)
 
   return (
     <div className="min-h-screen bg-gray-50 py-4 px-2 pb-20 font-sans">

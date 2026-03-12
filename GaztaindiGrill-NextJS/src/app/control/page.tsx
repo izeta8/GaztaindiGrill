@@ -10,10 +10,11 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { GlobalStatusDock } from '@/components/shared/GlobalStatusDock'
 import GrillScene from '@/components/three/GrillScene'
 import { ControlColumn } from './components/ControlColumn'
+import { ProgramExecutionStatus } from './grill/components/ProgramExecutionStatus'
 
 function GrillControlContent() {
   const { espConnectionStatus, clientConnectionStatus } = useMqtt()
-  const { runningPrograms } = useRunningPrograms()
+  const { runningPrograms, isAnyProgramRunning } = useRunningPrograms()
   const isConnected = espConnectionStatus === ConnectionStatusEnum.Online && clientConnectionStatus === ConnectionStatusEnum.Online
 
   const state0 = useGrillState(0)
@@ -55,6 +56,14 @@ function GrillControlContent() {
           />
 
         </div>
+      
+        {isAnyProgramRunning() && (
+          <ProgramExecutionStatus 
+            handleCancelPrograms={[commands0.handleCancelProgram, commands1.handleCancelProgram]} 
+            isConnected={isConnected} 
+          />
+        )}
+
       </div>
     </div>
   )

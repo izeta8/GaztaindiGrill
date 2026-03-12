@@ -13,7 +13,7 @@ import { SelectGrillModal } from './components/SelectGrillModal'
 import { ProcessingModal } from './components/ProcessingModal'
 import { FiltersBar } from './components/FiltersBar'
 import { parseSteps } from '@/utils'
-import type { Program } from '@/types'
+import type { Program, ProgramStep } from '@/types'
 import { TOPICS } from '@/constants/mqtt'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { GlobalStatusDock } from '@/components/shared/GlobalStatusDock'
@@ -225,6 +225,49 @@ function ProgramsPageContent() {
     router.push(`/programs/edit?id=${program.id}`)
   }
 
+  {/* Simulador de Pruebas */}
+  const handleSimulateMqtt0 = async () => {
+    if (programs.length === 0) return;
+    const p = programs[0];
+    const steps = JSON.parse(p.stepsJson);
+    
+    const simulatePayload = {
+      isRunning: true,
+      name: p.name,
+      programId: p.id,
+      currentStepIndex: 0,
+      steps: steps.map((s: ProgramStep, i: number) => ({
+        ...s,
+        ...(i === 0 ? { stepStartUnix: Math.floor(Date.now() / 1000) } : {})
+      }))
+    };
+
+    const topic = `grill/0/${TOPICS.STATUS.PROGRAM.CURRENT}`;
+    await publish(topic, JSON.stringify(simulatePayload), { qos: 1, retain: true });
+    toast.success("Simulación enviada a MQTT (Grill 0)");
+  };
+
+  const handleSimulateMqtt1 = async () => {
+    if (programs.length === 0) return;
+    const p = programs[1];
+    const steps = JSON.parse(p.stepsJson);
+    
+    const simulatePayload = {
+      isRunning: true,
+      name: p.name,
+      programId: p.id,
+      currentStepIndex: 0,
+      steps: steps.map((s: ProgramStep, i: number) => ({
+        ...s,
+        ...(i === 0 ? { stepStartUnix: Math.floor(Date.now() / 1000) } : {})
+      }))
+    };
+
+    const topic = `grill/1/${TOPICS.STATUS.PROGRAM.CURRENT}`;
+    await publish(topic, JSON.stringify(simulatePayload), { qos: 1, retain: true });
+    toast.success("Simulación enviada a MQTT (Grill 0)");
+  };
+
   const getCategoryName = (categoryId?: number) => {
     if (!categoryId) return 'Sin categoría'
     return categories.find(c => c.id === categoryId)?.name || `Categoría #${categoryId}`
@@ -251,6 +294,25 @@ function ProgramsPageContent() {
         />
 
         <GlobalStatusDock />
+
+        {/* Simulador de Pruebas */}
+        <div className="mb-4 flex justify-end">
+          <button
+            onClick={handleSimulateMqtt0}
+            className="text-xs bg-amber-100 text-amber-800 hover:bg-amber-200 px-3 py-1 rounded-full border border-amber-200 transition-colors"
+          >
+            🧪 Simular mensaje MQTT (Grill 0)
+          </button>
+        </div>
+
+        <div className="mb-4 flex justify-end">
+          <button
+            onClick={handleSimulateMqtt1}
+            className="text-xs bg-amber-100 text-amber-800 hover:bg-amber-200 px-3 py-1 rounded-full border border-amber-200 transition-colors"
+          >
+            🧪 Simular mensaje MQTT (Grill 1)
+          </button>
+        </div>
 
         {/* Content */}
         <div className="bg-white rounded-lg shadow-sm p-4">

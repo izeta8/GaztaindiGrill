@@ -29,41 +29,42 @@ function GrillControlContent() {
         <GlobalStatusDock />
 
         <PageHeader 
-          pageTitle="Centro de Control Dual"
+          pageTitle="Control de parrillas"
           pageDescription="Monitoreo de sensores y actuadores en tiempo real"
         />
 
         <GrillScene grillState={state0} />
 
-        <div className="flex justify-center items-start gap-8 sm:gap-16 mt-6">
-          
-          <ControlColumn 
-            label="Parrilla I" 
-            isConnected={isConnected}
-            isRunning={!!runningPrograms[0]}
-            commands={commands0}
-            grillState={state0}
-            grillIndex={0}
-          />
+        {!(!!runningPrograms[0] && !!runningPrograms[1]) && (
+          <div className="flex justify-center items-start gap-8 sm:gap-16 mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
 
-          <ControlColumn 
-            label="Parrilla D" 
-            isConnected={isConnected}
-            isRunning={!!runningPrograms[1]}
-            commands={commands1}
-            grillState={state1}
-            grillIndex={1}
-          />
+            <ControlColumn 
+              label="Parrilla I" 
+              isConnected={isConnected}
+              isRunning={!!runningPrograms[0]}
+              commands={commands0}
+              grillState={state0}
+              grillIndex={0}
+            />
 
-        </div>
-      
+            <ControlColumn 
+              label="Parrilla D" 
+              isConnected={isConnected}
+              isRunning={!!runningPrograms[1]}
+              commands={commands1}
+              grillState={state1}
+              grillIndex={1}
+            />
+
+          </div>
+        )}
+
         {isAnyProgramRunning() && (
           <ProgramExecutionStatus 
             handleCancelPrograms={[commands0.handleCancelProgram, commands1.handleCancelProgram]} 
             isConnected={isConnected} 
           />
         )}
-
       </div>
     </div>
   )

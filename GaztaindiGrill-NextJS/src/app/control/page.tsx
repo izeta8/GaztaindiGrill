@@ -33,9 +33,10 @@ function GrillControlContent() {
           pageDescription="Monitoreo de sensores y actuadores en tiempo real"
         />
 
-        <GrillScene grillState={state0} />
+        <GrillScene grillState0={state0} grillState1={state1} />
 
         {!(!!runningPrograms[0] && !!runningPrograms[1]) && (
+
           <div className="flex justify-center items-start gap-8 sm:gap-16 mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
 
             <ControlColumn 

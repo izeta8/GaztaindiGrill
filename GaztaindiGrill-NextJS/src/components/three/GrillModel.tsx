@@ -14,23 +14,22 @@ type GLTFResult = GLTF & {
 }
 
 interface GrillModelProps {
-  grillState: GrillState
-  // Añadimos props comunes de Three para evitar el error de 'scale'
+  grillState0: GrillState
+  grillState1: GrillState
   position?: [number, number, number]
   rotation?: [number, number, number]
   scale?: number | [number, number, number]
 }
 
-export function GrillModel({ grillState, ...props }: GrillModelProps) {
-  // Cargamos el modelo. Usamos unknown primero para un casteo seguro.
-  const { scene } = useGLTF('/models/parrilla_model.glb') as unknown as GLTFResult
+export function GrillModel({ grillState0, grillState1, ...props }: GrillModelProps) {
+  const { nodes, materials } = useGLTF('/models/parrilla_model.glb') as unknown as GLTFResult
   
   const grillPartRef = useRef<THREE.Group>(null)
 
   useFrame(() => {
     if (grillPartRef.current) {
       // ELEVACIÓN: Mapeamos la posición (0-100) al eje Y
-      const targetY = (grillState.position / 100) * 1.5 
+      const targetY = (grillState0.position / 100) * 1.5 
       grillPartRef.current.position.y = THREE.MathUtils.lerp(
         grillPartRef.current.position.y, 
         targetY, 
@@ -38,7 +37,7 @@ export function GrillModel({ grillState, ...props }: GrillModelProps) {
       )
 
       // ROTACIÓN: Si el modelo tiene giro
-      const targetRotation = (grillState.rotation * Math.PI) / 180
+      const targetRotation = (grillState0.rotation * Math.PI) / 180
       grillPartRef.current.rotation.x = THREE.MathUtils.lerp(
         grillPartRef.current.rotation.x, 
         targetRotation, 
@@ -50,7 +49,7 @@ export function GrillModel({ grillState, ...props }: GrillModelProps) {
   return (
     <group {...props} dispose={null}>
       <group ref={grillPartRef}>
-        <primitive object={scene} />
+        <primitive object={nodes.Scene} />
       </group>
     </group>
   )

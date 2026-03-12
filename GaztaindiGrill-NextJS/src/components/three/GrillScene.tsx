@@ -26,7 +26,7 @@ export default function GrillScene({ grillState }: GrillSceneProps) {
     <div className="w-full h-[250px] bg-white rounded-xl shadow-inner border border-gray-100 overflow-hidden relative">
       <Canvas
         shadows
-        camera={{ position: [0, 2, 11], fov: 23 }}
+        camera={{ position: [0, 5, 9], fov: 23 }}
         gl={{ antialias: true, alpha: true }}
       >
         <Suspense fallback={<Loader />}>

@@ -70,11 +70,25 @@ export function useGrillCommands(grillIndex: number) {
     sendCommand(TOPICS.ACTION.MOVEMENT.SET_ROTATION, value);
   }, [isLeftGrill, sendCommand]);
 
-  const handleCancelProgram = useCallback(() => {
+  const handleCancelProgram = useCallback(async () => {
     if (window.confirm(`¿Estás seguro de cancelar el programa en la parrilla ${grillName.toLowerCase()}?`)) {
+      
+      // Send command to ESP32 to cancel the program.
       sendCommand(TOPICS.ACTION.PROGRAM.CANCEL, '');
+
+      // If environment is localhost get rid of mqtt message so the hook doesnt re-read.
+      const isLocalhost = process.env.NEXT_PUBLIC_MQTT_SERVER === 'localhost';
+
+      if (isLocalhost) {
+        try {
+          const payload = JSON.stringify({ isRunning: false });
+          await publish(`grill/${grillIndex}/${TOPICS.STATUS.PROGRAM.CURRENT}`, payload, { qos: 1, retain: true });
+        } catch (error) {
+          console.error("Error updating local state in broker (simulation):", error);
+        }
+      }
     }
-  }, [grillName, sendCommand]);
+  }, [grillName, sendCommand, publish, grillIndex]);
 
   return {
     handleDirectionCommand,

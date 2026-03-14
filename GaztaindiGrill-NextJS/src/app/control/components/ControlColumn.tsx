@@ -84,8 +84,6 @@ export function ControlColumn({ label, isConnected, isRunning, commands, grillSt
                 min="0" max="100" step="5"
                 value={targetPos}
                 onChange={(e) => setTargetPos(e.target.value)}
-                onMouseUp={handleSendPosition}
-                onTouchEnd={handleSendPosition}
                 disabled={!isConnected || isRunning}
                 className="absolute h-36 w-2 appearance-none bg-transparent cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:w-10 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:rounded-lg [&::-webkit-slider-thumb]:shadow-md rotate-180"
                 style={{ writingMode: 'vertical-lr', WebkitAppearance: 'slider-vertical' }}
@@ -102,7 +100,6 @@ export function ControlColumn({ label, isConnected, isRunning, commands, grillSt
                   placeholder="%"
                   value={targetPos}
                   onChange={(e) => setTargetPos(e.target.value)}
-                  onBlur={handleSendPosition}
                   disabled={!isConnected || isRunning}
                   className="w-full h-10 px-2 bg-white border border-gray-100 rounded-xl text-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-50"
                 />

@@ -1,13 +1,12 @@
 "use client"
 
-import React, { useRef } from 'react'
-import { useGLTF } from '@react-three/drei'
+import React, { useRef, useMemo } from 'react'
+import { useGLTF, Text3D, Outlines } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { GLTF } from 'three-stdlib'
 import type { GrillState } from '@/types'
 
-// Definimos el resultado del GLTF de forma más flexible para evitar errores de Mesh/Object3D
 type GLTFResult = GLTF & {
   nodes: { [key: string]: THREE.Object3D }
   materials: { [key: string]: THREE.Material }
@@ -22,35 +21,105 @@ interface GrillModelProps {
 }
 
 export function GrillModel({ grillState0, grillState1, ...props }: GrillModelProps) {
-  const { nodes, materials } = useGLTF('/models/parrilla_model.glb') as unknown as GLTFResult
+  const { scene, nodes } = useGLTF('/models/parrilla_model.glb') as unknown as GLTFResult
   
-  const grillPartRef = useRef<THREE.Group>(null)
+  const leftGrillRef = useRef<THREE.Object3D | null>(null)
+  const rightGrillRef = useRef<THREE.Object3D | null>(null)
+  const leftTextRef = useRef<THREE.Group | null>(null)
+  const rightTextRef = useRef<THREE.Group | null>(null)
 
-  useFrame(() => {
-    if (grillPartRef.current) {
-      // ELEVACIÓN: Mapeamos la posición (0-100) al eje Y
-      const targetY = (grillState0.position / 100) * 1.5 
-      grillPartRef.current.position.y = THREE.MathUtils.lerp(
-        grillPartRef.current.position.y, 
-        targetY, 
-        0.1
-      )
+  const MIN_HEIGHT = 1  // Altura cuando la parrilla está al 0%
+  const MAX_HEIGHT = 1.8  // Altura cuando la parrilla está al 100%
+  
+  const box3 = useMemo(() => new THREE.Box3(), [])
+  const vector3 = useMemo(() => new THREE.Vector3(), [])
 
-      // ROTACIÓN: Si el modelo tiene giro
-      const targetRotation = (grillState0.rotation * Math.PI) / 180
-      grillPartRef.current.rotation.x = THREE.MathUtils.lerp(
-        grillPartRef.current.rotation.x, 
-        targetRotation, 
-        0.1
+  useMemo(() => {
+    if (nodes.padre_parrilla_ezkerra) leftGrillRef.current = nodes.padre_parrilla_ezkerra
+    if (nodes.padre_parrilla_eskubi) rightGrillRef.current = nodes.padre_parrilla_eskubi
+  }, [nodes])
+
+  const findBase = (root: THREE.Object3D) => {
+    let base: THREE.Object3D | null = null
+    root.traverse((child) => {
+      if (!base && child.name.toLowerCase().includes('base')) {
+        base = child
+      }
+    })
+    return base || root
+  }
+
+  const updateGrill = (
+    grillRef: React.RefObject<THREE.Object3D | null>,
+    textRef: React.RefObject<THREE.Group | null>,
+    positionPercent: number
+  ) => {
+    if (!grillRef.current) return
+
+    // Nueva fórmula que interpola entre MIN_HEIGHT y MAX_HEIGHT
+    const targetY = MIN_HEIGHT + (positionPercent / 100) * (MAX_HEIGHT - MIN_HEIGHT)
+    grillRef.current.position.y = THREE.MathUtils.lerp(grillRef.current.position.y, targetY, 0.1)
+    
+    if (textRef.current) {
+      const base = findBase(grillRef.current)
+      
+      box3.setFromObject(base)
+      box3.getCenter(vector3)
+      
+      const FORWARD_OFFSET = 0 
+      const X_OFFSET = 0.3       
+      const Y_OFFSET = 1.3       
+
+      textRef.current.position.set(
+        vector3.x + X_OFFSET,
+        vector3.y + Y_OFFSET,
+        box3.max.z + FORWARD_OFFSET 
       )
     }
+  }
+
+  useFrame(() => {
+    updateGrill(leftGrillRef, leftTextRef, grillState0.position)
+    updateGrill(rightGrillRef, rightTextRef, grillState1.position)
   })
+
+  const textLabels = [
+    { ref: leftTextRef, position: grillState0.position, id: 'left' },
+    { ref: rightTextRef, position: grillState1.position, id: 'right' }
+  ]
 
   return (
     <group {...props} dispose={null}>
-      <group ref={grillPartRef}>
-        <primitive object={nodes.Scene} />
-      </group>
+      <primitive object={scene} />
+
+      {textLabels.map((label) => (
+        <group ref={label.ref} key={label.id}>
+         <Text3D
+            font="/fonts/Geist_Regular.json" 
+            size={0.35}
+            height={0.05}
+            curveSegments={12}
+            bevelEnabled
+            bevelThickness={0.01}
+            bevelSize={0.01}
+            bevelSegments={3}
+            ref={(mesh) => {
+              if (mesh) mesh.geometry.center()
+            }}
+            onUpdate={(self) => {
+              self.geometry.center()
+            }}
+          >
+            {`${Math.round(label.position)}%`}
+            
+            {/* 1. El texto en blanco puro y sin sombras raras */}
+            <meshBasicMaterial color="white" />
+            
+            {/* 2. El borde negro 3D automático */}
+            <Outlines thickness={2} color="#525252" />
+          </Text3D>
+        </group>
+      ))}
     </group>
   )
 }

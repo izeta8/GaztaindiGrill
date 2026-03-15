@@ -21,7 +21,7 @@ interface GrillModelProps {
 }
 
 export function GrillModel({ grillState0, grillState1, ...props }: GrillModelProps) {
-  const { scene, nodes } = useGLTF('/models/parrilla_model.glb') as unknown as GLTFResult
+  const { scene, nodes } = useGLTF('/models/parrilla_model_v2.glb') as unknown as GLTFResult
   
   const leftGrillRef = useRef<THREE.Object3D | null>(null)
   const rightGrillRef = useRef<THREE.Object3D | null>(null)

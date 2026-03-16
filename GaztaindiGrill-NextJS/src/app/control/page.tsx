@@ -4,13 +4,13 @@ import { Suspense } from 'react'
 import { useMqtt } from '@/hooks/useMqtt'
 import { ConnectionStatus as ConnectionStatusEnum } from '@/types'
 import { useRunningPrograms } from '@/contexts/RunningProgramsContext'
-import { useGrillState } from '@/app/control/grill/hooks/useGrillState'
-import { useGrillCommands } from '@/app/control/grill/hooks/useGrillCommands'
+import { useGrillState } from '@/app/control/hooks/useGrillState'
+import { useGrillCommands } from '@/app/control/hooks/useGrillCommands'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { GlobalStatusDock } from '@/components/shared/GlobalStatusDock'
 import GrillScene from '@/components/three/GrillScene'
 import { ControlColumn } from './components/ControlColumn'
-import { ProgramExecutionStatus } from './grill/components/ProgramExecutionStatus'
+import { ProgramExecutionStatus } from './components/ProgramExecutionStatus'
 
 function GrillControlContent() {
   const { espConnectionStatus, clientConnectionStatus } = useMqtt()

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { GrillState } from '@/types'
-import { useGrillCommands } from '@/app/control/grill/hooks/useGrillCommands'
+import { useGrillCommands } from '@/app/control/hooks/useGrillCommands'
 import { Button } from '@/components/ui/Button'
 import { ChevronUp, ChevronDown, CircleStop, RotateCw, RotateCcw, Lock } from 'lucide-react'
 import { PAYLOAD_UP, PAYLOAD_DOWN, PAYLOAD_STOP, PAYLOAD_CLOCKWISE, PAYLOAD_COUNTER_CLOCKWISE } from '@/constants/mqtt'
@@ -37,7 +37,7 @@ export function ControlColumn({ label, isConnected, isRunning, commands, grillSt
 
       <div className="relative">
         
-        {/* --- OVERLAY MINIMALISTA --- */}
+        {/* --- OVERLAY --- */}
         {isRunning && (
           <div className="absolute inset-x-0 inset-y-[-10px] z-50 flex flex-col items-center justify-center bg-gray-50/60 backdrop-blur-[2px] transition-all duration-700 animate-in fade-in">
             <div className="flex flex-col items-center gap-2 opacity-60">

@@ -80,10 +80,11 @@ export default function ModePage() {
 
         <CurrentModeDisplay currentMode={currentMode} />
 
-        <hr className='bg-zinc-400 my-6' />
-
         {currentMode !== undefined && (
           <>
+    
+            <hr className='bg-zinc-400 my-6' />
+
             {/* Mode Selection */}
             <div className="space-y-4 mb-6">
               {modes.map((mode) => (

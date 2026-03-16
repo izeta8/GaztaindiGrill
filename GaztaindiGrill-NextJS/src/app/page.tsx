@@ -34,20 +34,6 @@ export default function Home() {
               >
                 Control General
               </Link>
-              <div className="grid grid-cols-2 gap-3 mt-2">
-                <Link 
-                  href="/control/grill?index=0" 
-                  className="block text-center px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all"
-                >
-                  Grill 0
-                </Link>
-                <Link 
-                  href="/control/grill?index=1" 
-                  className="block text-center px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all"
-                >
-                  Grill 1
-                </Link>
-              </div>
             </div>
           </div>
 

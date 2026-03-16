@@ -23,7 +23,7 @@ export const GlobalStatusDock = () => {
     <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[100] w-fit">
       <div className="flex items-center gap-3 px-4 py-2 bg-white/70 backdrop-blur-md border border-white/20 shadow-lg rounded-full ring-1 ring-black/5">
         
-        {/* Grupo: Conectividad (Mini dots) */}
+        {/* Conectividad */}
         <div className="flex gap-3">
           <StatusDot status={clientConnectionStatus} icon={<Smartphone className="w-4 h-4 text-white" />} title="App" />
           <StatusDot status={espConnectionStatus} icon={<Heater className="w-4 h-4 text-white" />} title="Parrilla" />
@@ -31,7 +31,7 @@ export const GlobalStatusDock = () => {
 
         <div className="h-4 w-px bg-gray-500 mx-1" />
 
-        {/* Grupo: Modo */}
+        {/* Modo */}
         <div className="flex items-center" title={`Modo: ${currentMode}`}>
           {currentMode === GrillModes.Dual ? (
             <ArrowsUpFromLine className={`w-5 h-5 text-${COLORS.SINGLE_MODE}-600`} />
@@ -42,7 +42,7 @@ export const GlobalStatusDock = () => {
 
         <div className="h-4 w-px bg-gray-500 mx-1" />
 
-        {/* Grupo: Programas Ejecutando */}
+        {/* Programas Ejecutando */}
         <div className="flex items-center gap-2">
           <GrillIndicator side="I" isRunning={isGrillRunning(0)} />
           <GrillIndicator side="D" isRunning={isGrillRunning(1)} />

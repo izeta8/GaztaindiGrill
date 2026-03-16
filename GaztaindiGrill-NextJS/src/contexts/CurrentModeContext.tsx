@@ -82,6 +82,19 @@ export function CurrentModeProvider({ children }: { children: React.ReactNode })
     };
   }, [clientConnectionStatus, subscribe, handleCurrentMode, requestCurrentMode]);
 
+  // Request current mode every 5s if undefined
+  useEffect(() => {
+    if (currentMode !== undefined) return;
+    if (clientConnectionStatus !== ConnectionStatus.Online || espConnectionStatus !== ConnectionStatus.Online) return;
+
+    const interval = setInterval(() => {
+      console.log("[CurrentModeContext] Polling: Requesting current mode...");
+      requestCurrentMode();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [currentMode, clientConnectionStatus, espConnectionStatus, requestCurrentMode]);
+
   return (
     <CurrentModeContext.Provider value={value}>
       {children}

@@ -1,12 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useMqtt } from "@/hooks/useMqtt";
 import { useCurrentMode } from "@/contexts/CurrentModeContext";
 import { useRunningPrograms } from "@/contexts/RunningProgramsContext";
 import { 
   Flame, Hand, Smartphone, Heater, 
-  ArrowDownUp, ArrowsUpFromLine 
+  ArrowDownUp, ArrowsUpFromLine, Loader2
 } from "lucide-react";
 import { ConnectionStatus, GrillModes } from "@/types";
 import { cn } from "@/utils";
@@ -32,8 +32,10 @@ export const GlobalStatusDock = () => {
         <div className="h-4 w-px bg-gray-500 mx-1" />
 
         {/* Modo */}
-        <div className="flex items-center" title={`Modo: ${currentMode}`}>
-          {currentMode === GrillModes.Dual ? (
+        <div className="flex items-center" title={currentMode ? `Modo: ${currentMode}` : "Obteniendo modo..."}>
+          {!currentMode ? (
+            <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+          ) : currentMode === GrillModes.Dual ? (
             <ArrowsUpFromLine className={`w-5 h-5 text-${COLORS.SINGLE_MODE}-600`} />
           ) : (
             <ArrowDownUp className={`w-5 h-5 text-${COLORS.DUAL_MODE}-600`} />

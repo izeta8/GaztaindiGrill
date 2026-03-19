@@ -19,55 +19,33 @@ export function CurrentModeProvider({ children }: { children: React.ReactNode })
     currentMode,
   };
 
-  const handleCurrentMode = useCallback((topic: string, payload: Uint8Array) => {
+  const handleCurrentMode = useCallback((_topic: string, payload: Uint8Array) => {
     try {
-
-      // Parse the data received from mqtt
       const mode = payload.toString();
-
-      // Validate MQTT input
-      if (mode != GrillModes.Dual && mode != GrillModes.Single) return
-
-      setCurrentMode(mode)
-
+      if (mode != GrillModes.Dual && mode != GrillModes.Single) return;
+      setCurrentMode(mode);
     } catch (error) {
       console.error("[MQTT Handler] Error processing status message:", error);
       toast.error("Error processing MQTT data.");
     }
   }, []);
-  
-  // Request ESP32 to publish the current mode 
-  const requestCurrentMode = useCallback(async () => {
-    if (clientConnectionStatus === ConnectionStatus.Online && espConnectionStatus === ConnectionStatus.Online) {
-        await publish(`grill/${TOPICS.MODE.REQUEST_CURRENT_MODE}`, "requestCurrentMode", { qos: 1 })
-    }
-  }, [publish, clientConnectionStatus, espConnectionStatus]);
-
 
   // --- MQTT Subscriptions ---
   useEffect(() => {
     if (clientConnectionStatus !== ConnectionStatus.Online || !subscribe) return;
 
-    // Use a variable to control if the effect is still mounted
     let isMounted = true;
     let unsubscribeFn: (() => void) | null = null;
 
-    // Listen to ESP32 response.
     const setupSubscriptions = async () => {
       try {
-
         const currentModeTopic = `grill/${TOPICS.MODE.CURRENT_MODE}`;
-
         const unsub = await subscribe(currentModeTopic, handleCurrentMode);
 
-        // Si para cuando terminó de suscribir el componente se desmontó, limpiamos inmediatamente
         if (!isMounted) {
           unsub();
         } else {
           unsubscribeFn = unsub;
-
-          // After subscribing request to ESP32 the current mode
-          requestCurrentMode();
         }
       } catch (error) {
         console.error("[MQTT Sub] Error during subscription:", error);
@@ -80,27 +58,26 @@ export function CurrentModeProvider({ children }: { children: React.ReactNode })
       isMounted = false;
       if (unsubscribeFn) unsubscribeFn();
     };
-  }, [clientConnectionStatus, subscribe, handleCurrentMode, requestCurrentMode]);
+  }, [clientConnectionStatus, subscribe, handleCurrentMode]);
 
-  // Request current mode every 5s if undefined
+  // Request current mode every 1s if undefined
   useEffect(() => {
     if (currentMode !== undefined) return;
     if (clientConnectionStatus !== ConnectionStatus.Online || espConnectionStatus !== ConnectionStatus.Online) return;
 
     const interval = setInterval(() => {
       console.log("[CurrentModeContext] Polling: Requesting current mode...");
-      requestCurrentMode();
-    }, 5000);
+      publish(`grill/${TOPICS.MODE.REQUEST_CURRENT_MODE}`, "requestCurrentMode", { qos: 1 });
+    }, 1000);
 
     return () => clearInterval(interval);
-  }, [currentMode, clientConnectionStatus, espConnectionStatus, requestCurrentMode]);
+  }, [currentMode, clientConnectionStatus, espConnectionStatus, publish]);
 
   return (
     <CurrentModeContext.Provider value={value}>
       {children}
     </CurrentModeContext.Provider>
   );
-
 }
 
 export function useCurrentMode() {

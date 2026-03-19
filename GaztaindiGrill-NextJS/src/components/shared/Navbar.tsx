@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "next-view-transitions";
 import { usePathname } from "next/navigation";
 import { cn } from "@/utils/styles";
 import { AlignHorizontalDistributeCenter, ArrowUpDown, List, PlusCircle, Flame } from "lucide-react";

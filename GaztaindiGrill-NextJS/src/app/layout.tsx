@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Navbar } from "@/components/shared/Navbar";
+import { ViewTransitions } from 'next-view-transitions'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,18 +26,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
-      >
-        <Providers>
-          <Navbar />
-          <main className="flex-1">
-            {children}
-          </main>
-        </Providers>
-      </body>
-    </html>
+    <ViewTransitions>
+      <html lang="en" suppressHydrationWarning>
+        <body
+          suppressHydrationWarning
+          className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
+        >
+          <Providers>
+            <Navbar />
+            <main className="flex-1">
+              {children}
+            </main>
+          </Providers>
+        </body>
+      </html>
+    </ViewTransitions>
   );
 }

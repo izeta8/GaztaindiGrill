@@ -100,9 +100,9 @@ export function GrillModel({ grillState0, grillState1, ...props }: GrillModelPro
             height={0.05}
             curveSegments={12}
             bevelEnabled
-            bevelThickness={0.01}
+            bevelThickness={0.05}
             bevelSize={0.01}
-            bevelSegments={3}
+            bevelSegments={1} // <-- 1. Reducir segmentos del bisel para limpiar las normales
             ref={(mesh) => {
               if (mesh) mesh.geometry.center()
             }}
@@ -112,11 +112,19 @@ export function GrillModel({ grillState0, grillState1, ...props }: GrillModelPro
           >
             {`${Math.round(label.position)}%`}
             
-            {/* 1. El texto en blanco puro y sin sombras raras */}
-            <meshBasicMaterial color="white" />
+            {/* 2. Añadir polygonOffset para que el texto blanco siempre tenga prioridad de profundidad y se dibuje DELANTE del borde */}
+            <meshBasicMaterial 
+              color="white" 
+              polygonOffset={true}
+              polygonOffsetFactor={3} // Empuja el material blanco ligeramente hacia la cámara
+            />
             
-            {/* 2. El borde negro 3D automático */}
-            <Outlines thickness={2} color="#525252" />
+            {/* 3. Reducir thickness y usar 'angle' para evitar que se delineen los triángulos internos */}
+            <Outlines 
+              thickness={1} // <-- Ajustado a la escala de tu texto (size: 0.35)
+              color="#525252" 
+              angle={Math.PI / 2} // <-- Solo dibuja bordes en ángulos pronunciados
+            />
           </Text3D>
         </group>
       ))}

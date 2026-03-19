@@ -55,10 +55,7 @@ export default function ModePage() {
     }
 
     try {
-      const modeLabel = selectedMode === 'dual' ? 'dual' : 'independiente'
-      toast.success(`Se ha solicitado cambiar a modo ${modeLabel}.`)
       await publish(`grill/${TOPICS.MODE.REQUEST_MODE_CHANGE}`, selectedMode, { qos: 1 })
-
     } catch (error) {
       toast.error('Error al cambiar modo')
       console.error('Mode change error:', error)

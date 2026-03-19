@@ -209,8 +209,6 @@ function ProgramsPageContent() {
 
       const topic = `grill/${side}/${TOPICS.ACTION.PROGRAM.EXECUTE}`
       await publish(topic, JSON.stringify(programToRun), { qos: 1 })
-
-      toast.success(`Ejecución iniciada en parrilla ${side === 0 ? 'izquierda' : 'derecha'} para "${programToExecute.name}"`)
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Error desconocido ejecutando programa'
       toast.error(msg)

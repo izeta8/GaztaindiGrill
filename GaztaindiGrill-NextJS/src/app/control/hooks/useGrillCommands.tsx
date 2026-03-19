@@ -26,7 +26,6 @@ export function useGrillCommands(grillIndex: number) {
     }
     try {
       await publish(`grill/${grillIndex}/${topic}`, payload, { qos: 1, retain: false });
-      toast.success(`Comando enviado a parrilla ${grillName.toLowerCase()}`);
     } catch (error) {
       toast.error('Error al enviar comando');
       console.error('MQTT publish error:', error);

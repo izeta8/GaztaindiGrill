@@ -12,6 +12,7 @@ type MqttContextValue = {
   clientConnectionStatus: ConnectionStatus
   resetStatus: ResetStatus
   error: string | null
+  isPublishing: boolean
   publish: (topic: string, payload: string, options?: IClientPublishOptions) => Promise<void>
   subscribe: (topic: string, handler: (topic: string, payload: Uint8Array) => void) => Promise<() => void>
 }
@@ -53,6 +54,7 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
   const [clientConnectionStatus, setClientConnectionStatus] = useState(ConnectionStatus.Connecting)
   const [resetStatus, setResetStatus] = useState(ResetStatus.Ready)
   const [error, setError] = useState<string | null>(null)
+  const [isPublishing, setIsPublishing] = useState(false)
   const handlersRef = useRef(new Map<string, Set<(topic: string, payload: Uint8Array) => void>>())
 
   // References to keep the functions stable without loosing the current state 
@@ -161,6 +163,11 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
     }
 
     console.log(`[MQTT] Publishing to "${topic}": ${payload.substring(0, 50)}${payload.length > 50 ? '...' : ''}`)
+    
+    // Visual feedback trigger
+    setIsPublishing(true)
+    setTimeout(() => setIsPublishing(false), 150)
+
     await new Promise<void>((resolve, reject) => {
       client.publish(topic, payload, { qos: 1, ...options }, (err) => {
         if (err) return reject(err)
@@ -172,19 +179,31 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
   const subscribe = useCallback(async (topic: string, handler: (topic: string, payload: Uint8Array) => void) => {
     if (!client) throw new Error('MQTT client not initialized')
 
-    await new Promise<void>((resolve, reject) => {
-      client.subscribe(topic, { qos: 0 }, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
-
+    // 1. Register handler locally FIRST to catch retained messages
     let set = handlersRef.current.get(topic)
     if (!set) {
       set = new Set()
       handlersRef.current.set(topic, set)
     }
     set.add(handler)
+
+    // 2. Then subscribe to the broker
+    try {
+      await new Promise<void>((resolve, reject) => {
+        client.subscribe(topic, { qos: 0 }, (err) => {
+          if (err) return reject(err)
+          resolve()
+        })
+      })
+    } catch (err) {
+      // Rollback local registration if broker subscription fails
+      const s = handlersRef.current.get(topic)
+      if (s) {
+        s.delete(handler)
+        if (s.size === 0) handlersRef.current.delete(topic)
+      }
+      throw err
+    }
 
     return () => {
       const s = handlersRef.current.get(topic)
@@ -206,9 +225,10 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
     clientConnectionStatus,
     resetStatus,
     error,
+    isPublishing,
     publish,
     subscribe
-  }), [client, espConnectionStatus, clientConnectionStatus, resetStatus, error, publish, subscribe])
+  }), [client, espConnectionStatus, clientConnectionStatus, resetStatus, error, isPublishing, publish, subscribe])
 
   return <MqttContext.Provider value={value}>{children}</MqttContext.Provider>
 }

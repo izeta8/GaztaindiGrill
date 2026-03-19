@@ -238,93 +238,93 @@ function ProgramsPageContent() {
       return idOk && nameOk && creatorOk && categoryOk
     })
 
+  // --- RENDER HELPERS ---
+  const renderTopSection = () => {
+    
+    if (loading) {
+      return (
+        <div className="text-center py-10 text-gray-500">
+          <Clock className="h-10 w-10 mx-auto mb-3 text-gray-300" />
+          Cargando programas...
+        </div>
+      )
+    }
+
+    if (error) {
+      return (
+        <div className="text-center py-10 text-red-500">
+          {error}
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-4">
+        <FiltersBar
+          categories={categories}
+          searchId={searchId}
+          onSearchIdChange={setSearchId}
+          searchName={searchName}
+          onSearchNameChange={setSearchName}
+          searchCreator={searchCreator}
+          onSearchCreatorChange={setSearchCreator}
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          onClearFilters={handleClearFilters}
+        />
+      </div>
+    )
+  }
+
+  const renderProgramsList = () => {
+    if (filteredPrograms.length === 0) {
+      return (
+        <div className="text-center py-8 text-gray-500">
+          <List className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+          No hay programas que coincidan con el filtro
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-3">
+        {filteredPrograms.map((p) => (
+          <ProgramCard
+            key={p.id}
+            program={p}
+            categoryName={getCategoryName(p.categoryId)}
+            stepsCount={parseSteps(p.stepsJson).length}
+            onViewSteps={openStepsModal}
+            onExecute={handleExecuteClick}
+            onEdit={handleEdit}
+          />
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-4 px-4">
       <div className="max-w-2xl mx-auto">
 
-        {/* Header */}
-        <PageHeader
+        {/* <PageHeader
           pageTitle='Programas'
           pageDescription='Lista de programas disponibles'
-        />
+        /> */}
 
         <GlobalStatusDock />
 
-        {/* Simulador de Pruebas */}
-        <div className="mb-4 flex justify-end">
-          <button
-            onClick={() => {simulateProgramExecution(publish, 0, programs[0])}}
-            className="text-xs bg-amber-100 text-amber-800 hover:bg-amber-200 px-3 py-1 rounded-full border border-amber-200 transition-colors"
-          >
-            🧪 Simular mensaje MQTT (Grill 0)
-          </button>
-        </div>
-
-        <div className="mb-4 flex justify-end">
-          <button
-            onClick={() => {simulateProgramExecution(publish, 1, programs[1])}}
-            className="text-xs bg-amber-100 text-amber-800 hover:bg-amber-200 px-3 py-1 rounded-full border border-amber-200 transition-colors"
-          >
-            🧪 Simular mensaje MQTT (Grill 1)
-          </button>
-        </div>
-
-        {/* Content */}
+        {/* Filter Section */}
         <div className="bg-white rounded-lg shadow-sm p-4">
-          {loading ? (
-            <div className="text-center py-10 text-gray-500">
-              <Clock className="h-10 w-10 mx-auto mb-3 text-gray-300" />
-              Cargando programas...
-            </div>
-          ) : error ? (
-            <div className="text-center py-10 text-red-500">
-              {error}
-            </div>
-          ) : (
-            <div className="space-y-4">
-
-              {/* Filtros */}
-              <FiltersBar
-                categories={categories}
-                searchId={searchId}
-                onSearchIdChange={setSearchId}
-                searchName={searchName}
-                onSearchNameChange={setSearchName}
-                searchCreator={searchCreator}
-                onSearchCreatorChange={setSearchCreator}
-                selectedCategory={selectedCategory}
-                onCategoryChange={setSelectedCategory}
-                onClearFilters={handleClearFilters}
-              />
-
-              {/* Lista filtrada */}
-              {filteredPrograms.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <List className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                  No hay programas que coincidan con el filtro
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {filteredPrograms.map((p) => {
-                    const steps = parseSteps(p.stepsJson)
-                    return (
-                      <ProgramCard
-                        key={p.id}
-                        program={p}
-                        categoryName={getCategoryName(p.categoryId)}
-                        stepsCount={steps.length}
-                        onViewSteps={openStepsModal}
-                        onExecute={handleExecuteClick}
-                        onEdit={handleEdit}
-                      />
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          )}
+          {renderTopSection()}
         </div>
 
+        {/* Cards Section */}
+        <div className='mt-5'>
+          {!loading && !error && renderProgramsList()}
+        </div>
+
+        {/* Modals */}
         <StepsModal
           isOpen={isStepsModalOpen}
           onClose={() => setIsStepsModalOpen(false)}

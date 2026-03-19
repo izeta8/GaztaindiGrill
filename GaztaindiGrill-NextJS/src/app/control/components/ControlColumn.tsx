@@ -39,7 +39,7 @@ export function ControlColumn({ label, isConnected, isRunning, commands, grillSt
         
         {/* --- OVERLAY --- */}
         {isRunning && (
-          <div className="absolute inset-x-0 inset-y-[-10px] z-50 flex flex-col items-center justify-center bg-gray-50/60 backdrop-blur-[2px] transition-all duration-700 animate-in fade-in">
+          <div className="absolute inset-x-0 inset-y-[-10px] z-40 flex flex-col items-center justify-center bg-gray-50/60 backdrop-blur-[2px] transition-all duration-700 animate-in fade-in">
             <div className="flex flex-col items-center gap-2 opacity-60">
               <Lock className="h-4 w-4 text-gray-400" strokeWidth={2.5} />
               <span className="text-[9px] font-black text-gray-500 uppercase tracking-[0.3em] [writing-mode:vertical-lr] mt-2">

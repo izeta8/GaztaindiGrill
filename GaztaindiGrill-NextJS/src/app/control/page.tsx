@@ -36,10 +36,10 @@ function GrillControlContent() {
         <GlobalStatusDock />
 
         {/* Cabecera */}
-        <PageHeader
+        {/* <PageHeader
           pageTitle="Control de parrillas"
           pageDescription="Monitoreo de sensores y actuadores en tiempo real"
-        />
+        /> */}
 
         {/* Modelo 3D */}
         <GrillScene grillState0={state0} grillState1={state1} />

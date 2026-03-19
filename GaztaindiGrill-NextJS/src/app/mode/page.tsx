@@ -70,10 +70,10 @@ export default function ModePage() {
         <GlobalStatusDock />
 
         {/* Header */}
-        <PageHeader
+        {/* <PageHeader
           pageTitle='Modo de Funcionamiento'
           pageDescription='Selecciona cómo quieres que funcionen las parrillas'
-        /> 
+        />  */}
 
         <CurrentModeDisplay currentMode={currentMode} />
 

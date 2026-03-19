@@ -284,9 +284,9 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
       <div className="max-w-2xl mx-auto">
 
         {/* Header */}
-        <PageHeader
+        {/* <PageHeader
            pageTitle={mode === 'edit' ? 'Editar Programa' : 'Crear Nuevo Programa'}
-        /> 
+        />  */}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}

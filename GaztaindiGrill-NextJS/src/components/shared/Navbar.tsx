@@ -34,10 +34,8 @@ export function Navbar() {
   const { isPublishing } = useMqtt();
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-14 items-center px-4 max-w-screen-2xl mx-auto w-full">
-        
-        <div className="flex flex-1 items-center justify-between overflow-hidden">
+    <nav className="sticky py-2 top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex flex-1 items-center justify-center overflow-hidden">
           <div className="flex items-center sm:space-x-2 overflow-x-auto no-scrollbar py-1">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
@@ -74,8 +72,6 @@ export function Navbar() {
             </div>
           </div>
         </div>
-
-      </div>
     </nav>
   );
 }

@@ -12,7 +12,6 @@ import { TOPICS } from '@/constants/mqtt'
 import { ConnectionStatus as ConnectionStatusEnum, GrillModes } from '@/types'
 import { useRunningPrograms } from '@/contexts/RunningProgramsContext'
 import { useCurrentMode } from '@/contexts/CurrentModeContext'
-import { PageHeader } from '@/components/shared/PageHeader'
 import { COLORS } from '@/constants'
 import { GlobalStatusDock } from '@/components/shared/GlobalStatusDock'
 
@@ -22,7 +21,7 @@ export default function ModePage() {
   const { isAnyProgramRunning } = useRunningPrograms();
   const { currentMode } = useCurrentMode();
 
-  const [selectedMode, setSelectedMode] = useState<GrillMode>(GrillModes.Single)
+  const [selectedMode, setSelectedMode] = useState<GrillMode>(currentMode || GrillModes.Single)
   const isTrulyConnected = espConnectionStatus === ConnectionStatusEnum.Online && clientConnectionStatus === ConnectionStatusEnum.Online;
 
   const modes = [

@@ -41,7 +41,9 @@ function GrillControlContent() {
         /> */}
 
         {/* Modelo 3D */}
-        <GrillScene />
+        <div className='mt-3'>
+          <GrillScene />
+        </div>
 
         {/* Esperar a que se fetcheé el modo */}
         {currentMode === undefined && (

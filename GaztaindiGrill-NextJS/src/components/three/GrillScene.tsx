@@ -4,7 +4,6 @@ import React, { Suspense } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Stage, Center, ContactShadows, Html } from '@react-three/drei'
 import { GrillModel } from './GrillModel'
-import type { GrillState } from '@/types'
 
 function Loader() {
   return (
@@ -20,10 +19,12 @@ function Loader() {
 
 export default function GrillScene() {
   return (
-    <div className="w-full h-[250px] bg-white rounded-xl shadow-inner border border-gray-100 overflow-hidden relative">
+    
+    <div className="w-full h-[290px] ">
+    {/* <div className="w-full h-[250px] bg-white rounded-xl shadow-inner border border-gray-100 overflow-hidden relative"> */}
       <Canvas
         shadows
-        camera={{ position: [0, 5, 9], fov: 23 }}
+        camera={{ position: [0, 6.2, 9], fov: 23 }} 
         gl={{ antialias: true, alpha: true }}
       >
         <Suspense fallback={<Loader />}>
@@ -48,6 +49,7 @@ export default function GrillScene() {
             maxAzimuthAngle={Math.PI / 6}
             enableZoom={true}
             autoRotate={false}
+            target={[0, 0.1, 0]}
           />
           
           <ContactShadows 

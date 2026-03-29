@@ -17,12 +17,8 @@ function Loader() {
   )
 }
 
-interface GrillSceneProps {
-  grillState0: GrillState
-  grillState1: GrillState
-}
 
-export default function GrillScene({ grillState0, grillState1 }: GrillSceneProps) {
+export default function GrillScene() {
   return (
     <div className="w-full h-[250px] bg-white rounded-xl shadow-inner border border-gray-100 overflow-hidden relative">
       <Canvas
@@ -39,8 +35,6 @@ export default function GrillScene({ grillState0, grillState1 }: GrillSceneProps
           >
             <Center top>
               <GrillModel 
-                grillState0={grillState0} 
-                grillState1={grillState1} 
                 scale={1} 
               />
             </Center>

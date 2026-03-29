@@ -7,7 +7,6 @@ import { useRunningPrograms } from '@/contexts/RunningProgramsContext'
 import { useGrillState } from '@/app/control/hooks/useGrillState'
 import { useGrillCommands } from '@/app/control/hooks/useGrillCommands'
 import { useCurrentMode } from '@/contexts/CurrentModeContext'
-import { PageHeader } from '@/components/shared/PageHeader'
 import { GlobalStatusDock } from '@/components/shared/GlobalStatusDock'
 import GrillScene from '@/components/three/GrillScene'
 import { ControlColumn } from './components/ControlColumn'
@@ -42,7 +41,7 @@ function GrillControlContent() {
         /> */}
 
         {/* Modelo 3D */}
-        <GrillScene grillState0={state0} grillState1={state1} />
+        <GrillScene />
 
         {/* Esperar a que se fetcheé el modo */}
         {currentMode === undefined && (

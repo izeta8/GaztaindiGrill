@@ -5,7 +5,7 @@ import { useGLTF, Text3D, Outlines } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { GLTF } from 'three-stdlib'
-import type { GrillState } from '@/types'
+import { useGrillState } from '@/app/control/hooks/useGrillState'
 
 type GLTFResult = GLTF & {
   nodes: { [key: string]: THREE.Object3D }
@@ -13,14 +13,15 @@ type GLTFResult = GLTF & {
 }
 
 interface GrillModelProps {
-  grillState0: GrillState
-  grillState1: GrillState
   position?: [number, number, number]
   rotation?: [number, number, number]
   scale?: number | [number, number, number]
 }
 
-export function GrillModel({ grillState0, grillState1, ...props }: GrillModelProps) {
+export function GrillModel({ ...props }: GrillModelProps) {
+  const grillState0 = useGrillState(0)
+  const grillState1 = useGrillState(1)
+  
   const { scene, nodes } = useGLTF('/models/parrilla_model_v2.glb') as unknown as GLTFResult
   
   const leftGrillRef = useRef<THREE.Object3D | null>(null)

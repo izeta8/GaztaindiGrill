@@ -1,18 +1,12 @@
 
 DOING: 
 
-- Hacer el sistema de los modos.
+- Implementar reseteo: 
+    * Opcion para reiniciar un actuador lineal / Rotor
+    * Opción para reiniciar toda la parrilla
 
 TODO: 
 
-- Mejorar la UI de los go to con modales. Posicion un slider vertical como en home assitant nativo y rotación un circulo. 
-
 - Sistema de notificaciones globales. Cuando se ejecute un programa avisar a todos los usuarios...
-
 - Fix last update del control de las parrillas
-
 - Bloquear la posibilidad de ejecutar un programa que contenga rotación en la parrilla derecha.
-
-- Opcion para reiniciar un actuador lineal 
-
-- Opción para reiniciar toda la parrilla

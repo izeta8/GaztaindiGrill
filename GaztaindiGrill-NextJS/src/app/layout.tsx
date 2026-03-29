@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Navbar } from "@/components/shared/Navbar";
+import { GlobalActionFab } from "@/components/shared/GlobalActionFab";
 import { ViewTransitions } from 'next-view-transitions'
 
 const geistSans = Geist({
@@ -37,6 +38,7 @@ export default function RootLayout({
             <main className="flex-1">
               {children}
             </main>
+            <GlobalActionFab />
           </Providers>
         </body>
       </html>

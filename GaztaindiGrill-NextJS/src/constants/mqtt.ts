@@ -4,6 +4,7 @@ export const TOPICS = {
     LWT: 'connection',
     LOG: 'log',
     RESET_STATUS: 'reset_status',
+    RESTART: 'restart',
   },
   MODE: {
     CURRENT_MODE: 'current_mode',

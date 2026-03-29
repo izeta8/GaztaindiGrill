@@ -2,8 +2,10 @@
 DOING: 
 
 - Implementar reseteo: 
-    * Opcion para reiniciar un actuador lineal / Rotor
-    * Opción para reiniciar toda la parrilla
+    * Opción para reiniciar toda la parrilla (falta compo)
+
+- Go-To sliderrak controlan albuan jarri
+
 
 TODO: 
 

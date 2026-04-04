@@ -2,7 +2,7 @@
 
 import React, { useRef, useMemo } from 'react'
 import { useGLTF, Text3D, Outlines } from '@react-three/drei'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useGraph } from '@react-three/fiber'
 import * as THREE from 'three'
 import { GLTF } from 'three-stdlib'
 import { useGrillState } from '@/app/control/hooks/useGrillState'
@@ -22,7 +22,14 @@ export function GrillModel({ ...props }: GrillModelProps) {
   const grillState0 = useGrillState(0)
   const grillState1 = useGrillState(1)
   
-  const { scene, nodes } = useGLTF('/models/parrilla_model_v2.glb') as unknown as GLTFResult
+  // Solo obtenemos la escena base del caché
+  const { scene } = useGLTF('/models/parrilla_model_v2.glb')
+  
+  // Clonamos la escena para tener una instancia única por componente
+  const clonedScene = useMemo(() => scene.clone(), [scene])
+  
+  // Extraemos los nodos de la escena clonada
+  const { nodes } = useGraph(clonedScene) as unknown as GLTFResult
   
   const leftGrillRef = useRef<THREE.Object3D | null>(null)
   const rightGrillRef = useRef<THREE.Object3D | null>(null)
@@ -57,7 +64,6 @@ export function GrillModel({ ...props }: GrillModelProps) {
   ) => {
     if (!grillRef.current) return
 
-    // Nueva fórmula que interpola entre MIN_HEIGHT y MAX_HEIGHT
     const targetY = MIN_HEIGHT + (positionPercent / 100) * (MAX_HEIGHT - MIN_HEIGHT)
     grillRef.current.position.y = THREE.MathUtils.lerp(grillRef.current.position.y, targetY, 0.1)
     
@@ -91,7 +97,8 @@ export function GrillModel({ ...props }: GrillModelProps) {
 
   return (
     <group {...props} dispose={null}>
-      <primitive object={scene} />
+      {/* 4. Renderizamos la escena clonada */}
+      <primitive object={clonedScene} />
 
       {textLabels.map((label) => (
         <group ref={label.ref} key={label.id}>
@@ -103,7 +110,7 @@ export function GrillModel({ ...props }: GrillModelProps) {
             bevelEnabled
             bevelThickness={0.05}
             bevelSize={0.01}
-            bevelSegments={1} // <-- 1. Reducir segmentos del bisel para limpiar las normales
+            bevelSegments={1}
             ref={(mesh) => {
               if (mesh) mesh.geometry.center()
             }}
@@ -113,18 +120,16 @@ export function GrillModel({ ...props }: GrillModelProps) {
           >
             {`${Math.round(label.position)}%`}
             
-            {/* 2. Añadir polygonOffset para que el texto blanco siempre tenga prioridad de profundidad y se dibuje DELANTE del borde */}
             <meshBasicMaterial 
               color="white" 
               polygonOffset={true}
-              polygonOffsetFactor={3} // Empuja el material blanco ligeramente hacia la cámara
+              polygonOffsetFactor={3}
             />
             
-            {/* 3. Reducir thickness y usar 'angle' para evitar que se delineen los triángulos internos */}
             <Outlines 
-              thickness={1} // <-- Ajustado a la escala de tu texto (size: 0.35)
+              thickness={1}
               color="#525252" 
-              angle={Math.PI / 2} // <-- Solo dibuja bordes en ángulos pronunciados
+              angle={Math.PI / 2}
             />
           </Text3D>
         </group>

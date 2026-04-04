@@ -133,4 +133,4 @@ export function GrillModel({ ...props }: GrillModelProps) {
   )
 }
 
-useGLTF.preload('/models/parrilla_model.glb')
+useGLTF.preload('/models/parrilla_model_v2.glb')

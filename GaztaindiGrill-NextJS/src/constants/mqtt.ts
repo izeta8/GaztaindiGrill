@@ -5,6 +5,7 @@ export const TOPICS = {
     LOG: 'log',
     RESET_STATUS: 'reset_status',
     RESTART: 'restart',
+    EMERGENCY_STOP: 'emergency_stop',
   },
   MODE: {
     CURRENT_MODE: 'current_mode',

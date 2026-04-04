@@ -26,8 +26,27 @@ export function useSystemActions() {
     }
   }
 
+  const handleEmergencyStop = async () => {
+    if (!isConnected) {
+      toast.error('No se puede detener: Sistema desconectado')
+      return false
+    }
+
+    try {
+      // Send emergency stop command to the global topic
+      await publish(`grill/${TOPICS.GLOBAL.EMERGENCY_STOP}`, "stop")
+      toast.success('PARADA DE EMERGENCIA ENVIADA')
+      return true
+    } catch (error) {
+      console.error('Failed to send emergency stop command:', error)
+      toast.error('Error al enviar parada de emergencia')
+      return false
+    }
+  }
+
   return {
     handleSystemReset,
+    handleEmergencyStop,
     isConnected
   }
 }

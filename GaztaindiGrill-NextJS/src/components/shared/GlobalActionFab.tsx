@@ -1,26 +1,38 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react'
-import { MoreVertical, RotateCcw, X } from 'lucide-react'
+import { MoreVertical, RotateCcw, X, AlertOctagon } from 'lucide-react'
 import { useSystemActions } from '@/hooks/useSystemActions'
 import { cn } from '@/utils'
 
 export function GlobalActionFab() {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
-  const { handleSystemReset, isConnected } = useSystemActions()
+  const { handleSystemReset, handleEmergencyStop, isConnected } = useSystemActions()
 
   // --- CONFIGURACIÓN DE ACCIONES ---
   const actions = [
     {
       label: 'Resetear sistema',
       icon: RotateCcw,
-      danger: true,
+      danger: false,
       disabled: !isConnected,
       onClick: async () => {
         const confirmed = window.confirm("¿Estás seguro de que quieres resetear todo el sistema? Los actuadores se moverán al tope superior.")
         if (confirmed) {
           await handleSystemReset()
+        }
+      }
+    },
+    {
+      label: 'Parada de emergencia',
+      icon: AlertOctagon,
+      danger: true,
+      disabled: !isConnected,
+      onClick: async () => {
+        const confirmed = window.confirm("¿PARADA DE EMERGENCIA? Se detendrán todos los movimientos inmediatamente.")
+        if (confirmed) {
+          await handleEmergencyStop()
         }
       }
     },

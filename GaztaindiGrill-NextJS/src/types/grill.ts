@@ -5,6 +5,8 @@ export interface GrillState {
   position: number; // 0-100
   temperature: number; // degrees celsius
   rotation: number; // 0-360 (only for left grill)
+  movement: GrillDirection; // current vertical movement direction
+  rotation_movement: GrillRotation; // current rotation movement direction
   lastUpdate: Date | null;
 }
 

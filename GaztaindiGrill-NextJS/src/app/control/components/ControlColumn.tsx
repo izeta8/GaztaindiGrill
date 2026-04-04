@@ -59,6 +59,7 @@ export function ControlColumn({ label, isConnected, isRunning, commands, grillSt
                 onStop={() => commands.handleRotationCommand(PAYLOAD_STOP)}
                 onDown={() => commands.handleRotationCommand(PAYLOAD_CLOCKWISE)}
                 isConnected={isConnected}
+                movement={grillState.rotation_movement}
                 icons={{ up: RotateCcw, stop: CircleStop, down: RotateCw }}
               />
             )}
@@ -68,6 +69,7 @@ export function ControlColumn({ label, isConnected, isRunning, commands, grillSt
               onStop={() => commands.handleDirectionCommand(PAYLOAD_STOP)}
               onDown={() => commands.handleDirectionCommand(PAYLOAD_DOWN)}
               isConnected={isConnected}
+              movement={grillState.movement}
               icons={{ up: ChevronUp, stop: CircleStop, down: ChevronDown }}
             />
           </div>

@@ -8,31 +8,59 @@ import { parseGrillIndex } from '@/utils';
 
 type GrillStates = { 0: GrillState; 1: GrillState; };
 
-const initialState: GrillState = { position: 0, temperature: 0, rotation: 0, lastUpdate: null };
+const initialState: GrillState = { 
+  position: 0, 
+  temperature: 0, 
+  rotation: 0, 
+  movement: 'stop', 
+  rotation_movement: 'stop',
+  lastUpdate: null 
+};
 
 const GrillStateContext = createContext<{ grillStates: GrillStates } | undefined>(undefined);
 
+// Define how to handle each topic
+const TOPIC_HANDLERS: Record<string, { key: keyof GrillState; type: 'number' | 'string' }> = {
+  [TOPICS.STATUS.SENSOR.POSITION]: { key: 'position', type: 'number' },
+  [TOPICS.STATUS.SENSOR.TEMPERATURE]: { key: 'temperature', type: 'number' },
+  [TOPICS.STATUS.SENSOR.ROTATION]: { key: 'rotation', type: 'number' },
+  [TOPICS.ACTION.MOVEMENT.VERTICAL]: { key: 'movement', type: 'string' },
+  [TOPICS.ACTION.MOVEMENT.ROTATION]: { key: 'rotation_movement', type: 'string' },
+};
+
 export function GrillStateProvider({ children }: { children: React.ReactNode }) {
   const { subscribe, clientConnectionStatus } = useMqtt();
-  const [grillStates, setGrillStates] = useState<GrillStates>({ 0: { ...initialState }, 1: { ...initialState } });
+  const [grillStates, setGrillStates] = useState<GrillStates>({ 
+    0: { ...initialState }, 
+    1: { ...initialState } 
+  });
 
   const handleUpdate = useCallback((topic: string, payload: Uint8Array) => {
     const idx = parseGrillIndex(topic);
     if (idx === undefined) return;
-    const val = parseInt(payload.toString());
-    if (isNaN(val)) return;
 
-    let key: keyof GrillState | null = null;
-    if (topic.includes(TOPICS.STATUS.SENSOR.POSITION)) key = 'position';
-    else if (topic.includes(TOPICS.STATUS.SENSOR.TEMPERATURE)) key = 'temperature';
-    else if (topic.includes(TOPICS.STATUS.SENSOR.ROTATION)) key = 'rotation';
+    // Find which handler matches this topic
+    const handlerEntry = Object.entries(TOPIC_HANDLERS).find(([t]) => topic.includes(t));
+    if (!handlerEntry) return;
 
-    if (key) {
-      setGrillStates(prev => ({
-        ...prev,
-        [idx]: { ...prev[idx], [key!]: val, lastUpdate: new Date() }
-      }));
+    const { key, type } = handlerEntry[1];
+    const payloadStr = payload.toString();
+
+    let value: string | number = payloadStr;
+    if (type === 'number') {
+      const parsedValue = parseInt(payloadStr);
+      if (isNaN(parsedValue)) return;
+      value = parsedValue;
     }
+
+    setGrillStates(prev => ({
+      ...prev,
+      [idx]: { 
+        ...prev[idx], 
+        [key]: value, 
+        lastUpdate: new Date() 
+      }
+    }));
   }, []);
 
   useEffect(() => {
@@ -41,14 +69,21 @@ export function GrillStateProvider({ children }: { children: React.ReactNode }) 
     const unsubs: (() => void)[] = [];
 
     const start = async () => {
-      const sensors = [TOPICS.STATUS.SENSOR.POSITION, TOPICS.STATUS.SENSOR.TEMPERATURE, TOPICS.STATUS.SENSOR.ROTATION];
-      const results = await Promise.all(sensors.map(s => subscribe(`grill/+/${s}`, handleUpdate)));
+      const topicsToSubscribe = Object.keys(TOPIC_HANDLERS);
+      
+      const results = await Promise.all(
+        topicsToSubscribe.map(t => subscribe(`grill/+/${t}`, handleUpdate))
+      );
+
       if (isMounted) unsubs.push(...results);
       else results.forEach(u => u());
     };
 
     start();
-    return () => { isMounted = false; unsubs.forEach(u => u()); };
+    return () => { 
+      isMounted = false; 
+      unsubs.forEach(u => u()); 
+    };
   }, [clientConnectionStatus, subscribe, handleUpdate]);
 
   return (

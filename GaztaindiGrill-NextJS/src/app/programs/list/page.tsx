@@ -27,6 +27,7 @@ type ApiProgram = Record<string, unknown> & {
   usage_count: number; creator_name: string; creation_date: string; update_date: string; is_active: number;
   category_id?: number | null;
   description?: string | null;
+  reference_type?: 'absolute' | 'relative' | null;
 }
 
 function ProgramsPageContent() {
@@ -135,6 +136,7 @@ function ProgramsPageContent() {
             creationDate: p.creation_date,
             updateDate: p.update_date,
             isActive: p.is_active === 1,
+            referenceType: p.reference_type === 'relative' ? 'relative' : 'absolute',
           }))
         setPrograms(mapped)
       } catch (e) {
@@ -204,7 +206,8 @@ function ProgramsPageContent() {
         name: programToExecute.name,
         creatorName: programToExecute.creatorName,
         description: programToExecute.description,
-        usageCount: programToExecute.usageCount
+        usageCount: programToExecute.usageCount,
+        referenceType: programToExecute.referenceType
       }
 
       const topic = `grill/${side}/${TOPICS.ACTION.PROGRAM.EXECUTE}`

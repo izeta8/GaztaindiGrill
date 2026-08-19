@@ -44,6 +44,7 @@ function EditProgramPageContent() {
           creationDate: data?.creation_date,
           updateDate: data?.update_date,
           usageCount: data?.usage_count,
+          referenceType: data?.reference_type === 'relative' ? 'relative' : 'absolute',
         }
         setInitial(initialValues)
       } catch {
@@ -68,6 +69,7 @@ function EditProgramPageContent() {
           creationDate: payload.creationDate,
           updateDate: payload.updateDate,
           usageCount: payload.usageCount,
+          referenceType: payload.referenceType,
         }
         const res = await fetch(`${apiBase}/programs/${id}`, {
           method: 'PATCH',

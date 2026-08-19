@@ -13,6 +13,7 @@ export default function CreateProgram() {
         description: payload.description,
         creatorName: payload.creatorName,
         stepsJson: payload.stepsJson,
+        referenceType: payload.referenceType,
       }
 
       if (payload.categoryId != null) body.categoryId = payload.categoryId

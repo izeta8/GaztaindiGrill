@@ -7,13 +7,11 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Select } from '@/components/ui/Select'
-import type { ProgramStep } from '@/types'
+import type { ProgramStep, ReferenceType } from '@/types'
 import { toDateInputValue, fromDateInputValue } from '@/utils'
 import { StepsList } from './StepsList'
 import { StepModal, type StepFormState } from './StepModal'
 import { CategoryModal } from './CategoryModal'
-import { PageHeader } from '@/components/shared/PageHeader'
-import { GlobalStatusDock } from '@/components/shared/GlobalStatusDock'
 
 export type Category = { id: number; name: string }
 
@@ -27,6 +25,7 @@ export type ProgramFormInitialValues = {
   creationDate?: string
   updateDate?: string
   usageCount?: number
+  referenceType?: ReferenceType
 }
 
 export type ProgramFormSubmitPayload = {
@@ -40,6 +39,7 @@ export type ProgramFormSubmitPayload = {
   creationDate?: string
   updateDate?: string
   usageCount?: number
+  referenceType: ReferenceType
 }
 
 type ProgramFormProps = {
@@ -60,6 +60,7 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
   const [steps, setSteps] = useState<ProgramStep[]>(initialValues?.steps || [])
 
   // Categories
+  const [referenceType, setReferenceType] = useState<ReferenceType>(initialValues?.referenceType || 'absolute')
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     initialValues?.categoryId ?? null
@@ -113,23 +114,23 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
     loadCategories()
   }, [])
 
-  // Sync form with incoming initialValues (especially in edit mode after async fetch)
+  // Sync form with incoming initialValues after the async fetch in edit mode.
+  // Only in edit mode. In create mode `initialValues` is a fresh object literal.
   useEffect(() => {
-    if (!initialValues) return
+    if (mode !== 'edit' || !initialValues) return
     setFormData({
       name: initialValues.name || '',
       description: initialValues.description || '',
       creatorName: initialValues.creatorName || ''
     })
     setSteps(initialValues.steps || [])
+    setReferenceType(initialValues.referenceType || 'absolute')
     setSelectedCategoryId(
       typeof initialValues.categoryId === 'number' ? initialValues.categoryId : null
     )
-    if (mode === 'edit') {
-      setCreationDate(toDateInputValue(initialValues.creationDate))
-      setUpdateDate(toDateInputValue(initialValues.updateDate))
-      setUsageCount(typeof initialValues.usageCount === 'number' ? String(initialValues.usageCount) : '')
-    }
+    setCreationDate(toDateInputValue(initialValues.creationDate))
+    setUpdateDate(toDateInputValue(initialValues.updateDate))
+    setUsageCount(typeof initialValues.usageCount === 'number' ? String(initialValues.usageCount) : '')
   }, [initialValues, mode])
 
   // Step helpers
@@ -167,8 +168,12 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
     } else if (stepForm.type === 'position') {
       if (!stepForm.position) return
       const pos = parseInt(stepForm.position)
-      if (isNaN(pos) || pos < 0 || pos > 100) {
-        toast.error('La posición debe estar entre 0 y 100')
+      if (isNaN(pos) || (referenceType === "absolute" && (pos < 0 || pos > 100))) {
+        toast.error(
+          referenceType === "absolute"
+            ? 'La posición debe estar entre 0 y 100'
+            : 'La posición debe ser un número válido'
+        )
         return
       }
       newStep.position = pos
@@ -229,7 +234,8 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
         stepsJson: JSON.stringify(steps),
         creationDate: mode === 'edit' ? undefined : fromDateInputValue(creationDate),
         updateDate: mode === 'edit' ? today : fromDateInputValue(updateDate),
-        usageCount: mode === 'edit' && usageCount !== '' ? Number(usageCount) : undefined
+        usageCount: mode === 'edit' && usageCount !== '' ? Number(usageCount) : undefined,
+        referenceType
       }
       await onSubmit(payload)
       // Reset only on create
@@ -237,6 +243,7 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
         setFormData({ name: '', description: '', creatorName: '' })
         setSteps([])
         setSelectedCategoryId(null)
+        setReferenceType('absolute')
       }
     } catch {
       // onSubmit should handle toasts ideally; fallback here
@@ -299,6 +306,16 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
                 onChange={(value) => setFormData(prev => ({ ...prev, name: value }))}
                 placeholder="Ej: Chuletón"
                 required
+              />
+
+              <Select
+                label="Modo de Ejecución"
+                value={referenceType}
+                onChange={(val) => setReferenceType(val as ReferenceType)}
+                options={[
+                  { value: 'absolute', label: 'Absoluto (Valores Fijos)' },
+                  { value: 'relative', label: 'Relativo (Desde posición inicial)' }
+                ]}
               />
 
               <div>
@@ -402,6 +419,7 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
 
         {/* Step Modal */}
         <StepModal
+          referenceType={referenceType}
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           stepForm={stepForm}

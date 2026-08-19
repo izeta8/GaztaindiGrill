@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import type { Dispatch, SetStateAction } from 'react'
+import { ReferenceType } from '@/types'
 
 export type StepType = 'temperature' | 'position' | 'rotation' | ''
 
@@ -17,6 +18,7 @@ export type StepFormState = {
 }
 
 type StepModalProps = {
+  referenceType: ReferenceType
   isOpen: boolean
   onClose: () => void
   stepForm: StepFormState
@@ -26,6 +28,7 @@ type StepModalProps = {
 }
 
 export function StepModal({
+  referenceType,
   isOpen,
   onClose,
   stepForm,
@@ -113,20 +116,22 @@ export function StepModal({
           {stepForm.type === 'position' && (
             <>
               <Input
-                label="Posición"
+                label={referenceType === 'relative' ? "Posición Relativa (%)" : "Posición (%)"}
                 type="number"
                 value={stepForm.position}
                 onChange={(value) => {
-                  const n = Number(value)
-                  if (Number.isNaN(n)) {
-                    setStepForm(prev => ({ ...prev, position: '' }))
+                  if (value === '' || value === '-') {
+                    setStepForm(prev => ({ ...prev, position: value }))
                     return
                   }
-                  const clamped = Math.max(0, Math.min(100, Math.floor(n)))
+                  const n = Number(value)
+                  if (Number.isNaN(n)) return
+                  const minVal = referenceType === 'relative' ? -100 : 0
+                  const clamped = Math.max(minVal, Math.min(100, Math.floor(n)))
                   setStepForm(prev => ({ ...prev, position: String(clamped) }))
                 }}
-                placeholder="80"
-                min={0}
+                placeholder={referenceType === 'relative' ? "-20" : "80"}
+                min={referenceType === 'relative' ? -100 : 0}
                 max={100}
                 required
               />

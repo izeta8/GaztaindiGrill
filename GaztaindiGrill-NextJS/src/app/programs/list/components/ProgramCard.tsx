@@ -1,6 +1,6 @@
 "use client"
 
-import { BarChart3, Calendar, Pencil, Play, Tag, Eye, Trash2, User, FlameKindling } from "lucide-react"
+import { BarChart3, Calendar, Pencil, Play, Tag, Eye, Trash2, User, FlameKindling, MoveVertical } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 import type { Program } from "@/types"
 import { formatDate } from "@/utils"
@@ -63,18 +63,29 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
 
         {/* Program Info Section */}
         <div className="md:col-span-2 min-w-0">
-          <div className="flex justify-between items-center gap-2">
+          <div className="flex flex-wrap justify-between items-center gap-2">
             {/* Name and ID */}
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="flex text-md px-4 gap-2 py-0.5 rounded-full bg-gray-200 w-fit text-base items-center">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className="flex text-md px-4 gap-2 py-0.5 rounded-full bg-gray-200 w-fit max-w-full text-base items-center">
                 <h3 className="italic font-semibold text-gray-900 truncate" title={p.name}>{p.name}</h3>
-                <span className="italic opacity-75 text-xs"># {p.id}</span>
+                <span className="italic opacity-75 text-xs whitespace-nowrap"># {p.id}</span>
               </div>
             </div>
-            {/* Category */}
-            <span className="w-fit text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 inline-flex items-center gap-1" aria-label={`Categoría ${categoryName}`}>
-              <Tag className="h-3.5 w-3.5" /> {categoryName}
-            </span>
+            {/* Category and reference type */}
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              <span className="w-fit text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 inline-flex items-center gap-1" aria-label={`Categoría ${categoryName}`}>
+                <Tag className="h-3.5 w-3.5" /> {categoryName}
+              </span>
+              {p.referenceType === 'relative' ? (
+                <span className="w-fit inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] text-amber-700 border border-amber-100">
+                  <MoveVertical className="h-3.5 w-3.5" /> Relativo
+                </span>
+              ) : (
+                <span className="w-fit inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[11px] text-blue-700 border border-blue-100">
+                  <MoveVertical className="h-3.5 w-3.5" /> Absoluto
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Description */}

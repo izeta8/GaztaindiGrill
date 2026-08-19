@@ -14,9 +14,8 @@ import { ProcessingModal } from './components/ProcessingModal'
 import { FiltersBar } from './components/FiltersBar'
 import type { Program } from '@/types'
 import { TOPICS } from '@/constants/mqtt'
-import { PageHeader } from '@/components/shared/PageHeader'
 import { GlobalStatusDock } from '@/components/shared/GlobalStatusDock'
-import { parseSteps, simulateProgramExecution } from '@/utils'
+import { parseSteps } from '@/utils'
 
 type Category = { id: number; name: string }
 
@@ -307,7 +306,7 @@ function ProgramsPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-4 px-4">
+    <div className="min-h-screen bg-gray-50 py-4 px-4 pb-18">
       <div className="max-w-2xl mx-auto">
 
         {/* <PageHeader

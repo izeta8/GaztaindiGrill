@@ -13,7 +13,9 @@ const LIMITS = {
 };
 
 export function useGrillCommands(grillIndex: number) {
-  const { publish, espConnectionStatus, clientConnectionStatus } = useMqtt();
+  // publish stays for the localhost simulation below, which impersonates the ESP32 rather than
+  // commanding it; real commands go through sendMqttCommand so they get an answer back.
+  const { publish, sendCommand: sendMqttCommand, espConnectionStatus, clientConnectionStatus } = useMqtt();
   
   const isConnected = espConnectionStatus === ConnectionStatusEnum.Online && clientConnectionStatus === ConnectionStatusEnum.Online;
   const isLeftGrill = grillIndex === 0;
@@ -25,12 +27,12 @@ export function useGrillCommands(grillIndex: number) {
       return;
     }
     try {
-      await publish(`grill/${grillIndex}/${topic}`, payload, { qos: 1, retain: false });
+      await sendMqttCommand(`grill/${grillIndex}/${topic}`, payload);
     } catch (error) {
       toast.error('Error al enviar comando');
       console.error('MQTT publish error:', error);
     }
-  }, [isConnected, publish, grillIndex, grillName]);
+  }, [isConnected, sendMqttCommand, grillIndex]);
 
   const handleDirectionCommand = useCallback((direction: GrillDirection) => {
     sendCommand(TOPICS.ACTION.MOVEMENT.VERTICAL, direction);

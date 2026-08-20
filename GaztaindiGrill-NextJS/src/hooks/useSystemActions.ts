@@ -5,7 +5,7 @@ import { TOPICS } from '@/constants/mqtt'
 import { toast } from 'sonner'
 
 export function useSystemActions() {
-  const { publish, clientConnectionStatus, espConnectionStatus } = useMqtt()
+  const { sendCommand, clientConnectionStatus, espConnectionStatus } = useMqtt()
   const isConnected = clientConnectionStatus === 'online' && espConnectionStatus === 'online'
 
   const handleSystemReset = async () => {
@@ -16,7 +16,7 @@ export function useSystemActions() {
 
     try {
       // Send restart command to the global topic
-      await publish(`grill/${TOPICS.GLOBAL.RESTART}`, "restart")
+      await sendCommand(`grill/${TOPICS.GLOBAL.RESTART}`, "restart")
       toast.success('Comando de reseteo enviado')
       return true
     } catch (error) {
@@ -34,7 +34,7 @@ export function useSystemActions() {
 
     try {
       // Send emergency stop command to the global topic
-      await publish(`grill/${TOPICS.GLOBAL.EMERGENCY_STOP}`, "stop")
+      await sendCommand(`grill/${TOPICS.GLOBAL.EMERGENCY_STOP}`, "stop")
       toast.success('PARADA DE EMERGENCIA ENVIADA')
       return true
     } catch (error) {

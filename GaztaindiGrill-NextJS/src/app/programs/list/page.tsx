@@ -32,7 +32,7 @@ type ApiProgram = Record<string, unknown> & {
 function ProgramsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { publish } = useMqtt()
+  const { sendCommand } = useMqtt()
 
   const [programs, setPrograms] = useState<Program[]>([])
   const [loading, setLoading] = useState(true)
@@ -210,7 +210,7 @@ function ProgramsPageContent() {
       }
 
       const topic = `grill/${side}/${TOPICS.ACTION.PROGRAM.EXECUTE}`
-      await publish(topic, JSON.stringify(programToRun), { qos: 1 })
+      await sendCommand(topic, programToRun)
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Error desconocido ejecutando programa'
       toast.error(msg)

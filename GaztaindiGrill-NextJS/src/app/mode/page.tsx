@@ -17,7 +17,7 @@ import { GlobalStatusDock } from '@/components/shared/GlobalStatusDock'
 
 export default function ModePage() {
 
-  const { publish, espConnectionStatus, clientConnectionStatus } = useMqtt()
+  const { sendCommand, espConnectionStatus, clientConnectionStatus } = useMqtt()
   const { isAnyProgramRunning } = useRunningPrograms();
   const { currentMode } = useCurrentMode();
 
@@ -54,7 +54,7 @@ export default function ModePage() {
     }
 
     try {
-      await publish(`grill/${TOPICS.MODE.REQUEST_MODE_CHANGE}`, selectedMode, { qos: 1 })
+      await sendCommand(`grill/${TOPICS.MODE.REQUEST_MODE_CHANGE}`, selectedMode)
     } catch (error) {
       toast.error('Error al cambiar modo')
       console.error('Mode change error:', error)

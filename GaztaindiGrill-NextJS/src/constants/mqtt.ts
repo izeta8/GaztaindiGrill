@@ -36,8 +36,15 @@ export const TOPICS = {
     PROGRAM: {
       CURRENT: 'status/program/current',
     },
+    // The ESP32's answer to one command. Not retained, unlike every other status/ topic,
+    // because it is a reply rather than state.
+    RESULT: 'status/result',
   },
 };
+
+// The ESP32 sends this instead of a requestId when the answer is for everyone watching the
+// grill rather than for whoever sent the command.
+export const REQUEST_ID_EVERYONE = 'EVERYONE';
 
 // --- MQTT PAYLOADS ---
 

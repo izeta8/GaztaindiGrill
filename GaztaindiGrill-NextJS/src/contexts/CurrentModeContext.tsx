@@ -13,7 +13,7 @@ const CurrentModeContext = createContext<CurrentModeContextValue | undefined>(un
 export function CurrentModeProvider({ children }: { children: React.ReactNode }) {
 
   const [currentMode, setCurrentMode] = useState<GrillMode | undefined>(undefined);
-  const { subscribe, publish, clientConnectionStatus, espConnectionStatus } = useMqtt();
+  const { subscribe, sendCommand, clientConnectionStatus, espConnectionStatus } = useMqtt();
 
   const value = {
     currentMode,
@@ -67,11 +67,13 @@ export function CurrentModeProvider({ children }: { children: React.ReactNode })
 
     const interval = setInterval(() => {
       console.log("[CurrentModeContext] Polling: Requesting current mode...");
-      publish(`grill/${TOPICS.MODE.REQUEST_CURRENT_MODE}`, "requestCurrentMode", { qos: 1 });
+      // Silent: this polls once a second until the mode is known, so its answers must never
+      // become a stream of toasts.
+      sendCommand(`grill/${TOPICS.MODE.REQUEST_CURRENT_MODE}`, "requestCurrentMode", { silent: true });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [currentMode, clientConnectionStatus, espConnectionStatus, publish]);
+  }, [currentMode, clientConnectionStatus, espConnectionStatus, sendCommand]);
 
   return (
     <CurrentModeContext.Provider value={value}>

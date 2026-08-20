@@ -4,7 +4,8 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState,
 import mqtt, { IClientOptions, MqttClient, IClientPublishOptions } from 'mqtt'
 import { ConnectionStatus, ResetStatus } from '@/types'
 import { toast } from 'sonner'
-import { TOPICS } from '@/constants/mqtt'
+import { TOPICS, REQUEST_ID_EVERYONE } from '@/constants/mqtt'
+import { commandErrorMessage } from '@/constants/commandErrors'
 
 type MqttContextValue = {
   client: MqttClient | null
@@ -14,8 +15,35 @@ type MqttContextValue = {
   error: string | null
   isPublishing: boolean
   publish: (topic: string, payload: string, options?: IClientPublishOptions) => Promise<void>
+  sendCommand: (topic: string, value: unknown, options?: SendCommandOptions) => Promise<void>
   subscribe: (topic: string, handler: (topic: string, payload: Uint8Array) => void) => Promise<() => void>
 }
+
+export type SendCommandOptions = {
+  // Mutes the toast for this command's answer. Only ever mutes success: a failure the user
+  // caused should always surface, so silent commands still report their errors.
+  silent?: boolean
+}
+
+type PendingCommand = {
+  command: string
+  silent: boolean
+  createdAt: number
+}
+
+// crypto.randomUUID() only exists in secure contexts, and this app is served over plain HTTP
+// on the LAN, so it is undefined in exactly the deployment that matters. Fall back to a
+// random string: these ids only need to be unique among a handful of in-flight commands.
+function newRequestId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+// An answer that never arrives (grill rebooted mid-command) would otherwise leak an entry
+// per command for the lifetime of the page.
+const PENDING_COMMAND_TTL_MS = 30_000
 
 const MqttContext = createContext<MqttContextValue | undefined>(undefined)
 
@@ -56,6 +84,7 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [isPublishing, setIsPublishing] = useState(false)
   const handlersRef = useRef(new Map<string, Set<(topic: string, payload: Uint8Array) => void>>())
+  const pendingCommandsRef = useRef(new Map<string, PendingCommand>())
 
   // References to keep the functions stable without loosing the current state 
   const espStatusRef = useRef(espConnectionStatus)
@@ -176,6 +205,30 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
     })
   }, [client])
 
+  // Wraps every command in the envelope the firmware expects: { value, requestId }. 
+  // The id is recorded here and matched against the answer that comes back on status/result.
+  const sendCommand = useCallback(async (topic: string, value: unknown, options?: SendCommandOptions) => {
+    const requestId = newRequestId()
+
+    const now = Date.now()
+    pendingCommandsRef.current.forEach((entry, id) => {
+      if (now - entry.createdAt > PENDING_COMMAND_TTL_MS) pendingCommandsRef.current.delete(id)
+    })
+
+    pendingCommandsRef.current.set(requestId, {
+      command: topic,
+      silent: options?.silent ?? false,
+      createdAt: now,
+    })
+
+    try {
+      await publish(topic, JSON.stringify({ value, requestId }), { qos: 1 })
+    } catch (err) {
+      pendingCommandsRef.current.delete(requestId)
+      throw err
+    }
+  }, [publish])
+
   const subscribe = useCallback(async (topic: string, handler: (topic: string, payload: Uint8Array) => void) => {
     if (!client) throw new Error('MQTT client not initialized')
 
@@ -219,6 +272,59 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
     }
   }, [client])
 
+  // ONE subscription for every command answer, here rather than one per request: a
+  // subscribe/unsubscribe round trip per command would race with the reply.
+  useEffect(() => {
+    if (clientConnectionStatus !== ConnectionStatus.Online) return
+
+    let isMounted = true
+
+    const handleResult = (_topic: string, payload: Uint8Array) => {
+      try {
+        const { requestId, ok, error: errorCode } = JSON.parse(payload.toString())
+
+        const pending = pendingCommandsRef.current.get(requestId)
+        if (pending) pendingCommandsRef.current.delete(requestId)
+
+        // Somebody else's command: staying quiet is the point of correlating at all, since a
+        // toast that matches no action the user took is just confusing.
+        if (!pending && requestId !== REQUEST_ID_EVERYONE) return
+
+        if (!ok) {
+          toast.error(commandErrorMessage(errorCode))
+          return
+        }
+
+        // Successes are silent by default today; the flag is what a caller opts into when it
+        // does start showing them.
+        if (pending?.silent) return
+      } catch (err) {
+        console.error('[MQTT] Could not parse a command result:', err)
+      }
+    }
+
+    // Two patterns, because the firmware answers on two different shapes: per-grill commands
+    // reply under grill/{id}/..., while system-level ones (mode change, restart) come from a
+    // GrillMQTT built with index -1 and so reply under grill/... with no id. A single "+"
+    // wildcard matches exactly one level, so it would miss the second.
+    const unsubscribers: Array<() => void> = []
+
+    Promise.all([
+      subscribe(`grill/+/${TOPICS.STATUS.RESULT}`, handleResult),
+      subscribe(`grill/${TOPICS.STATUS.RESULT}`, handleResult),
+    ])
+      .then((fns) => {
+        if (isMounted) unsubscribers.push(...fns)
+        else fns.forEach((fn) => fn())
+      })
+      .catch((err) => console.error('[MQTT] Could not subscribe to command results:', err))
+
+    return () => {
+      isMounted = false
+      unsubscribers.forEach((fn) => fn())
+    }
+  }, [clientConnectionStatus, subscribe])
+
   const value = useMemo(() => ({
     client,
     espConnectionStatus,
@@ -227,8 +333,9 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
     error,
     isPublishing,
     publish,
+    sendCommand,
     subscribe
-  }), [client, espConnectionStatus, clientConnectionStatus, resetStatus, error, isPublishing, publish, subscribe])
+  }), [client, espConnectionStatus, clientConnectionStatus, resetStatus, error, isPublishing, publish, sendCommand, subscribe])
 
   return <MqttContext.Provider value={value}>{children}</MqttContext.Provider>
 }

@@ -1,0 +1,39 @@
+# Información del Add-on
+name: "GaztaindiGrill API"
+version: "1.0.1"
+slug: "gaztaindigrill_api"
+description: "API para la parrilla"
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+init: false
+
+# Mapeo del puerto de la API
+ports:
+  8000/tcp: 8000
+ports_description:
+  8000/tcp: "Puerto de la API de GaztaindiGrill"
+
+# Opciones de configuración
+options:
+  DB_HOST: "core-mariadb"
+  DB_USER: "gaztaindi"
+  DB_PASSWORD: "gaztaindi"
+  DB_NAME: "gaztaindi"
+  MQTT_BROKER: "core-mosquitto" # O la IP/host de tu broker
+  MQTT_PORT: 1883
+  MQTT_USER: "gaztaindi"
+  MQTT_PASSWORD: "gaztaindi"
+
+schema:
+  DB_HOST: str
+  DB_USER: str
+  DB_PASSWORD: password
+  DB_NAME: str
+  MQTT_BROKER: str
+  MQTT_PORT: int
+  MQTT_USER: str
+  MQTT_PASSWORD: password

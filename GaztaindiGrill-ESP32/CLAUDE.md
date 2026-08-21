@@ -34,7 +34,7 @@ Full design write-up lives in [ARCHITECTURE.md](ARCHITECTURE.md) — read it bef
 - **`GaztaindiGrill.cpp`** (`src/`) — entry point (`setup()`/`loop()`), owns the Ethernet/MQTT connections, dispatches incoming MQTT messages to the right `Grill` instance.
 - **`GrillSystem`** — owns the 2 `Grill` instances (`GrillConstants::NUM_GRILLS`).
 - **`Grill`** — facade for a single grill; routes MQTT commands to the right manager.
-- **`ProgramManager`** — state machine (`ProgramState`/`StepState`) that drives step-by-step program execution; program state lives in RAM only and does **not** survive a reboot (deliberate tradeoff to avoid flash wear — see ARCHITECTURE.md §4 for the FRAM-based plan if this ever needs to change).
+- **`ProgramManager`** — state machine (`ProgramState`/`StepState`) that drives step-by-step program execution; program state lives in RAM only and does **not** survive a reboot (deliberate tradeoff to avoid flash wear — see ARCHITECTURE.md §5 for the FRAM-based plan if this ever needs to change).
 - **`MovementManager`** — vertical actuator + rotation motor control.
 - **`GrillMQTT`** — wrapper centralizing publish/subscribe/topic-parsing logic.
 - **`HardwareManager`, `GrillSensor`, `StatusLed`** — low-level hardware abstraction.
@@ -42,7 +42,8 @@ Full design write-up lives in [ARCHITECTURE.md](ARCHITECTURE.md) — read it bef
 
 Key cross-cutting flows (detailed in ARCHITECTURE.md):
 
-- **Multi-user sync**: the ESP32 periodically publishes a lightweight progress status; a newly-connected client that sees an unfamiliar `programId` requests the full program JSON on demand rather than the API, since the ESP32 holds the actually-running version in RAM.
+- **Command protocol**: every command arrives wrapped as `{ value, requestId }` and is answered on `grill/{id}/status/result`. Handlers only spell out their failures — the dispatcher calls `reply_ok_if_unanswered()` for anything that came back without an answer. See ARCHITECTURE.md §2.
+- **Multi-user sync**: `ProgramManager::publish_program_status()` publishes the **whole** running program (name, steps, `currentStepIndex`, and `stepStartUnix` on the current step) **retained** on `grill/{id}/status/program/current`. The broker replays it to any client that subscribes, so a newly-connected client needs no request/response round trip and never asks the API — the ESP32's RAM holds the version actually cooking. See ARCHITECTURE.md §3.
 - **Disconnection handling**: uses MQTT Last Will and Testament (`grill/connection` → `offline`) so clients can detect a dead grill instead of showing stale "running" state.
 
 `GrillConstants.h` is the single source of truth for every MQTT topic, payload string, and tunable constant (timeouts, margins, `NUM_GRILLS`, `MAX_PROGRAM_STEPS`, etc.) — check it before touching anything protocol-related, and keep `GaztaindiGrill-NextJS/src/constants/mqtt.ts` in sync if you add or rename a topic. `GrillConfig.h` holds the other kind of constant instead: board wiring (GPIO pins) and deployment config (static IP, MQTT broker credentials, OTA port) — changes per board/deployment rather than per feature.

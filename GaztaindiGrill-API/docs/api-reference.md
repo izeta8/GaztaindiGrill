@@ -141,7 +141,7 @@ Gestiona los programas de cocción, que contienen los pasos para una receta.
 
 ### `PATCH /programs/{program_id}`
 
-- **Descripción**: Actualiza uno o más campos de un programa existente. Solo se deben enviar los campos a modificar. Al ejecutarse correctamente, publica un mensaje en el topic MQTT `programs/updated/{program_id}`.
+- **Descripción**: Actualiza uno o más campos de un programa existente. Solo se deben enviar los campos a modificar. No emite ningún mensaje MQTT: este servicio no habla MQTT (ver `docs/architecture.md` §5).
 - **Método**: `PATCH`
 - **Parámetros de Ruta**:
   - `program_id` (integer, requerido): El ID del programa a actualizar.

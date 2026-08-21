@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-FastAPI microservice that owns CRUD for cooking programs and categories (MySQL) and publishes MQTT cache-invalidation events when a program changes. Part of the larger GaztaindiGrill monorepo — see `../CLAUDE.md` (the repo root) for how this fits with the firmware and web client.
+FastAPI microservice that owns CRUD for cooking programs and categories (MySQL). Part of the larger GaztaindiGrill monorepo — see `../CLAUDE.md` (the repo root) for how this fits with the firmware and web client.
 
-This service is **not** in the real-time control loop: manual movement and program execution go directly over MQTT between the web client and the grill. This API is only for persisting/editing programs and notifying that a stored program changed.
+This service is **HTTP + MySQL only, and speaks no MQTT at all**. Manual movement, program execution and telemetry go directly over MQTT between the web client and the grill; this API just persists and edits programs. A `paho-mqtt` client used to be wired in here but never published anything, so it was removed — `docs/architecture.md` §5 records what went and what you would have to decide before bringing it back.
 
 ## Commands
 
@@ -22,11 +22,10 @@ No automated test suite is configured (no pytest setup). There is no lint/format
 
 Full write-up in [docs/architecture.md](docs/architecture.md) (component diagram + data-flow walkthrough) and the schema in [docs/database.md](docs/database.md) — read these before adding endpoints or changing the schema. Endpoint reference: [docs/api-reference.md](docs/api-reference.md).
 
-- **`app/main.py`** — FastAPI app entry point; uses a `lifespan` context manager to connect/disconnect the MQTT client around the app's lifecycle, configures CORS, includes the routers.
+- **`app/main.py`** — FastAPI app entry point; configures CORS and includes the routers. No `lifespan` context manager: the one that existed only wrapped the MQTT connect/disconnect, so it went with it. MySQL needs none — `get_connection()` opens lazily.
 - **`app/api/routes/programs.py`, `categories.py`** — HTTP endpoints per business entity. Routes build SQL manually (parameterized, not an ORM) and validate request bodies with Pydantic schemas.
 - **`app/core/db.py`** — `mysql-connector-python` connection management via a simple singleton (`get_connection()`), with a ping check to detect a stale connection and reconnect.
-- **`app/core/mqtt_client.py`** — `paho-mqtt` client singleton, connected at startup. `PATCH /programs/{id}` publishes to `programs/updated/{program_id}` after a successful update — this is the cache-invalidation signal other services/the firmware can act on.
-- **`app/core/config.py`** — loads all config (DB + MQTT credentials) from `.env` via `python-dotenv`; never hardcode credentials in route/business logic.
+- **`app/core/config.py`** — loads DB config from `.env` via `python-dotenv`. Four `DB_*` variables and nothing else; never hardcode credentials in route/business logic.
 - **`app/schemas/programs.py`** — Pydantic request models (`CreateProgramRequest`, `UpdateProgramRequest`).
 
 ### Naming asymmetry (intentional, don't "fix" without checking the other side)

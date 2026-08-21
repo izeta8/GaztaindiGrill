@@ -8,6 +8,7 @@ export const COMMAND_ERROR_MESSAGES: Record<string, string> = {
   rotation_out_of_range: 'La rotación debe estar entre 0 y 359 grados',
   mode_change_denied: 'No se puede cambiar de modo con un programa en marcha',
   no_program_running: 'No hay ningún programa en marcha',
+  encoder_not_answering: 'El encoder no responde: no se puede iniciar un programa relativo',
   resetting: 'La parrilla se está reiniciando, espera unos segundos',
 }
 

@@ -15,7 +15,7 @@ npm run start
 npm run lint      # next lint
 ```
 
-No automated test suite is configured (no jest/vitest setup) — verification is manual in the browser. Use `GaztaindiGrill-Shadow` as the MQTT-speaking grill stand-in when testing control flows without physical hardware (set the broker config so the app points at the same broker the simulator publishes to).
+No automated test suite is configured (no jest/vitest setup) — verification is manual in the browser, against the real grill. To watch or fake MQTT traffic while developing, use `mosquitto_sub -v -t 'grill/#'` and `mosquitto_pub` directly against the broker.
 
 ## Architecture
 

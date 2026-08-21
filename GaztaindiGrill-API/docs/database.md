@@ -31,6 +31,7 @@ erDiagram
         TIMESTAMP update_date "Fecha de última modificación"
         INT usage_count "Contador de uso"
         BOOLEAN is_active "Borrado lógico (1=activo, 0=inactivo)"
+        VARCHAR(20) reference_type "absolute o relative"
     }
 
     PROGRAMS }|--|| CATEGORIES : "pertenece a"
@@ -66,3 +67,4 @@ Contiene los programas de cocción con todos sus detalles y pasos.
 | `update_date` | `TIMESTAMP` | `NULL` | Fecha de la última actualización. |
 | `usage_count` | `INT` | `DEFAULT 0` | Cuántas veces se ha utilizado el programa. |
 | `is_active` | `BOOLEAN` / `TINYINT(1)` | `DEFAULT 1` | Para borrado lógico. 1 para activo, 0 para inactivo. |
+| `reference_type` | `VARCHAR(20)` | `DEFAULT 'absolute'` | Cómo se interpreta el campo `position` de cada paso. `"absolute"`: la posición es el objetivo fijo 0-100%. `"relative"`: la posición es un delta (puede ser negativo) que se suma a la posición de la parrilla en el momento de iniciar la ejecución del programa, y se clampa a 0-100%.

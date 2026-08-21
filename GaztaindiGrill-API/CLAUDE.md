@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-FastAPI microservice that owns CRUD for cooking programs and categories (MySQL) and publishes MQTT cache-invalidation events when a program changes. Part of the larger GaztaindiGrill ecosystem — see `../CLAUDE.md` for how this fits with the firmware and web client.
+FastAPI microservice that owns CRUD for cooking programs and categories (MySQL) and publishes MQTT cache-invalidation events when a program changes. Part of the larger GaztaindiGrill monorepo — see `../CLAUDE.md` (the repo root) for how this fits with the firmware and web client.
 
-This service is **not** in the real-time control loop: manual movement and program execution go directly over MQTT between the web client and the grill (or `GaztaindiGrill-Shadow`). This API is only for persisting/editing programs and notifying that a stored program changed.
+This service is **not** in the real-time control loop: manual movement and program execution go directly over MQTT between the web client and the grill. This API is only for persisting/editing programs and notifying that a stored program changed.
 
 ## Commands
 
@@ -37,6 +37,6 @@ Request bodies use **camelCase** (`stepsJson`, `creatorName`, `categoryId`); the
 
 Updates are partial: only fields present (non-`None`) in the payload get included in the dynamic `UPDATE ... SET` clause built in `programs.py`. Keep this pattern when adding update endpoints — don't switch to full-replace semantics.
 
-## Home Assistant add-on mirror
+## Home Assistant add-on
 
-`../addons/gaztaindigrill_api/app/` is a near-identical copy of `app/` packaged as a Home Assistant add-on (Dockerfile + `config.yaml` + `run.sh`). It is kept in sync **manually** — if you change anything under `app/` here, check whether the add-on copy needs the same change.
+`addons/gaztaindigrill_api/` packages this service as a Home Assistant add-on (`Dockerfile`, `config.yaml`, `run.sh`, `requirements.txt`) plus `app/`, a mirror of this repo's own `app/`. Deploy with `deploy-addon.ps1` (in this same directory) — it robocopies `app/` onto `addons/gaztaindigrill_api/app/`, uploads over Samba, and rebuilds the add-on over SSH. Never edit `addons/gaztaindigrill_api/app/` directly: it's gitignored and overwritten on the next deploy. See the repo root `CLAUDE.md` for the full deploy flow.

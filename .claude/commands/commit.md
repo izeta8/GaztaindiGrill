@@ -14,10 +14,10 @@ GaztaindiGrill is one repo. The first token of the arguments selects a path pref
 
 | Token | Path prefix |
 |---|---|
-| `firmware`, `grill`, `esp32`, `fw` | `firmware/` |
+| `firmware`, `grill`, `esp32`, `fw` | `GaztaindiGrill-ESP32/` |
 | `next`, `nextjs`, `web`, `front`, `frontend` | `GaztaindiGrill-NextJS/` |
-| `api`, `db`, `backend` | `DatabaseAPI/GaztaindiGrill-API/` |
-| `addon`, `ha` | `DatabaseAPI/addons/` |
+| `api`, `db`, `backend` | `GaztaindiGrill-API/` |
+| `addon`, `ha` | `GaztaindiGrill-API/addons/` |
 | `all`, or no token at all | no filter — the whole repo |
 
 Match case-insensitively. A bare path that matches an existing directory also works. If the first token is not a recognised alias, treat the whole argument string as a free-form instruction and default the scope to the whole repo — do not error out over it.

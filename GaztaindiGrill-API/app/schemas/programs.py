@@ -8,6 +8,7 @@ class CreateProgramRequest(BaseModel):
     category_id: Optional[int] = Field(None, alias="categoryId")
     steps_json: str = Field(..., alias="stepsJson")
     creator_name: str = Field(..., alias="creatorName")
+    reference_type: Optional[str] = Field("absolute", alias="referenceType")
 
 
 class CreateCategoryRequest(BaseModel):
@@ -24,3 +25,4 @@ class UpdateProgramRequest(BaseModel):
     creation_date: Optional[str] = Field(None, alias="creationDate")
     update_date: Optional[str] = Field(None, alias="updateDate")
     usage_count: Optional[int] = Field(None, alias="usageCount")
+    reference_type: Optional[str] = Field(None, alias="referenceType")

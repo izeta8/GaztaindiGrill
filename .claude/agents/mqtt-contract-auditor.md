@@ -13,7 +13,7 @@ Paths are relative to the repo root.
 
 | Side | File | What it declares |
 |---|---|---|
-| Firmware (authoritative) | `firmware/lib/Grill/GrillConstants.h` | every topic, payload, `JSON_*` field and `ERROR_*` code, as `static constexpr const char*` in class `GrillConstants` |
+| Firmware (authoritative) | `GaztaindiGrill-ESP32/lib/Grill/GrillConstants.h` | every topic, payload, `JSON_*` field and `ERROR_*` code, as `static constexpr const char*` in class `GrillConstants` |
 | Frontend | `GaztaindiGrill-NextJS/src/constants/mqtt.ts` | nested `TOPICS` object + `PAYLOAD_*` exports |
 | Frontend | `GaztaindiGrill-NextJS/src/constants/commandErrors.ts` | `COMMAND_ERROR_MESSAGES`, mapping the firmware's `ERROR_*` codes to Spanish display text |
 | Frontend | `GaztaindiGrill-NextJS/src/**/*.{ts,tsx}` | the call sites that assemble the full topic — see the prefix trap below |

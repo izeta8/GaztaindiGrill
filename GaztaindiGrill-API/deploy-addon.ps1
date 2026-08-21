@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 # Deploys GaztaindiGrill-API to its Home Assistant local add-on: mirrors
-# GaztaindiGrill-API/app onto addons/gaztaindigrill_api/app, pushes the add-on
-# to HA over Samba, and optionally rebuilds + restarts it over SSH.
+# app/ onto addons/gaztaindigrill_api/app, pushes the add-on to HA over
+# Samba, and optionally rebuilds + restarts it over SSH.
 
 $ErrorActionPreference = 'Stop'
 
@@ -17,7 +17,7 @@ $DoRebuild  = $true
 # -----------------------------------------------------------------------------
 
 $ScriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
-$DevApp      = Join-Path $ScriptDir 'GaztaindiGrill-API\app'
+$DevApp      = Join-Path $ScriptDir 'app'
 $AddonRoot   = Join-Path $ScriptDir 'addons\gaztaindigrill_api'
 $AddonApp    = Join-Path $AddonRoot 'app'
 $RemoteShare = "\\$HaHost\$SambaShare"
@@ -41,7 +41,7 @@ function Close-SambaSessionsTo($hostName) {
     $ErrorActionPreference = $prevEAP
 }
 
-Write-Host '[1/3] Mirroring GaztaindiGrill-API/app -> addons/gaztaindigrill_api/app' -ForegroundColor Cyan
+Write-Host '[1/3] Mirroring app -> addons/gaztaindigrill_api/app' -ForegroundColor Cyan
 robocopy $DevApp $AddonApp /MIR /XD __pycache__ /NFL /NDL /NJH /NJS /NP | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy (local mirror) failed (code $LASTEXITCODE)" }
 $global:LASTEXITCODE = 0

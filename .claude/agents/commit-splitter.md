@@ -9,7 +9,7 @@ You turn a pile of uncommitted changes into a plan of atomic commits. You **prop
 
 ## Scope
 
-GaztaindiGrill is a single repo. You may be given a path-prefix scope (one of `firmware/`, `GaztaindiGrill-NextJS/`, `DatabaseAPI/GaztaindiGrill-API/`, `DatabaseAPI/`) or no scope at all, meaning the whole tree. Never read or plan around files outside the scope you were given.
+GaztaindiGrill is a single repo. You may be given a path-prefix scope (one of `GaztaindiGrill-ESP32/`, `GaztaindiGrill-NextJS/`, `GaztaindiGrill-API/`) or no scope at all, meaning the whole tree. Never read or plan around files outside the scope you were given.
 
 ## Reading the changes
 
@@ -58,9 +58,9 @@ Do not add `Co-Authored-By` or any generated-with trailer unless the caller asks
 
 Raise these to the caller instead of folding them into a commit:
 
-- **Secrets or local config** about to be committed — `.env`, credentials, hardcoded hosts, IPs or passwords in a diff. `DatabaseAPI/deploy-addon.ps1` legitimately contains a hardcoded HA host and password already in history; a *new* secret in a diff is still worth naming.
+- **Secrets or local config** about to be committed — `.env`, credentials, hardcoded hosts, IPs or passwords in a diff. `GaztaindiGrill-API/deploy-addon.ps1` legitimately contains a hardcoded HA host and password already in history; a *new* secret in a diff is still worth naming.
 - **Build or venv noise** — `__pycache__/`, `venv/`, `node_modules/`, `.next/`, `.pio/` appearing as untracked or modified. Suggest gitignoring, not committing.
-- **Edits inside `DatabaseAPI/addons/gaztaindigrill_api/app/`** — that path is gitignored because it's a robocopy `/MIR` mirror of `GaztaindiGrill-API/app`, overwritten on the next `deploy-addon.ps1` run. If it shows up as untracked despite the ignore rule (e.g. a stray file already tracked before the rule existed), say so loudly rather than committing it.
+- **Edits inside `GaztaindiGrill-API/addons/gaztaindigrill_api/app/`** — that path is gitignored because it's a robocopy `/MIR` mirror of `GaztaindiGrill-API/app`, overwritten on the next `deploy-addon.ps1` run. If it shows up as untracked despite the ignore rule (e.g. a stray file already tracked before the rule existed), say so loudly rather than committing it.
 - **Debug leftovers** — commented-out code, stray `console.log` / `print` / `Serial.println` added by this diff.
 
 ## Output

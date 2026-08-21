@@ -40,6 +40,7 @@ async def update_program(program_id: int, payload: UpdateProgramRequest):
         "creation_date": payload.creation_date,
         "update_date": payload.update_date,
         "usage_count": payload.usage_count,
+        "reference_type": payload.reference_type,
     }
 
     set_parts = []
@@ -100,8 +101,8 @@ async def create_program(payload: CreateProgramRequest):
     try:
         cursor = connection.cursor()
         sql = (
-            "INSERT INTO programs (name, description, category_id, steps_json, creator_name) "
-            "VALUES (%s, %s, %s, %s, %s)"
+            "INSERT INTO programs (name, description, category_id, steps_json, creator_name, reference_type) "
+            "VALUES (%s, %s, %s, %s, %s, %s)"
         )
         cursor.execute(
             sql,
@@ -111,6 +112,7 @@ async def create_program(payload: CreateProgramRequest):
                 payload.category_id,
                 payload.steps_json,
                 payload.creator_name,
+                payload.reference_type,
             ),
         )
         connection.commit()

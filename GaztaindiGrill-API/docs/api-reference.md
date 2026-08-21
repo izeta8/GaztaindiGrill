@@ -78,7 +78,8 @@ Gestiona los programas de cocción, que contienen los pasos para una receta.
       "creation_date": "2024-02-17T11:00:00Z",
       "update_date": null,
       "usage_count": 15,
-      "is_active": 1
+      "is_active": 1,
+      "reference_type": "absolute"
     }
   ]
   ```
@@ -101,7 +102,8 @@ Gestiona los programas de cocción, que contienen los pasos para una receta.
     "creation_date": "2024-02-17T11:00:00Z",
     "update_date": null,
     "usage_count": 15,
-    "is_active": 1
+    "is_active": 1,
+    "reference_type": "absolute"
   }
   ```
 - **Respuesta de Error (404 Not Found)**:
@@ -123,9 +125,11 @@ Gestiona los programas de cocción, que contienen los pasos para una receta.
     "description": "Lomo de merluza con piel.",
     "categoryId": 2,
     "stepsJson": "[{"temp": 180, "duration": 480}]",
-    "creatorName": "Chef de Mar"
+    "creatorName": "Chef de Mar",
+    "referenceType": "relative"
   }
   ```
+  `referenceType` es opcional y por defecto es `"absolute"`. Determina cómo se interpretan los valores `position` de los pasos: `"absolute"` (posición fija 0-100%) o `"relative"` (delta desde la posición de la parrilla en el momento de ejecutar el programa, ver `docs/database.md`).
 - **Respuesta Exitosa (201 CREATED)**:
   ```json
   {
@@ -145,7 +149,8 @@ Gestiona los programas de cocción, que contienen los pasos para una receta.
   ```json
   {
     "description": "Lomo de merluza de anzuelo con piel.",
-    "usageCount": 16
+    "usageCount": 16,
+    "referenceType": "relative"
   }
   ```
 - **Respuesta Exitosa (200 OK)**:

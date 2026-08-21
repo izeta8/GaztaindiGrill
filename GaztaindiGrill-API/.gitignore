@@ -1,0 +1,5 @@
+addons/gaztaindigrill_api/app/
+
+__pycache__
+venv
+.env

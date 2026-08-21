@@ -3,7 +3,6 @@ from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from ...core.db import get_connection
 from ...schemas.programs import CreateProgramRequest, UpdateProgramRequest
-from ...core.mqtt_client import publish
 
 router = APIRouter(prefix="/programs", tags=["programs"])
 

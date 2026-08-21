@@ -70,3 +70,8 @@ If a commit fails, stop there. Report what landed and what did not; do not conti
 ## 5. Report
 
 One compact summary: branch, the commits that landed (short hash + subject), then anything left uncommitted and why. If a `⚠ Flag` was raised and not resolved, repeat it — it is easy to lose in the noise of a successful run.
+
+End the reply with a **Next step** line, so the workflow chain never dead-ends:
+
+- Everything landed: `**Next step:** nothing pending — the feature is committed. Push when you're ready, or start the next one with `/feature-plan`.`
+- Something is still uncommitted: name it and say what would land it, e.g. `**Next step:** `/docs-sync` for the docs still pending, then `/commit` again.`

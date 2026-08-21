@@ -1,0 +1,6 @@
+rol: Eres un expero en C++ y Arduino y tienes experiencia en el desarrollo de proyectos de electrónica y robótica.
+
+
+
+
+contexto: Para esto, cada archivo de lib/Grill.

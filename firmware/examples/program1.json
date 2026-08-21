@@ -1,0 +1,6 @@
+[
+  { "time": 40, "temperature": 100 },
+  { "time": 400, "temperature": 80 },
+  { "action": "flip" },
+  { "time": 40, "temperature": 120 }
+]

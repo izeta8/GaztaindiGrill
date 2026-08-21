@@ -6,18 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **GaztaindiGrill** is a monorepo: a remotely-controlled grill (ESP32) driven over MQTT from a web app, with a FastAPI backend for persisting cooking programs. It holds every part of the ecosystem in one git history — firmware, web client, API, and the Home Assistant add-on that packages the API. Each project below has its own CLAUDE.md with project-specific commands.
 
-This used to be three separate git repositories glued together by a non-repo parent folder. They were merged into this single repo (via `git filter-repo` + merge, full history preserved per-commit — `git log GaztaindiGrill-ESP32/` or `git log GaztaindiGrill-NextJS/` walks each project's original commits with paths already rewritten under their new prefix) because a feature always touched all three at once anyway: the same branch name had to be created and merged by hand in three places, and the MQTT contract could drift between firmware and frontend with nothing to catch it. One repo means one branch per feature and one commit that can span both sides of the contract when that's the honest shape of the change.
-
 ## Layout
 
 | Path | Role | Stack |
 |---|---|---|
 | `GaztaindiGrill-ESP32/` | Firmware running on the ESP32 that physically drives the grill (vertical position, rotation/tilt, temperature, cooking programs). | C++ / Arduino framework / PlatformIO |
 | `GaztaindiGrill-NextJS/` | Web client used to control the grill in real time and manage programs. | Next.js 15 / React 19 / TypeScript |
-| `GaztaindiGrill-API/` | Backend microservice: CRUD for cooking programs/categories (MySQL) + publishes MQTT invalidation events. | Python / FastAPI |
+| `GaztaindiGrill-API/` | Backend microservice: CRUD for cooking programs/categories (MySQL). | Python / FastAPI |
 | `GaztaindiGrill-API/addons/gaztaindigrill_api/` | Home Assistant add-on packaging of the API: `Dockerfile`, `config.yaml`, `run.sh`, `requirements.txt` are hand-authored and tracked; `app/` is a generated mirror of the API's own `app/` and is **gitignored** — see below. | Python / Docker / Home Assistant Supervisor |
-
-The firmware is the only implementation of the MQTT contract. Protocol-level verification means real hardware, or a throwaway `mosquitto_pub`/`mosquitto_sub` session against the broker.
 
 ### Deploying the API to Home Assistant
 
@@ -31,19 +27,26 @@ Because step 1 mirrors with `/MIR`, **any edit made directly inside `addons/gazt
 
 ## System architecture (cross-project)
 
-```
-Web Client (NextJS)  <--HTTP CRUD-->  GaztaindiGrill-API  <--MySQL-->  Database
-       |                                      |
-       |  MQTT (real-time control/status)     | MQTT (cache-invalidation only)
-       v                                      v
-                    MQTT Broker (Mosquitto)
-                              |
-                              v
-                  GaztaindiGrill firmware (ESP32)
+```mermaid
+flowchart TB
+    WEB["<b>Web Client</b><br/>GaztaindiGrill-NextJS<br/>(runs in the browser)"]
+    API["<b>GaztaindiGrill-API</b><br/>FastAPI"]
+    DB[("MySQL<br/>programs / categories")]
+    BROKER{{"<b>MQTT Broker</b><br/>Mosquitto"}}
+    ESP["<b>Firmware</b><br/>GaztaindiGrill-ESP32<br/>grill/0 + grill/1"]
+
+    WEB -->|"HTTP CRUD (fetch from the browser)<br/>programs + categories"| API
+    API -->|"parameterized SQL<br/>mysql-connector"| DB
+
+    WEB -->|"MQTT over WebSocket (ws/wss)<br/>grill/{id}/action/...<br/>payload { value, requestId }"| BROKER
+    BROKER -->|"commands"| ESP
+    ESP -->|"MQTT over TCP<br/>grill/{id}/status/... (retained)<br/>grill/{id}/status/result (not retained)<br/>grill/connection (LWT), grill/time"| BROKER
+    BROKER -->|"telemetry, command results,<br/>program + mode state"| WEB
 ```
 
-- **HTTP** is used *only* for CRUD on programs/categories (NextJS <-> API <-> MySQL). The API is not in the real-time control loop.
-- **MQTT** is used for *everything else*: manual movement/rotation commands, program execution, sensor telemetry, and connection status (LWT). This happens directly between the web client and the ESP32 — the API does not relay these messages, it only publishes a `programs/updated/{id}` cache-invalidation event when a program is edited.
+- **HTTP** is used *only* for CRUD on programs/categories, called straight from the browser (`NEXT_PUBLIC_API_URL`) — there is no Next.js server-side proxy. The API is not in the real-time control loop.
+- **MQTT** is used for *everything else*: manual movement/rotation commands, program execution, sensor telemetry, mode switching, and connection status (LWT). This happens directly between the web client and the ESP32 — the API does not relay these messages.
+- **The API has no MQTT connection at all** — note there is no edge between it and the broker above. It used to carry a `paho-mqtt` singleton that connected at startup and published nothing (`programs.py` imported `publish` without ever calling it), so it was removed along with the `lifespan`, the `MQTT_*` config, the dependency and the add-on's MQTT options. `GaztaindiGrill-API/docs/architecture.md` §5 records what went and what would have to be decided before reintroducing it.
 
 ## Source of truth for the MQTT contract
 
@@ -51,7 +54,7 @@ Web Client (NextJS)  <--HTTP CRUD-->  GaztaindiGrill-API  <--MySQL-->  Database
 
 1. Check `GrillConstants.h` first.
 2. Cross-check against `GaztaindiGrill-NextJS/src/constants/mqtt.ts` (the frontend's mirror of the topics and payloads) and `GaztaindiGrill-NextJS/src/constants/commandErrors.ts` (the frontend's mapping of the firmware's `ERROR_*` codes to Spanish display text).
-3. **Do not trust `GaztaindiGrill-NextJS/docs/mqtt.md` blindly** — it still documents the pre-`action/`/`status/` scheme (`grill/{id}/execute_program`, `grill/{id}/move`, `grill/{id}/program_status_response`...) which no longer exists in either the firmware or `constants/mqtt.ts`. The flow descriptions are still useful; the topic names are not. `GrillConstants.h` wins.
+3. `GaztaindiGrill-NextJS/docs/mqtt.md` is the prose version of the same contract — full topic tables, the request/response envelope, retained-vs-not semantics and the main flows. It was rewritten against the code, so it is accurate, but it is still a *copy*: on any disagreement, `GrillConstants.h` wins.
 
 The contract is duplicated between C++ and TypeScript with nothing enforcing agreement — use the `mqtt-contract-auditor` agent (see below) rather than eyeballing it.
 
@@ -73,8 +76,8 @@ Commands are no longer fire-and-forget. Every command the client sends is wrappe
 Each project's own docs are more detailed than this overview — read them before making changes in that project:
 
 - `GaztaindiGrill-ESP32/ARCHITECTURE.md` — class structure (Grill, ProgramManager, MovementManager, GrillMQTT, HardwareManager...), the multi-user state-sync flow, and LWT-based disconnect handling. `GaztaindiGrill-ESP32/TODO.md` carries known bugs with detailed reasoning — read it before touching encoder or program-execution code.
-- `GaztaindiGrill-API/docs/architecture.md`, `docs/database.md`, `docs/api-reference.md` — service architecture, MySQL schema (`programs`, `categories`), and endpoint reference.
-- `GaztaindiGrill-NextJS/docs/api.md`, `docs/cache.md` — REST contract with the API and the in-memory `RunningProgramsContext` cache strategy for synchronizing new clients with an already-running program. `docs/mqtt.md` has outdated topic names (see above). `TODO.md` is a mix of Spanish and Basque.
+- `GaztaindiGrill-API/docs/architecture.md`, `docs/database.md`, `docs/api-reference.md` — service architecture, MySQL schema (`programs`, `categories`), and endpoint reference. §5 of `architecture.md` records why the MQTT publish is still unimplemented.
+- `GaztaindiGrill-NextJS/docs/mqtt.md` — the full MQTT contract in prose: topic tables, the `{ value, requestId }` envelope, error codes and the main flows. `docs/cache.md` — how a client that connects mid-cooking gets the whole running program (short version: the retained `status/program/current` topic, not a cache). `docs/api.md` — REST contract with the API. `TODO.md` is a mix of Spanish and Basque.
 
 ## Conventions worth knowing
 
@@ -88,9 +91,24 @@ Each project's own docs are more detailed than this overview — read them befor
 
 ## Tooling (`.claude/`)
 
+### The feature workflow
+
+The normal path for anything bigger than a one-liner is four commands, in order. Each ends by naming the next, so there's never a guess about what to run.
+
+| Step | Command | What it does |
+|---|---|---|
+| 1 | `/feature-plan <what you want>` | Reads the affected projects and docs, then writes a numbered plan of atomic, independently-committable tasks to `.claude/plans/<slug>.md`. Plans only — never writes code. Edit the file directly to correct the plan. |
+| 2 | `/feature-implement [n]` | Implements **one** task, verifies it (`pio run` / `npm run lint` / `compileall` — there are no test suites), stages exactly that task's files and proposes its commit message as a runnable command. Stages; never commits. Repeat per task. |
+| 3 | `/docs-sync` | Diffs the branch, maps changed paths to the docs that describe them, updates those docs against the real diff, stages them with `docs:` messages. |
+| 4 | `/commit` | Lands everything. |
+
+Steps 2 and 3 deliberately stop after each unit of work instead of batching: the point is that reviewing a staged diff stays cheap.
+
+### Everything else
+
 | What | Use it for |
 |---|---|
-| `/commit [firmware\|next\|api\|all]` | Groups the diff into atomic commits, proposes Conventional Commit messages, commits what you approve. The scope filters by path prefix within this one repo; defaults to everything. |
+| `/commit [firmware\|next\|api\|all]` | Groups the diff into atomic commits, proposes Conventional Commit messages, commits what you approve. The scope filters by path prefix within this one repo; defaults to everything. Usable standalone, without the workflow above. |
 | `mqtt-contract-auditor` agent | Read-only diff of the MQTT contract between `GrillConstants.h` and the frontend's `constants/mqtt.ts` + `commandErrors.ts` + call sites. Run it after touching any topic, payload or error code. |
 | `commit-splitter` agent | Reads a diff and returns a commit plan. Invoked by `/commit`; rarely useful standalone. |
 
@@ -99,3 +117,4 @@ Each project's own docs are more detailed than this overview — read them befor
 - **Never commit without being asked.** Staging and committing happen when the user runs `/commit` or says so explicitly — not as the tail end of a task.
 - **Uncommitted work never blocks new work.** If the user changes direction with a dirty tree, follow them. Don't insist on committing, stashing, or "cleaning up" first, and don't refuse to start something new. Just keep track of what's pending.
 - **Don't switch branches on your own.** Branch changes are the user's call.
+- **Shell commands you hand the user must be PowerShell 5.1.** That's what they run. `&&` is a parser error there — chain with `; if ($?) { ... }`, and tag the fence `powershell`. Same for `head`/`tail`/`which`/`touch`, which don't exist as such.

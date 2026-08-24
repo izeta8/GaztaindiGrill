@@ -113,6 +113,13 @@ void Grill::handle_temperature_stop() {
 }
 
 //
+// Rotation clearance guard
+//
+void Grill::update_rotation_guard() {
+    movement->update_rotation_guard();
+}
+
+//
 // Mode
 //
 DualModeDirection Grill::get_dual_direction() {

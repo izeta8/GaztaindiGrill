@@ -43,11 +43,16 @@ public:
     void handle_rotor_stop();
     void handle_position_stop();
     void handle_temperature_stop();
-    
+
+    // ---------- ROTATION HEADROOM GUARD ---------- //
+    int min_safe_position(int degrees);
+    void update_rotation_guard();
+    void reset_rotation_guard();
+
     // -------------- GO_TO TARGETS ------------- //
     int targetTemperature;
     int targetDegrees;
-    int targetPosition; 
+    int targetPosition;
     bool has_any_active_target();
 
 private:
@@ -60,6 +65,19 @@ private:
     HardwareManager* hardware;
     GrillSensor* sensor;
     ModeManager* modeManager;
+
+    enum RotationGuardState {
+        GUARD_IDLE,
+        GUARD_LIFTING,   // raising to a safe height; the rotor has not started yet
+        GUARD_ROTATING,  // the rotor is running
+        GUARD_RETURNING  // going back down to positionBeforeRotation
+    };
+
+    RotationGuardState guardState;
+    int pendingRotationDegrees; // held target angle while GUARD_LIFTING
+    int positionBeforeRotation; // where to come back to; NO_TARGET when no lift was needed
+
+    void start_rotation(int degrees);
 
 };
 

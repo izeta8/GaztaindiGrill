@@ -53,6 +53,9 @@ public:
     void handle_position_stop();
     void handle_temperature_stop();
 
+    // Rotation clearance guard
+    void update_rotation_guard();
+
     // Mode
     DualModeDirection get_dual_direction();
     Mode get_mode();

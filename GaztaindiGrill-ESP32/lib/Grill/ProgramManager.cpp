@@ -117,6 +117,8 @@ void ProgramManager::finish_program(bool forcedCancelation = false) {
     movement->targetPosition = GrillConstants::NO_TARGET;
     movement->targetDegrees = GrillConstants::NO_TARGET;
     movement->targetTemperature = GrillConstants::NO_TARGET;
+    // A rotation held waiting for a lift has to go too, or it would fire once the grill is up.
+    movement->reset_rotation_guard();
     movement->stop_lineal_actuator();
     
     // Clear the in-memory program

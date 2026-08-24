@@ -160,7 +160,7 @@ void MovementManager::start_rotation(int degrees) {
 }
 
 /// ------------------------------------ ///
-///       ROTATION CLEARANCE GUARD       ///
+///       ROTATION HEADROOM GUARD        ///
 /// ------------------------------------ ///
 
 // Lowest position (0-100%) at which the rack may sit at this tilt without its lower edge
@@ -203,6 +203,31 @@ void MovementManager::update_rotation_guard() {
         case GUARD_ROTATING:
             // handle_rotor_stop() clears the target once the rotor settles on the angle.
             if (targetDegrees == GrillConstants::NO_TARGET) {
+
+                // Nothing was lifted, so there is nowhere to come back down to.
+                if (positionBeforeRotation == GrillConstants::NO_TARGET) {
+                    reset_rotation_guard();
+                    break;
+                }
+
+                // The rack may have settled still tilted, and then it cannot come all the way
+                // back: the floor for the angle it stopped at wins over where it started.
+                int finalAngle = sensor->get_rotor_encoder_value();
+                int safetyFloor = min_safe_position(finalAngle);
+                int returnTo = (positionBeforeRotation > safetyFloor) ? positionBeforeRotation : safetyFloor;
+
+                mqtt->print("Rotation done at " + String(finalAngle) + ", returning to " +
+                            String(returnTo) + " (was " + String(positionBeforeRotation) +
+                            ", floor " + String(safetyFloor) + ")");
+
+                guardState = GUARD_RETURNING;
+                go_to(returnTo);
+            }
+            break;
+
+        case GUARD_RETURNING:
+            // Back down. handle_position_stop() clears the target once it arrives.
+            if (targetPosition == GrillConstants::NO_TARGET) {
                 reset_rotation_guard();
             }
             break;

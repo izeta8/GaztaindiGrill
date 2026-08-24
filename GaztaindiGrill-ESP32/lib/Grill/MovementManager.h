@@ -73,11 +73,26 @@ private:
         GUARD_RETURNING  // going back down to positionBeforeRotation
     };
 
+    enum RotationDirection {
+        ROTATION_NONE,
+        ROTATION_CLOCKWISE,
+        ROTATION_COUNTER_CLOCKWISE
+    };
+
     RotationGuardState guardState;
     int pendingRotationDegrees; // held target angle while GUARD_LIFTING
     int positionBeforeRotation; // where to come back to; NO_TARGET when no lift was needed
+    RotationDirection rotatingDirection; // directional turn in progress; NONE for a targeted turn
+
+    // Drive the rotor with no headroom check. Only for callers already past the guard, same
+    // split as go_up() / go_up_raw() on the linear actuator.
+    void rotate_clockwise_raw();
+    void rotate_counter_clockwise_raw();
+    void stop_rotor_raw();
 
     void start_rotation(int degrees);
+    void start_rotating(RotationDirection direction);
+    void run_rotating(RotationDirection direction);
 
 };
 

@@ -15,7 +15,8 @@ MovementManager::MovementManager(int index, GrillMQTT* mqtt, HardwareManager* ha
     isLinearResetting(false),
     guardState(GUARD_IDLE),
     pendingRotationDegrees(GrillConstants::NO_TARGET),
-    positionBeforeRotation(GrillConstants::NO_TARGET)
+    positionBeforeRotation(GrillConstants::NO_TARGET),
+    rotatingDirection(ROTATION_NONE)
      {}
 
 
@@ -72,22 +73,52 @@ bool MovementManager::has_rotor()
     return hardware->rotor != nullptr;
 }
 
-void MovementManager::rotate_clockwise()
+void MovementManager::rotate_clockwise_raw()
 {
     if (!has_rotor()) { return; }
     hardware->rotor->rotate_clockwise();
 }
 
-void MovementManager::rotate_counter_clockwise()
+void MovementManager::rotate_counter_clockwise_raw()
 {
     if (!has_rotor()) { return; }
     hardware->rotor->rotate_counter_clockwise();
 }
 
-void MovementManager::stop_rotor()
+void MovementManager::stop_rotor_raw()
 {
     if (!has_rotor()) { return; }
     hardware->rotor->stop();
+}
+
+// Directional rotation. One command starts it and the rack keeps turning until a stop command
+// arrives, so unlike go_to_rotor() there is no target angle bounding the tilt: the whole drop
+// has to be cleared before the rotor may start.
+void MovementManager::rotate_clockwise()
+{
+    start_rotating(ROTATION_CLOCKWISE);
+}
+
+void MovementManager::rotate_counter_clockwise()
+{
+    start_rotating(ROTATION_COUNTER_CLOCKWISE);
+}
+
+// The stop command.
+void MovementManager::stop_rotor()
+{
+    stop_rotor_raw();
+
+    // Stop arrived while still on the way up: drop the pending rotation, or it would fire on
+    // its own as soon as the lift finishes.
+    if (guardState == GUARD_LIFTING) {
+        mqtt->print("Stop received during the lift, the pending rotation is cancelled");
+        reset_rotation_guard();
+        return;
+    }
+
+    // Stop arrived mid-turn: clearing the direction is what lets the guard start the way back down.
+    rotatingDirection = ROTATION_NONE;
 }
 
 void MovementManager::turn_around() {
@@ -152,10 +183,49 @@ void MovementManager::start_rotation(int degrees) {
     // In the handle_rotor_stop() function that is called in loop, we handle when we have to stop
     if (differenceRight < differenceLeft)
     {
-        rotate_counter_clockwise();
+        rotate_counter_clockwise_raw();
     } else
     {
-        rotate_clockwise();
+        rotate_clockwise_raw();
+    }
+}
+
+// Directional turn: same guard as go_to_rotor(), but what is held while lifting is a direction
+// to keep turning in, not an angle to stop at.
+void MovementManager::start_rotating(RotationDirection direction) {
+
+    if (!has_rotor()) { return; }
+
+    long currentPosition = sensor->get_encoder_value();
+
+    if (currentPosition == (long)GrillConstants::ENCODER_ERROR) {
+        mqtt->print("Rotation refused: the position encoder is not answering");
+        return;
+    }
+
+    rotatingDirection = direction;
+
+    if (currentPosition < GrillConstants::SAFE_ROTATION_POSITION_PCT) {
+
+        positionBeforeRotation = (int)currentPosition;
+        guardState = GUARD_LIFTING;
+
+        mqtt->print("Rotation held: raising from " + String(currentPosition) + " to " +
+                    String(GrillConstants::SAFE_ROTATION_POSITION_PCT) + " first");
+
+        go_to(GrillConstants::SAFE_ROTATION_POSITION_PCT);
+        return;
+    }
+
+    guardState = GUARD_ROTATING;
+    run_rotating(direction);
+}
+
+void MovementManager::run_rotating(RotationDirection direction) {
+    if (direction == ROTATION_CLOCKWISE) {
+        rotate_clockwise_raw();
+    } else {
+        rotate_counter_clockwise_raw();
     }
 }
 
@@ -195,12 +265,22 @@ void MovementManager::update_rotation_guard() {
             if (targetPosition == GrillConstants::NO_TARGET) {
                 mqtt->print("Safe height reached, starting the held rotation");
                 guardState = GUARD_ROTATING;
-                start_rotation(pendingRotationDegrees);
-                pendingRotationDegrees = GrillConstants::NO_TARGET;
+
+                if (rotatingDirection != ROTATION_NONE) {
+                    // A directional turn keeps its direction until a stop command arrives.
+                    run_rotating(rotatingDirection);
+                } else {
+                    start_rotation(pendingRotationDegrees);
+                    pendingRotationDegrees = GrillConstants::NO_TARGET;
+                }
             }
             break;
 
         case GUARD_ROTATING:
+            // A directional turn has no target angle to settle on; it ends when stop_rotor()
+            // clears the direction, so until then there is nothing to wait for here.
+            if (rotatingDirection != ROTATION_NONE) { break; }
+
             // handle_rotor_stop() clears the target once the rotor settles on the angle.
             if (targetDegrees == GrillConstants::NO_TARGET) {
 
@@ -241,16 +321,19 @@ void MovementManager::reset_rotation_guard() {
     guardState = GUARD_IDLE;
     pendingRotationDegrees = GrillConstants::NO_TARGET;
     positionBeforeRotation = GrillConstants::NO_TARGET;
+    rotatingDirection = ROTATION_NONE;
 }
 
 void MovementManager::handle_rotor_stop() {
     
     int currentRotorPosition = sensor->get_rotor_encoder_value();
 
-    if (abs(currentRotorPosition-targetDegrees) <= GrillConstants::ROTOR_MARGIN && targetDegrees != GrillConstants::NO_TARGET ) { 
-        stop_rotor();
+    if (abs(currentRotorPosition-targetDegrees) <= GrillConstants::ROTOR_MARGIN && targetDegrees != GrillConstants::NO_TARGET ) {
+        // _raw: a targeted turn reaching its angle is not a button release, and the guard
+        // reads the cleared targetDegrees below to know the turn is over.
+        stop_rotor_raw();
         targetDegrees = GrillConstants::NO_TARGET;
-    } 
+    }
 }
 
 // ------------- LINEAL ACTUATOR ------------- //
@@ -340,7 +423,9 @@ bool MovementManager::check_reset_status()
 void MovementManager::emergency_stop()
 {
     stop_lineal_actuator();
-    stop_rotor();
+    // _raw: stop_rotor() would hand the guard over to a return move, and this has just stopped
+    // the linear actuator on purpose.
+    stop_rotor_raw();
     isLinearResetting = false;
     targetTemperature = GrillConstants::NO_TARGET;
     targetDegrees = GrillConstants::NO_TARGET;

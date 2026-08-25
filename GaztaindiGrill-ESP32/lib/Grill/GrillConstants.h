@@ -135,6 +135,7 @@ public:
     static constexpr const char* ERROR_MODE_CHANGE_DENIED = "mode_change_denied";
     static constexpr const char* ERROR_NO_PROGRAM_RUNNING = "no_program_running";
     static constexpr const char* ERROR_ENCODER_NOT_ANSWERING = "encoder_not_answering";
+    static constexpr const char* ERROR_ROTATION_UNSAFE = "rotation_unsafe";
 };
 
 #endif

@@ -16,7 +16,10 @@ MovementManager::MovementManager(int index, GrillMQTT* mqtt, HardwareManager* ha
     guardState(GUARD_IDLE),
     pendingRotationDegrees(GrillConstants::NO_TARGET),
     positionBeforeRotation(GrillConstants::NO_TARGET),
-    rotatingDirection(ROTATION_NONE)
+    rotatingDirection(ROTATION_NONE),
+    pendingRotationRequestId(GrillConstants::PAYLOAD_REQUEST_ID_EVERYONE),
+    pendingRotationCommand(""),
+    liftStartedAt(0)
      {}
 
 
@@ -94,14 +97,14 @@ void MovementManager::stop_rotor_raw()
 // Directional rotation. One command starts it and the rack keeps turning until a stop command
 // arrives, so unlike go_to_rotor() there is no target angle bounding the tilt: the whole drop
 // has to be cleared before the rotor may start.
-void MovementManager::rotate_clockwise()
+bool MovementManager::rotate_clockwise(const String& requestId, const String& command)
 {
-    start_rotating(ROTATION_CLOCKWISE);
+    return start_rotating(ROTATION_CLOCKWISE, requestId, command);
 }
 
-void MovementManager::rotate_counter_clockwise()
+bool MovementManager::rotate_counter_clockwise(const String& requestId, const String& command)
 {
-    start_rotating(ROTATION_COUNTER_CLOCKWISE);
+    return start_rotating(ROTATION_COUNTER_CLOCKWISE, requestId, command);
 }
 
 // The stop command.
@@ -119,13 +122,17 @@ void MovementManager::stop_rotor()
 
     // Stop arrived mid-turn: clearing the direction is what lets the guard start the way back down.
     rotatingDirection = ROTATION_NONE;
+    pendingRotationRequestId = GrillConstants::PAYLOAD_REQUEST_ID_EVERYONE;
+    pendingRotationCommand = "";
+    liftStartedAt = 0;
 }
 
 void MovementManager::turn_around() {
     mqtt->print("Turning around");
     int currentInclination = sensor->get_rotor_encoder_value();
     int targetInclination = (currentInclination + 180) % 360;
-    go_to_rotor(targetInclination);
+    // Nobody is waiting on this one: it is a program's flip action, not a client command.
+    go_to_rotor(targetInclination, GrillConstants::PAYLOAD_REQUEST_ID_EVERYONE, "");
 }
 
 
@@ -135,11 +142,11 @@ void MovementManager::turn_around() {
 
 // ------------- ROTOR ------------- //
 
-void MovementManager::go_to_rotor(int degrees) {
+bool MovementManager::go_to_rotor(int degrees, const String& requestId, const String& command) {
 
     // The MQTT boundary (Grill::handle_mqtt_message) validates this too, and can answer the
     // client. Kept here as well because turn_around() reaches this directly.
-    if (!has_rotor() || degrees < 0 || degrees >= 360) { return; }
+    if (!has_rotor() || degrees < 0 || degrees >= 360) { return false; }
 
     long currentPosition = sensor->get_encoder_value();
 
@@ -147,7 +154,7 @@ void MovementManager::go_to_rotor(int degrees) {
     // embers, so the turn does not start at all.
     if (currentPosition == (long)GrillConstants::ENCODER_ERROR) {
         mqtt->print("Rotation refused: the position encoder is not answering");
-        return;
+        return false;
     }
 
     // Too low to tilt: raise first and hold the turn. The target angle does not lower the bar,
@@ -157,17 +164,21 @@ void MovementManager::go_to_rotor(int degrees) {
         positionBeforeRotation = (int)currentPosition;
         pendingRotationDegrees = degrees;
         guardState = GUARD_LIFTING;
+        pendingRotationRequestId = requestId;
+        pendingRotationCommand = command;
+        liftStartedAt = millis();
 
         mqtt->print("Rotation held: raising from " + String(currentPosition) + " to " +
                     String(GrillConstants::SAFE_ROTATION_POSITION_PCT) + " first");
 
         go_to(GrillConstants::SAFE_ROTATION_POSITION_PCT);
-        return;
+        return true;
     }
 
     // Already high enough. Nothing to come back down to, so no position is remembered.
     guardState = GUARD_ROTATING;
     start_rotation(degrees);
+    return false;
 }
 
 void MovementManager::start_rotation(int degrees) {
@@ -192,15 +203,15 @@ void MovementManager::start_rotation(int degrees) {
 
 // Directional turn: same guard as go_to_rotor(), but what is held while lifting is a direction
 // to keep turning in, not an angle to stop at.
-void MovementManager::start_rotating(RotationDirection direction) {
+bool MovementManager::start_rotating(RotationDirection direction, const String& requestId, const String& command) {
 
-    if (!has_rotor()) { return; }
+    if (!has_rotor()) { return false; }
 
     long currentPosition = sensor->get_encoder_value();
 
     if (currentPosition == (long)GrillConstants::ENCODER_ERROR) {
         mqtt->print("Rotation refused: the position encoder is not answering");
-        return;
+        return false;
     }
 
     rotatingDirection = direction;
@@ -209,16 +220,20 @@ void MovementManager::start_rotating(RotationDirection direction) {
 
         positionBeforeRotation = (int)currentPosition;
         guardState = GUARD_LIFTING;
+        pendingRotationRequestId = requestId;
+        pendingRotationCommand = command;
+        liftStartedAt = millis();
 
         mqtt->print("Rotation held: raising from " + String(currentPosition) + " to " +
                     String(GrillConstants::SAFE_ROTATION_POSITION_PCT) + " first");
 
         go_to(GrillConstants::SAFE_ROTATION_POSITION_PCT);
-        return;
+        return true;
     }
 
     guardState = GUARD_ROTATING;
     run_rotating(direction);
+    return false;
 }
 
 void MovementManager::run_rotating(RotationDirection direction) {
@@ -273,6 +288,28 @@ void MovementManager::update_rotation_guard() {
                     start_rotation(pendingRotationDegrees);
                     pendingRotationDegrees = GrillConstants::NO_TARGET;
                 }
+
+                // The turn is under way, which is the answer whoever asked has been waiting
+                // for since the lift began. Same rule as reply_ok_if_unanswered(): EVERYONE
+                // means nobody asked, so a success is not worth broadcasting.
+                if (pendingRotationRequestId != GrillConstants::PAYLOAD_REQUEST_ID_EVERYONE) {
+                    mqtt->reply_to(pendingRotationRequestId, pendingRotationCommand, true, nullptr);
+                    pendingRotationRequestId = GrillConstants::PAYLOAD_REQUEST_ID_EVERYONE;
+                    pendingRotationCommand = "";
+                }
+                break;
+            }
+
+            // The actuator never got there: jammed, or the encoder died mid-move. A failure is
+            // broadcast even when nobody asked, because the grill just refused to do something
+            // a program told it to.
+            if (millis() - liftStartedAt > GrillConstants::MOVEMENT_TIMEOUT) {
+                mqtt->print("The grill did not reach a safe height in time, rotation cancelled");
+                stop_lineal_actuator();
+                targetPosition = GrillConstants::NO_TARGET;
+                mqtt->reply_to(pendingRotationRequestId, pendingRotationCommand, false,
+                               GrillConstants::ERROR_ROTATION_UNSAFE);
+                reset_rotation_guard();
             }
             break;
 

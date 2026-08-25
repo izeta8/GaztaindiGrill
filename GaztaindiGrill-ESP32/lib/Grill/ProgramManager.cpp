@@ -202,8 +202,9 @@ void ProgramManager::start_current_step() {
         movement->go_to(resolvedTarget);
         stepState = STEP_MOVING_TO_TARGET;
     } else if (step.rotation != -1) {
-        // Movimiento por rotación
-        movement->go_to_rotor(step.rotation);
+        // Movimiento por rotación. Nadie espera respuesta: el execute_program que lanzó este
+        // programa se contestó hace rato, así que un fallo se anuncia a todos (EVERYONE).
+        movement->go_to_rotor(step.rotation, GrillConstants::PAYLOAD_REQUEST_ID_EVERYONE, "");
         stepState = STEP_MOVING_TO_TARGET;
     } else {
         // Si es un paso de "Solo Tiempo" (sin movimientos ni acciones)

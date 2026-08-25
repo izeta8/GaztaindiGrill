@@ -19,6 +19,17 @@ const initialState: GrillState = {
 
 const GrillStateContext = createContext<{ grillStates: GrillStates } | undefined>(undefined);
 
+// Los topics de acción llevan el sobre { value, requestId }; los de estado, el valor pelado.
+function unwrapEnvelope(payload: string): string {
+  if (!payload.startsWith('{')) return payload;
+  try {
+    const parsed = JSON.parse(payload);
+    return parsed?.value !== undefined ? String(parsed.value) : payload;
+  } catch {
+    return payload;
+  }
+}
+
 // Define how to handle each topic
 const TOPIC_HANDLERS: Record<string, { key: keyof GrillState; type: 'number' | 'string' }> = {
   [TOPICS.STATUS.SENSOR.POSITION]: { key: 'position', type: 'number' },
@@ -44,7 +55,7 @@ export function GrillStateProvider({ children }: { children: React.ReactNode }) 
     if (!handlerEntry) return;
 
     const { key, type } = handlerEntry[1];
-    const payloadStr = payload.toString();
+    const payloadStr = unwrapEnvelope(payload.toString());
 
     let value: string | number = payloadStr;
     if (type === 'number') {

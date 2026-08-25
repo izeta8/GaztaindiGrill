@@ -6,6 +6,7 @@ import { useGrillCommands } from '@/app/control/hooks/useGrillCommands'
 import { Button } from '@/components/ui/Button'
 import { ChevronUp, ChevronDown, CircleStop, RotateCw, RotateCcw, Lock } from 'lucide-react'
 import { PAYLOAD_UP, PAYLOAD_DOWN, PAYLOAD_STOP, PAYLOAD_CLOCKWISE, PAYLOAD_COUNTER_CLOCKWISE } from '@/constants/mqtt'
+import { SAFE_ROTATION_POSITION } from '@/constants/grill'
 import { ControlPad } from './ControlPad'
 
 interface ControlColumnProps {
@@ -52,26 +53,37 @@ export function ControlColumn({ label, isConnected, isRunning, commands, grillSt
         <div className={`flex flex-col items-center gap-8 transition-all duration-700 ${isRunning ? 'opacity-20 blur-[1px] grayscale pointer-events-none' : ''}`}>
           
           {/* --- FILA 1: PADS DE CONTROL --- */}
-          <div className="flex items-center justify-center gap-3">
-            {grillIndex === 0 && (
-              <ControlPad
-                onUp={() => commands.handleRotationCommand(PAYLOAD_COUNTER_CLOCKWISE)}
-                onStop={() => commands.handleRotationCommand(PAYLOAD_STOP)}
-                onDown={() => commands.handleRotationCommand(PAYLOAD_CLOCKWISE)}
-                isConnected={isConnected}
-                movement={grillState.rotation_movement}
-                icons={{ up: RotateCcw, stop: CircleStop, down: RotateCw }}
-              />
-            )}
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center justify-center gap-3">
+              {grillIndex === 0 && (
+                <ControlPad
+                  onUp={() => commands.handleRotationCommand(PAYLOAD_COUNTER_CLOCKWISE)}
+                  onStop={() => commands.handleRotationCommand(PAYLOAD_STOP)}
+                  onDown={() => commands.handleRotationCommand(PAYLOAD_CLOCKWISE)}
+                  isConnected={isConnected}
+                  movement={grillState.rotation_movement}
+                  icons={{ up: RotateCcw, stop: CircleStop, down: RotateCw }}
+                />
+              )}
 
-            <ControlPad
-              onUp={() => commands.handleDirectionCommand(PAYLOAD_UP)}
-              onStop={() => commands.handleDirectionCommand(PAYLOAD_STOP)}
-              onDown={() => commands.handleDirectionCommand(PAYLOAD_DOWN)}
-              isConnected={isConnected}
-              movement={grillState.movement}
-              icons={{ up: ChevronUp, stop: CircleStop, down: ChevronDown }}
-            />
+              <ControlPad
+                onUp={() => commands.handleDirectionCommand(PAYLOAD_UP)}
+                onStop={() => commands.handleDirectionCommand(PAYLOAD_STOP)}
+                onDown={() => commands.handleDirectionCommand(PAYLOAD_DOWN)}
+                isConnected={isConnected}
+                movement={grillState.movement}
+                icons={{ up: ChevronUp, stop: CircleStop, down: ChevronDown }}
+              />
+            </div>
+
+            {/* Altura fija en las dos columnas: si no, el aviso desalinea la izquierda. */}
+            <div className="h-8 flex items-center justify-center">
+              {grillIndex === 0 && (grillState?.position ?? 0) < SAFE_ROTATION_POSITION && (
+                <p className="max-w-[170px] text-center text-[9px] font-bold uppercase leading-tight tracking-wide text-amber-600">
+                  Girar subirá al {SAFE_ROTATION_POSITION}% y volverá
+                </p>
+              )}
+            </div>
           </div>
 
           {/* --- FILA 2: SLIDERS Y ENTRADA DE POSICIÓN --- */}

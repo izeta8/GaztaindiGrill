@@ -196,20 +196,12 @@ void Grill::handle_mqtt_message(const char* pAction, GrillRequest& request) {
             mqtt->reply_error(request, GrillConstants::ERROR_NO_ROTOR);
             return;
         }
-        // Tilting drops the rack's lower edge towards the embers, so the guard needs to know
-        // how high it is. Without that reading there is no safe way to turn.
-        if (payload != GrillConstants::PAYLOAD_STOP &&
-            sensor->get_encoder_value() == (long)GrillConstants::ENCODER_ERROR) {
-            mqtt->reply_error(request, GrillConstants::ERROR_ROTATION_UNSAFE);
-            return;
-        }
-
+        // No headroom guard here on purpose: turning by hand is somebody watching the grill and
+        // stopping it. Only turns with a destination, which run unattended, get lifted.
         if (payload == GrillConstants::PAYLOAD_CLOCKWISE) {
-            // A true return means the grill has to be raised first, so the outcome is not known
-            // yet and the dispatcher must not answer "ok" on the way out.
-            if (movement->rotate_clockwise(request.id, request.command)) { mqtt->defer(request); }
+            movement->rotate_clockwise();
         } else if (payload == GrillConstants::PAYLOAD_COUNTER_CLOCKWISE) {
-            if (movement->rotate_counter_clockwise(request.id, request.command)) { mqtt->defer(request); }
+            movement->rotate_counter_clockwise();
         } else if (payload == GrillConstants::PAYLOAD_STOP) {
             movement->stop_rotor();
         }

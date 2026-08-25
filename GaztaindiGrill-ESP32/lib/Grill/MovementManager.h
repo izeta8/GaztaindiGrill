@@ -24,18 +24,16 @@ public:
     bool has_rotor();
 
     void turn_around();
+    void rotate_clockwise();
+    void rotate_counter_clockwise();
     void stop_rotor();
-
-    // Rotation entry points. They return true when the answer has been deferred: a lift had
-    // to start first, so whether the turn happens is only known later and the caller must
-    // not answer now. The requester travels with the call rather than being stored between
-    // messages, so a second command arriving mid-lift cannot steal the first one's answer.
-    bool rotate_clockwise(const String& requestId, const String& command);
-    bool rotate_counter_clockwise(const String& requestId, const String& command);
 
     // ------------------- GO_TO ------------------ //
     void go_to(int position);
     void go_to_temp(int temperature);
+    // Returns true when the answer is deferred: a lift had to start first, so whether the
+    // turn happens is only known later. The requester travels with the call so a second
+    // command arriving mid-lift cannot steal the first one's answer.
     bool go_to_rotor(int grades, const String& requestId, const String& command);
 
     // ------------------- RESETS ------------------ //
@@ -51,6 +49,8 @@ public:
 
     // ---------- ROTATION HEADROOM GUARD ---------- //
     int min_safe_position(int degrees);
+    // Lowest position the whole arc from one angle to another stays safe at.
+    int min_safe_position_for_turn(int fromAngle, int toAngle);
     void update_rotation_guard();
     void reset_rotation_guard();
 
@@ -78,33 +78,17 @@ private:
         GUARD_RETURNING  // going back down to positionBeforeRotation
     };
 
-    enum RotationDirection {
-        ROTATION_NONE,
-        ROTATION_CLOCKWISE,
-        ROTATION_COUNTER_CLOCKWISE
-    };
-
     RotationGuardState guardState;
     int pendingRotationDegrees; // held target angle while GUARD_LIFTING
     int positionBeforeRotation; // where to come back to; NO_TARGET when no lift was needed
-    RotationDirection rotatingDirection; // directional turn in progress; NONE for a targeted turn
 
-    // Who is waiting for the outcome of a rotation that had to lift first, and since when.
-    // EVERYONE means nobody asked (a program step, turn_around), so only a failure is worth
-    // broadcasting.
+    // Who is waiting for a rotation that had to lift first, and since when. EVERYONE means
+    // nobody asked, so only a failure is worth broadcasting.
     String pendingRotationRequestId;
     String pendingRotationCommand;
     unsigned long liftStartedAt;
 
-    // Drive the rotor with no headroom check. Only for callers already past the guard, same
-    // split as go_up() / go_up_raw() on the linear actuator.
-    void rotate_clockwise_raw();
-    void rotate_counter_clockwise_raw();
-    void stop_rotor_raw();
-
     void start_rotation(int degrees);
-    bool start_rotating(RotationDirection direction, const String& requestId, const String& command);
-    void run_rotating(RotationDirection direction);
 
 };
 

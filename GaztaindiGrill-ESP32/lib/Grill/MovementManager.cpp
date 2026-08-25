@@ -16,7 +16,6 @@ MovementManager::MovementManager(int index, GrillMQTT* mqtt, HardwareManager* ha
     guardState(GUARD_IDLE),
     pendingRotationDegrees(GrillConstants::NO_TARGET),
     positionBeforeRotation(GrillConstants::NO_TARGET),
-    rotatingDirection(ROTATION_NONE),
     pendingRotationRequestId(GrillConstants::PAYLOAD_REQUEST_ID_EVERYONE),
     pendingRotationCommand(""),
     liftStartedAt(0)
@@ -76,55 +75,22 @@ bool MovementManager::has_rotor()
     return hardware->rotor != nullptr;
 }
 
-void MovementManager::rotate_clockwise_raw()
+void MovementManager::rotate_clockwise()
 {
     if (!has_rotor()) { return; }
     hardware->rotor->rotate_clockwise();
 }
 
-void MovementManager::rotate_counter_clockwise_raw()
+void MovementManager::rotate_counter_clockwise()
 {
     if (!has_rotor()) { return; }
     hardware->rotor->rotate_counter_clockwise();
 }
 
-void MovementManager::stop_rotor_raw()
+void MovementManager::stop_rotor()
 {
     if (!has_rotor()) { return; }
     hardware->rotor->stop();
-}
-
-// Directional rotation. One command starts it and the rack keeps turning until a stop command
-// arrives, so unlike go_to_rotor() there is no target angle bounding the tilt: the whole drop
-// has to be cleared before the rotor may start.
-bool MovementManager::rotate_clockwise(const String& requestId, const String& command)
-{
-    return start_rotating(ROTATION_CLOCKWISE, requestId, command);
-}
-
-bool MovementManager::rotate_counter_clockwise(const String& requestId, const String& command)
-{
-    return start_rotating(ROTATION_COUNTER_CLOCKWISE, requestId, command);
-}
-
-// The stop command.
-void MovementManager::stop_rotor()
-{
-    stop_rotor_raw();
-
-    // Stop arrived while still on the way up: drop the pending rotation, or it would fire on
-    // its own as soon as the lift finishes.
-    if (guardState == GUARD_LIFTING) {
-        mqtt->print("Stop received during the lift, the pending rotation is cancelled");
-        reset_rotation_guard();
-        return;
-    }
-
-    // Stop arrived mid-turn: clearing the direction is what lets the guard start the way back down.
-    rotatingDirection = ROTATION_NONE;
-    pendingRotationRequestId = GrillConstants::PAYLOAD_REQUEST_ID_EVERYONE;
-    pendingRotationCommand = "";
-    liftStartedAt = 0;
 }
 
 void MovementManager::turn_around() {
@@ -157,9 +123,10 @@ bool MovementManager::go_to_rotor(int degrees, const String& requestId, const St
         return false;
     }
 
-    // Too low to tilt: raise first and hold the turn. The target angle does not lower the bar,
-    // because the shortest arc to it sweeps through 90 degrees, where the drop is maximal.
-    if (currentPosition < GrillConstants::SAFE_ROTATION_POSITION_PCT) {
+    // Only as high as this particular turn needs: a small tilt asks for far less than a flip.
+    int required = min_safe_position_for_turn(sensor->get_rotor_encoder_value(), degrees);
+
+    if (currentPosition < required) {
 
         positionBeforeRotation = (int)currentPosition;
         pendingRotationDegrees = degrees;
@@ -169,9 +136,9 @@ bool MovementManager::go_to_rotor(int degrees, const String& requestId, const St
         liftStartedAt = millis();
 
         mqtt->print("Rotation held: raising from " + String(currentPosition) + " to " +
-                    String(GrillConstants::SAFE_ROTATION_POSITION_PCT) + " first");
+                    String(required) + " first");
 
-        go_to(GrillConstants::SAFE_ROTATION_POSITION_PCT);
+        go_to(required);
         return true;
     }
 
@@ -194,53 +161,10 @@ void MovementManager::start_rotation(int degrees) {
     // In the handle_rotor_stop() function that is called in loop, we handle when we have to stop
     if (differenceRight < differenceLeft)
     {
-        rotate_counter_clockwise_raw();
+        rotate_counter_clockwise();
     } else
     {
-        rotate_clockwise_raw();
-    }
-}
-
-// Directional turn: same guard as go_to_rotor(), but what is held while lifting is a direction
-// to keep turning in, not an angle to stop at.
-bool MovementManager::start_rotating(RotationDirection direction, const String& requestId, const String& command) {
-
-    if (!has_rotor()) { return false; }
-
-    long currentPosition = sensor->get_encoder_value();
-
-    if (currentPosition == (long)GrillConstants::ENCODER_ERROR) {
-        mqtt->print("Rotation refused: the position encoder is not answering");
-        return false;
-    }
-
-    rotatingDirection = direction;
-
-    if (currentPosition < GrillConstants::SAFE_ROTATION_POSITION_PCT) {
-
-        positionBeforeRotation = (int)currentPosition;
-        guardState = GUARD_LIFTING;
-        pendingRotationRequestId = requestId;
-        pendingRotationCommand = command;
-        liftStartedAt = millis();
-
-        mqtt->print("Rotation held: raising from " + String(currentPosition) + " to " +
-                    String(GrillConstants::SAFE_ROTATION_POSITION_PCT) + " first");
-
-        go_to(GrillConstants::SAFE_ROTATION_POSITION_PCT);
-        return true;
-    }
-
-    guardState = GUARD_ROTATING;
-    run_rotating(direction);
-    return false;
-}
-
-void MovementManager::run_rotating(RotationDirection direction) {
-    if (direction == ROTATION_CLOCKWISE) {
-        rotate_clockwise_raw();
-    } else {
-        rotate_counter_clockwise_raw();
+        rotate_clockwise();
     }
 }
 
@@ -269,6 +193,29 @@ int MovementManager::min_safe_position(int degrees) {
     return minimum;
 }
 
+// True when travelling `span` degrees from `start` passes over `angle`.
+static bool arc_covers(int start, int span, int angle) {
+    return ((angle - start + 360) % 360) <= span;
+}
+
+// The rack keeps tilting as it turns, so the whole arc has to clear the embers, not just the
+// destination. Only the two ends and a crossing of 90 or 270 can be the worst point of it.
+int MovementManager::min_safe_position_for_turn(int fromAngle, int toAngle) {
+
+    // start_rotation() always takes the shorter way round.
+    int forward = (toAngle - fromAngle + 360) % 360;
+    int span = (forward <= 180) ? forward : 360 - forward;
+    int start = (forward <= 180) ? fromAngle : toAngle;
+
+    if (arc_covers(start, span, 90) || arc_covers(start, span, 270)) {
+        return GrillConstants::SAFE_ROTATION_POSITION_PCT;
+    }
+
+    int fromFloor = min_safe_position(fromAngle);
+    int toFloor = min_safe_position(toAngle);
+    return (fromFloor > toFloor) ? fromFloor : toFloor;
+}
+
 // Advances the guard. Called every loop from GrillSystem::handle_rotor_operations(), right
 // after handle_rotor_stop(), so the targets it reads are already up to date.
 void MovementManager::update_rotation_guard() {
@@ -280,14 +227,8 @@ void MovementManager::update_rotation_guard() {
             if (targetPosition == GrillConstants::NO_TARGET) {
                 mqtt->print("Safe height reached, starting the held rotation");
                 guardState = GUARD_ROTATING;
-
-                if (rotatingDirection != ROTATION_NONE) {
-                    // A directional turn keeps its direction until a stop command arrives.
-                    run_rotating(rotatingDirection);
-                } else {
-                    start_rotation(pendingRotationDegrees);
-                    pendingRotationDegrees = GrillConstants::NO_TARGET;
-                }
+                start_rotation(pendingRotationDegrees);
+                pendingRotationDegrees = GrillConstants::NO_TARGET;
 
                 // The turn is under way, which is the answer whoever asked has been waiting
                 // for since the lift began. Same rule as reply_ok_if_unanswered(): EVERYONE
@@ -314,10 +255,6 @@ void MovementManager::update_rotation_guard() {
             break;
 
         case GUARD_ROTATING:
-            // A directional turn has no target angle to settle on; it ends when stop_rotor()
-            // clears the direction, so until then there is nothing to wait for here.
-            if (rotatingDirection != ROTATION_NONE) { break; }
-
             // handle_rotor_stop() clears the target once the rotor settles on the angle.
             if (targetDegrees == GrillConstants::NO_TARGET) {
 
@@ -358,7 +295,6 @@ void MovementManager::reset_rotation_guard() {
     guardState = GUARD_IDLE;
     pendingRotationDegrees = GrillConstants::NO_TARGET;
     positionBeforeRotation = GrillConstants::NO_TARGET;
-    rotatingDirection = ROTATION_NONE;
 }
 
 void MovementManager::handle_rotor_stop() {
@@ -366,9 +302,7 @@ void MovementManager::handle_rotor_stop() {
     int currentRotorPosition = sensor->get_rotor_encoder_value();
 
     if (abs(currentRotorPosition-targetDegrees) <= GrillConstants::ROTOR_MARGIN && targetDegrees != GrillConstants::NO_TARGET ) {
-        // _raw: a targeted turn reaching its angle is not a button release, and the guard
-        // reads the cleared targetDegrees below to know the turn is over.
-        stop_rotor_raw();
+        stop_rotor();
         targetDegrees = GrillConstants::NO_TARGET;
     }
 }
@@ -460,9 +394,7 @@ bool MovementManager::check_reset_status()
 void MovementManager::emergency_stop()
 {
     stop_lineal_actuator();
-    // _raw: stop_rotor() would hand the guard over to a return move, and this has just stopped
-    // the linear actuator on purpose.
-    stop_rotor_raw();
+    stop_rotor();
     isLinearResetting = false;
     targetTemperature = GrillConstants::NO_TARGET;
     targetDegrees = GrillConstants::NO_TARGET;

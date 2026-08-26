@@ -7,7 +7,7 @@ import { Select } from '@/components/ui/Select'
 import type { Dispatch, SetStateAction } from 'react'
 import { ReferenceType } from '@/types'
 
-export type StepType = 'temperature' | 'position' | 'rotation' | ''
+export type StepType = 'temperature' | 'position' | 'rotation' | 'wait' | ''
 
 export type StepFormState = {
   type: StepType
@@ -72,7 +72,8 @@ export function StepModal({
             options={[
               { value: 'temperature', label: 'Temperatura' },
               { value: 'position', label: 'Posición' },
-              { value: 'rotation', label: 'Rotación' }
+              { value: 'rotation', label: 'Rotación' },
+              { value: 'wait', label: 'Espera' }
             ]}
             required
           />
@@ -89,27 +90,6 @@ export function StepModal({
                 max={500}
                 required
               />
-              <div className="grid grid-cols-2 gap-3">
-                <Input
-                  label="Minutos"
-                  type="number"
-                  value={minutesStr}
-                  onChange={onMinutesChange}
-                  placeholder="1"
-                  min={0}
-                  required
-                />
-                <Input
-                  label="Segundos"
-                  type="number"
-                  value={secondsStr}
-                  onChange={onSecondsChange}
-                  placeholder="0"
-                  min={0}
-                  max={59}
-                  required
-                />
-              </div>
             </>
           )}
 
@@ -135,27 +115,6 @@ export function StepModal({
                 max={100}
                 required
               />
-              <div className="grid grid-cols-2 gap-3">
-                <Input
-                  label="Minutos"
-                  type="number"
-                  value={minutesStr}
-                  onChange={onMinutesChange}
-                  placeholder="0"
-                  min={0}
-                  required
-                />
-                <Input
-                  label="Segundos"
-                  type="number"
-                  value={secondsStr}
-                  onChange={onSecondsChange}
-                  placeholder="30"
-                  min={0}
-                  max={59}
-                  required
-                />
-              </div>
             </>
           )}
 
@@ -179,28 +138,31 @@ export function StepModal({
                 max={360}
                 required
               />
-              <div className="grid grid-cols-2 gap-3">
-                <Input
-                  label="Minutos"
-                  type="number"
-                  value={minutesStr}
-                  onChange={onMinutesChange}
-                  placeholder="0"
-                  min={0}
-                  required
-                />
-                <Input
-                  label="Segundos"
-                  type="number"
-                  value={secondsStr}
-                  onChange={onSecondsChange}
-                  placeholder="30"
-                  min={0}
-                  max={59}
-                  required
-                />
-              </div>
             </>
+          )}
+
+          {stepForm.type === 'wait' && (
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Minutos"
+                type="number"
+                value={minutesStr}
+                onChange={onMinutesChange}
+                placeholder="2"
+                min={0}
+                required
+              />
+              <Input
+                label="Segundos"
+                type="number"
+                value={secondsStr}
+                onChange={onSecondsChange}
+                placeholder="30"
+                min={0}
+                max={59}
+                required
+              />
+            </div>
           )}
         </div>
 
@@ -217,9 +179,10 @@ export function StepModal({
             className="flex-1"
             disabled={
               !stepForm.type ||
-              (stepForm.type === 'temperature' && (!stepForm.temperature || !stepForm.time)) ||
-              (stepForm.type === 'position' && (!stepForm.position || !stepForm.time)) ||
-              (stepForm.type === 'rotation' && (!stepForm.rotation || !stepForm.time))
+              (stepForm.type === 'temperature' && !stepForm.temperature) ||
+              (stepForm.type === 'position' && !stepForm.position) ||
+              (stepForm.type === 'rotation' && !stepForm.rotation) ||
+              (stepForm.type === 'wait' && !stepForm.time)
             }
           >
             {editingStep !== null ? 'Actualizar' : 'Añadir'}

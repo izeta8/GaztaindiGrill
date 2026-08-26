@@ -145,7 +145,10 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
   const openEditStepModal = (index: number) => {
     const step = steps[index]
     setStepForm({
-      type: step.temperature ? 'temperature' : step.rotation ? 'rotation' : 'position',
+      type: step.temperature != null ? 'temperature'
+          : step.rotation != null ? 'rotation'
+          : step.position != null ? 'position'
+          : 'wait',
       time: step.time?.toString() || '',
       temperature: step.temperature?.toString() || '',
       position: step.position?.toString() || '',
@@ -158,11 +161,17 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
     if (!stepForm.type) return
 
     const newStep: ProgramStep = {}
-    
-    if (!stepForm.time) return
-    newStep.time = parseInt(stepForm.time)
-    
-    if (stepForm.type === 'temperature') {
+
+    if (stepForm.type === 'wait') {
+      if (!stepForm.time) return
+      const secs = parseInt(stepForm.time)
+      // El firmware se salta un paso cuyo time no sea > 0.
+      if (isNaN(secs) || secs <= 0) {
+        toast.error('La espera tiene que ser mayor que cero')
+        return
+      }
+      newStep.time = secs
+    } else if (stepForm.type === 'temperature') {
       if (!stepForm.temperature) return
       newStep.temperature = parseInt(stepForm.temperature)
     } else if (stepForm.type === 'position') {

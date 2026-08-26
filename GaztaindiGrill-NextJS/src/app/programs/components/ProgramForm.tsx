@@ -15,6 +15,21 @@ import { CategoryModal } from './CategoryModal'
 
 export type Category = { id: number; name: string }
 
+// A wait step only carries time; every other kind moves the grill.
+const isWaitStep = (step: ProgramStep) =>
+  step.temperature == null && step.position == null && step.rotation == null && step.action == null
+
+// Consecutive movement steps, labelled the way the notice below the list shows them.
+const backToBackPairs = (steps: ProgramStep[]): string[] => {
+  const pairs: string[] = []
+  for (let i = 0; i < steps.length - 1; i++) {
+    if (!isWaitStep(steps[i]) && !isWaitStep(steps[i + 1])) {
+      pairs.push(`${i + 1} y ${i + 2}`)
+    }
+  }
+  return pairs
+}
+
 export type ProgramFormInitialValues = {
   id?: number | string
   name: string
@@ -165,7 +180,7 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
     if (stepForm.type === 'wait') {
       if (!stepForm.time) return
       const secs = parseInt(stepForm.time)
-      // El firmware se salta un paso cuyo time no sea > 0.
+      // The firmware skips a step whose time is not greater than zero.
       if (isNaN(secs) || secs <= 0) {
         toast.error('La espera tiene que ser mayor que cero')
         return
@@ -207,6 +222,8 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
     resetStepForm()
   }
   const deleteStep = (index: number) => setSteps(steps.filter((_, i) => i !== index))
+
+  const chainedSteps = useMemo(() => backToBackPairs(steps), [steps])
   const moveStep = (index: number, direction: 'up' | 'down') => {
     if ((direction === 'up' && index === 0) || (direction === 'down' && index === steps.length - 1)) return
     const swapped = [...steps]
@@ -411,6 +428,12 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
               onEdit={openEditStepModal}
               onDelete={(idx) => deleteStep(idx)}
             />
+
+            {chainedSteps.length > 0 && (
+              <p className="mt-3 text-xs text-gray-500">
+                Los pasos {chainedSteps.join(', ')} se encadenan sin pausa entre medias.
+              </p>
+            )}
           </div>
 
           {/* Submit Section */}

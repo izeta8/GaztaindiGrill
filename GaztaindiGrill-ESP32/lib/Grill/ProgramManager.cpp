@@ -206,10 +206,14 @@ void ProgramManager::start_current_step() {
         // programa se contestó hace rato, así que un fallo se anuncia a todos (EVERYONE).
         movement->go_to_rotor(step.rotation, GrillConstants::PAYLOAD_REQUEST_ID_EVERYONE, "");
         stepState = STEP_MOVING_TO_TARGET;
-    } else {
-        // Si es un paso de "Solo Tiempo" (sin movimientos ni acciones)
-        // Pasamos directamente a esperar el tiempo.
+    } else if (step.time > 0) {
+        // Espera. El reloj se arranca aquí: es el único camino que no pasa por
+        // check_target_reached(), que es quien lo arranca en los pasos con movimiento.
+        stepDurationStart = millis();
         stepState = STEP_WAITING_TIME;
+    } else {
+        mqtt->print("Step " + String(programCurrentStep + 1) + " has nothing to do, skipping it");
+        stepState = STEP_COMPLETED;
     }
 }
 

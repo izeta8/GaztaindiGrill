@@ -144,11 +144,11 @@ bool MovementManager::go_to_rotor(int degrees, const String& requestId, const St
 
     // Already high enough. Nothing to come back down to, so no position is remembered.
     guardState = GUARD_ROTATING;
-    start_rotation(degrees);
+    start_rotation_to(degrees);
     return false;
 }
 
-void MovementManager::start_rotation(int degrees) {
+void MovementManager::start_rotation_to(int degrees) {
 
     int currentRotorPosition = sensor->get_rotor_encoder_value();
     targetDegrees = degrees;
@@ -202,7 +202,7 @@ static bool arc_covers(int start, int span, int angle) {
 // destination. Only the two ends and a crossing of 90 or 270 can be the worst point of it.
 int MovementManager::min_safe_position_for_turn(int fromAngle, int toAngle) {
 
-    // start_rotation() always takes the shorter way round.
+    // start_rotation_to() always takes the shorter way round.
     int forward = (toAngle - fromAngle + 360) % 360;
     int span = (forward <= 180) ? forward : 360 - forward;
     int start = (forward <= 180) ? fromAngle : toAngle;
@@ -227,7 +227,7 @@ void MovementManager::update_rotation_guard() {
             if (targetPosition == GrillConstants::NO_TARGET) {
                 mqtt->print("Safe height reached, starting the held rotation");
                 guardState = GUARD_ROTATING;
-                start_rotation(pendingRotationDegrees);
+                start_rotation_to(pendingRotationDegrees);
                 pendingRotationDegrees = GrillConstants::NO_TARGET;
 
                 // The turn is under way, which is the answer whoever asked has been waiting

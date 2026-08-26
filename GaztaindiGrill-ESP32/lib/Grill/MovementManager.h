@@ -88,7 +88,7 @@ private:
     String pendingRotationCommand;
     unsigned long liftStartedAt;
 
-    void start_rotation(int degrees);
+    void start_rotation_to(int degrees);
 
 };
 

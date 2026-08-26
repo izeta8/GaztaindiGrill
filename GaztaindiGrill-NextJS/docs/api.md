@@ -31,14 +31,17 @@ interface Program {
 
 ### ProgramStep
 
-Un `ProgramStep` representa un único paso dentro de un `Program`.
+Un `ProgramStep` representa un único paso dentro de un `Program`, y hace **una sola cosa**: mover la parrilla o esperar.
+
+`time` a solas es un **paso de espera**; no es un retardo pegado a un movimiento. Los pasos que mueven la parrilla no llevan tiempo y avanzan en cuanto llegan a su destino. El firmware resuelve el tipo en el orden en que aparecen los campos abajo, y se salta un paso que no traiga ninguno.
 
 ```typescript
 interface ProgramStep {
-  time?: number;          // en segundos
+  action?: string;        // por ahora solo "flip"
   temperature?: number;   // en grados Celsius
   position?: number;      // 0-100
   rotation?: number;      // 0-360
+  time?: number;          // en segundos
 }
 ```
 
@@ -72,7 +75,7 @@ Obtiene una lista de todos los programas activos.
         "name": "Chuletón al punto",
         "description": "Chuletón de 500g a la brasa.",
         "category_id": 1,
-        "steps_json": "[{"time":300,"temperature":250},{"time":300,"position":50}]",
+        "steps_json": "[{\"position\":50},{\"time\":300},{\"action\":\"flip\"}]",
         "usage_count": 42,
         "creator_name": "Asador Gaztaindi",
         "creation_date": "2023-01-15",
@@ -107,7 +110,7 @@ Crea un nuevo programa.
       "name": "Nuevo Programa",
       "description": "Descripción opcional",
       "creatorName": "Tu Nombre",
-      "stepsJson": "[{"time":60,"temperature":180}]",
+      "stepsJson": "[{\"position\":30},{\"time\":60}]",
       "categoryId": 2
     }
     ```
@@ -123,7 +126,7 @@ Actualiza un programa existente. Se pueden enviar solo los campos a modificar.
     {
       "name": "Nombre del Programa Actualizado",
       "description": "Descripción actualizada",
-      "stepsJson": "[{"time":120,"temperature":200}]"
+      "stepsJson": "[{\"position\":30},{\"time\":120}]"
     }
     ```
 *   **Respuesta Exitosa (200 OK):** Un objeto confirmando la actualización.

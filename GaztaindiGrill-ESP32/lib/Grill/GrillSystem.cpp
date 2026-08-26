@@ -126,6 +126,10 @@ void GrillSystem::handle_rotor_operations() {
     // Only the left grill has a rotor
     if (grills[0]) {
         grills[0]->handle_rotor_stop();
+
+        // After handle_rotor_stop() so the guard sees this loop's targets, not the last one's.
+        grills[0]->update_rotation_guard();
+
         grills[0]->update_rotor_encoder();
     }
 }

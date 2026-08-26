@@ -15,6 +15,21 @@ import { CategoryModal } from './CategoryModal'
 
 export type Category = { id: number; name: string }
 
+// A wait step only has time. Everything else moves the grill.
+const isWaitStep = (step: ProgramStep) =>
+  step.temperature == null && step.position == null && step.rotation == null && step.action == null
+
+// Pairs of steps that run back to back, numbered for the notice.
+const backToBackPairs = (steps: ProgramStep[]): string[] => {
+  const pairs: string[] = []
+  for (let i = 0; i < steps.length - 1; i++) {
+    if (!isWaitStep(steps[i]) && !isWaitStep(steps[i + 1])) {
+      pairs.push(`${i + 1} y ${i + 2}`)
+    }
+  }
+  return pairs
+}
+
 export type ProgramFormInitialValues = {
   id?: number | string
   name: string
@@ -145,7 +160,10 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
   const openEditStepModal = (index: number) => {
     const step = steps[index]
     setStepForm({
-      type: step.temperature ? 'temperature' : step.rotation ? 'rotation' : 'position',
+      type: step.temperature != null ? 'temperature'
+          : step.rotation != null ? 'rotation'
+          : step.position != null ? 'position'
+          : 'wait',
       time: step.time?.toString() || '',
       temperature: step.temperature?.toString() || '',
       position: step.position?.toString() || '',
@@ -158,11 +176,17 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
     if (!stepForm.type) return
 
     const newStep: ProgramStep = {}
-    
-    if (!stepForm.time) return
-    newStep.time = parseInt(stepForm.time)
-    
-    if (stepForm.type === 'temperature') {
+
+    if (stepForm.type === 'wait') {
+      if (!stepForm.time) return
+      const secs = parseInt(stepForm.time)
+      // The firmware skips a step with time 0.
+      if (isNaN(secs) || secs <= 0) {
+        toast.error('La espera tiene que ser mayor que cero')
+        return
+      }
+      newStep.time = secs
+    } else if (stepForm.type === 'temperature') {
       if (!stepForm.temperature) return
       newStep.temperature = parseInt(stepForm.temperature)
     } else if (stepForm.type === 'position') {
@@ -198,6 +222,8 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
     resetStepForm()
   }
   const deleteStep = (index: number) => setSteps(steps.filter((_, i) => i !== index))
+
+  const chainedSteps = useMemo(() => backToBackPairs(steps), [steps])
   const moveStep = (index: number, direction: 'up' | 'down') => {
     if ((direction === 'up' && index === 0) || (direction === 'down' && index === steps.length - 1)) return
     const swapped = [...steps]
@@ -402,6 +428,12 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
               onEdit={openEditStepModal}
               onDelete={(idx) => deleteStep(idx)}
             />
+
+            {chainedSteps.length > 0 && (
+              <p className="mt-3 text-xs text-gray-500">
+                Los pasos {chainedSteps.join(', ')} se encadenan sin pausa entre medias.
+              </p>
+            )}
           </div>
 
           {/* Submit Section */}

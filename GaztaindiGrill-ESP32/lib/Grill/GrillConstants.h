@@ -22,7 +22,19 @@ public:
     static constexpr int TEMPERATURE_MARGIN = 2;
     static constexpr int ROTOR_MARGIN = 3;
     static constexpr int SYNC_MARGIN = 0; // Margin for dual mode synchronization
-    
+
+    // Rotation headroom. The rack is 30 cm deep and turns on its central axis, so tilting it
+    // 90 degrees drops its lower edge 15 cm. The linear actuator's whole travel is also 30 cm
+    // and at 0% the rack reaches the embers, so those 15 cm are half the position range.
+    static constexpr int ROTATION_MAX_DROP_PCT = 50;
+
+    // Air left under the tilted edge: 3 cm over a 30 cm travel.
+    static constexpr int CLEARANCE_PCT = 10;
+
+    // Height every rotation demands before the rotor may start. It is min_safe_position(90),
+    // the worst case, because a turn sweeps through 90 degrees whatever its target angle is.
+    static constexpr int SAFE_ROTATION_POSITION_PCT = 60;
+
     // Timeouts
     static constexpr unsigned long RESET_TIMEOUT = 1000;
     static constexpr unsigned long MOVEMENT_TIMEOUT = 30000;
@@ -123,6 +135,7 @@ public:
     static constexpr const char* ERROR_MODE_CHANGE_DENIED = "mode_change_denied";
     static constexpr const char* ERROR_NO_PROGRAM_RUNNING = "no_program_running";
     static constexpr const char* ERROR_ENCODER_NOT_ANSWERING = "encoder_not_answering";
+    static constexpr const char* ERROR_ROTATION_UNSAFE = "rotation_unsafe";
 };
 
 #endif

@@ -50,8 +50,10 @@ Publicado por `ProgramManager::publish_program_status()` en el firmware:
   "currentStepIndex": 1,
   "referenceType": "absolute",
   "steps": [
-    { "time": 300, "temperature": 220, "position": 40 },
-    { "time": 600, "position": 20, "stepStartUnix": 1755781200 }
+    { "position": 40 },
+    { "time": 300 },
+    { "action": "flip" },
+    { "position": 20, "stepStartUnix": 1755781200 }
   ]
 }
 ```

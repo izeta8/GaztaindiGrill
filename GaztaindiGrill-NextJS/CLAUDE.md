@@ -13,7 +13,10 @@ npm run dev      # next dev --turbopack
 npm run build
 npm run start
 npm run lint      # next lint
+npm run typecheck # tsc --noEmit, does not touch .next
 ```
+
+**Do not run `npm run build` while `npm run dev` is up.** `next dev` uses Turbopack and `next build` uses webpack, and both write to the same `.next` directory, so a build wipes the manifests out from under the dev server. It then throws `ENOENT ... build-manifest.json` on every request until you restart it. Use `npm run typecheck` instead: it checks the same types and never touches `.next`.
 
 No automated test suite is configured (no jest/vitest setup) — verification is manual in the browser, against the real grill. To watch or fake MQTT traffic while developing, use `mosquitto_sub -v -t 'grill/#'` and `mosquitto_pub` directly against the broker.
 

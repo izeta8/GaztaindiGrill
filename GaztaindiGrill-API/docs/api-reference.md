@@ -73,7 +73,7 @@ Gestiona los programas de cocción, que contienen los pasos para una receta.
       "name": "Chuleta a punto",
       "description": "Chuleta de 500g a fuego fuerte.",
       "category_id": 1,
-      "steps_json": "[{"temp": 250, "duration": 300}, {"temp": 200, "duration": 600}]",
+      "steps_json": "[{\"position\": 30}, {\"time\": 300}, {\"action\": \"flip\"}]",
       "creator_name": "Asador Principal",
       "creation_date": "2024-02-17T11:00:00Z",
       "update_date": null,
@@ -97,7 +97,7 @@ Gestiona los programas de cocción, que contienen los pasos para una receta.
     "name": "Chuleta a punto",
     "description": "Chuleta de 500g a fuego fuerte.",
     "category_id": 1,
-    "steps_json": "[{"temp": 250, "duration": 300}, {"temp": 200, "duration": 600}]",
+    "steps_json": "[{\"position\": 30}, {\"time\": 300}, {\"action\": \"flip\"}]",
     "creator_name": "Asador Principal",
     "creation_date": "2024-02-17T11:00:00Z",
     "update_date": null,
@@ -124,7 +124,7 @@ Gestiona los programas de cocción, que contienen los pasos para una receta.
     "name": "Merluza a la brasa",
     "description": "Lomo de merluza con piel.",
     "categoryId": 2,
-    "stepsJson": "[{"temp": 180, "duration": 480}]",
+    "stepsJson": "[{\"position\": 30}, {\"time\": 480}]",
     "creatorName": "Chef de Mar",
     "referenceType": "relative"
   }

@@ -31,7 +31,10 @@ public:
     // ------------------- GO_TO ------------------ //
     void go_to(int position);
     void go_to_temp(int temperature);
-    void go_to_rotor(int grades);
+    // Returns true when the answer is deferred: a lift had to start first, so whether the
+    // turn happens is only known later. The requester travels with the call so a second
+    // command arriving mid-lift cannot steal the first one's answer.
+    bool go_to_rotor(int grades, const String& requestId, const String& command);
 
     // ------------------- RESETS ------------------ //
     void start_reset();
@@ -43,11 +46,18 @@ public:
     void handle_rotor_stop();
     void handle_position_stop();
     void handle_temperature_stop();
-    
+
+    // ---------- ROTATION HEADROOM GUARD ---------- //
+    int min_safe_position(int degrees);
+    // Lowest position the whole arc from one angle to another stays safe at.
+    int min_safe_position_for_turn(int fromAngle, int toAngle);
+    void update_rotation_guard();
+    void reset_rotation_guard();
+
     // -------------- GO_TO TARGETS ------------- //
     int targetTemperature;
     int targetDegrees;
-    int targetPosition; 
+    int targetPosition;
     bool has_any_active_target();
 
 private:
@@ -60,6 +70,25 @@ private:
     HardwareManager* hardware;
     GrillSensor* sensor;
     ModeManager* modeManager;
+
+    enum RotationGuardState {
+        GUARD_IDLE,
+        GUARD_LIFTING,   // raising to a safe height; the rotor has not started yet
+        GUARD_ROTATING,  // the rotor is running
+        GUARD_RETURNING  // going back down to positionBeforeRotation
+    };
+
+    RotationGuardState guardState;
+    int pendingRotationDegrees; // held target angle while GUARD_LIFTING
+    int positionBeforeRotation; // where to come back to; NO_TARGET when no lift was needed
+
+    // Who is waiting for a rotation that had to lift first, and since when. EVERYONE means
+    // nobody asked, so only a failure is worth broadcasting.
+    String pendingRotationRequestId;
+    String pendingRotationCommand;
+    unsigned long liftStartedAt;
+
+    void start_rotation_to(int degrees);
 
 };
 

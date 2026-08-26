@@ -61,7 +61,7 @@ Contiene los programas de cocción con todos sus detalles y pasos.
 | `name` | `VARCHAR(255)` | `NOT NULL` | Nombre descriptivo del programa. |
 | `description` | `TEXT` | `NULL` | Explicación más detallada del programa. |
 | `category_id` | `INT` | `FOREIGN KEY(categories.id)` | ID de la categoría a la que pertenece. |
-| `steps_json` | `JSON` | `NOT NULL` | Array de objetos JSON que define los pasos de cocción. |
+| `steps_json` | `JSON` | `NOT NULL` | Array de objetos JSON que define los pasos de cocción. Cada paso hace una sola cosa: `action`, `temperature`, `position`, `rotation` o `time`. Un paso con solo `time` es una **espera**. |
 | `creator_name` | `VARCHAR(100)`| `NOT NULL` | Nombre del usuario o rol que creó el programa. |
 | `creation_date` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP`| Fecha y hora de creación del registro. |
 | `update_date` | `TIMESTAMP` | `NULL` | Fecha de la última actualización. |

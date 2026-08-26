@@ -117,6 +117,8 @@ void ProgramManager::finish_program(bool forcedCancelation = false) {
     movement->targetPosition = GrillConstants::NO_TARGET;
     movement->targetDegrees = GrillConstants::NO_TARGET;
     movement->targetTemperature = GrillConstants::NO_TARGET;
+    // A rotation held waiting for a lift has to go too, or it would fire once the grill is up.
+    movement->reset_rotation_guard();
     movement->stop_lineal_actuator();
     
     // Clear the in-memory program
@@ -200,13 +202,16 @@ void ProgramManager::start_current_step() {
         movement->go_to(resolvedTarget);
         stepState = STEP_MOVING_TO_TARGET;
     } else if (step.rotation != -1) {
-        // Movimiento por rotación
-        movement->go_to_rotor(step.rotation);
+        // Rotation step. Nobody is waiting on this one, so failures go to EVERYONE.
+        movement->go_to_rotor(step.rotation, GrillConstants::PAYLOAD_REQUEST_ID_EVERYONE, "");
         stepState = STEP_MOVING_TO_TARGET;
-    } else {
-        // Si es un paso de "Solo Tiempo" (sin movimientos ni acciones)
-        // Pasamos directamente a esperar el tiempo.
+    } else if (step.time > 0) {
+        // Wait step. Starts its own clock; moving steps get theirs in check_target_reached().
+        stepDurationStart = millis();
         stepState = STEP_WAITING_TIME;
+    } else {
+        mqtt->print("Step " + String(programCurrentStep + 1) + " has nothing to do, skipping it");
+        stepState = STEP_COMPLETED;
     }
 }
 

@@ -113,6 +113,13 @@ void Grill::handle_temperature_stop() {
 }
 
 //
+// Rotation clearance guard
+//
+void Grill::update_rotation_guard() {
+    movement->update_rotation_guard();
+}
+
+//
 // Mode
 //
 DualModeDirection Grill::get_dual_direction() {
@@ -189,6 +196,8 @@ void Grill::handle_mqtt_message(const char* pAction, GrillRequest& request) {
             mqtt->reply_error(request, GrillConstants::ERROR_NO_ROTOR);
             return;
         }
+        // No headroom guard here on purpose: turning by hand is somebody watching the grill and
+        // stopping it. Only turns with a destination, which run unattended, get lifted.
         if (payload == GrillConstants::PAYLOAD_CLOCKWISE) {
             movement->rotate_clockwise();
         } else if (payload == GrillConstants::PAYLOAD_COUNTER_CLOCKWISE) {
@@ -231,7 +240,14 @@ void Grill::handle_mqtt_message(const char* pAction, GrillRequest& request) {
             mqtt->reply_error(request, GrillConstants::ERROR_ROTATION_OUT_OF_RANGE);
             return;
         }
-        movement->go_to_rotor(grades);
+
+        // Same reasoning as the manual rotation above: no position reading, no safe tilt.
+        if (sensor->get_encoder_value() == (long)GrillConstants::ENCODER_ERROR) {
+            mqtt->reply_error(request, GrillConstants::ERROR_ROTATION_UNSAFE);
+            return;
+        }
+
+        if (movement->go_to_rotor(grades, request.id, request.command)) { mqtt->defer(request); }
     }
 
     if (topic == GrillConstants::TOPIC_CMD_REQ_PROG_STATUS) {

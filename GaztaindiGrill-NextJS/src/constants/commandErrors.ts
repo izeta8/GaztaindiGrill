@@ -9,6 +9,7 @@ export const COMMAND_ERROR_MESSAGES: Record<string, string> = {
   mode_change_denied: 'No se puede cambiar de modo con un programa en marcha',
   no_program_running: 'No hay ningún programa en marcha',
   encoder_not_answering: 'El encoder no responde: no se puede iniciar un programa relativo',
+  rotation_unsafe: 'No se puede girar: la parrilla no ha podido subir a una altura segura',
   resetting: 'La parrilla se está reiniciando, espera unos segundos',
 }
 

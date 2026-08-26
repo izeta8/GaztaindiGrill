@@ -21,27 +21,31 @@ export const getStepIcon = (step: ProgramStep) => {
 
 
 export const getStepDescription = (step: ProgramStep): ReactNode => {
-  if (step.temperature) {
+  if (step.temperature != null) {
     return (
       <div className="leading-tight">
         <div><span className="font-medium">Temperatura:</span> {step.temperature}°C</div>
-        <div><span className="font-medium">Tiempo:</span> {formatSeconds(step.time as number)}</div>
       </div>
     )
   }
-  if (step.position) {
+  if (step.position != null) {
     return (
       <div className="leading-tight">
         <div><span className="font-medium">Posición:</span> {step.position}</div>
-        <div><span className="font-medium">Tiempo:</span> {formatSeconds(step.time as number)}</div>
       </div>
     )
   }
-  if (step.rotation) {
+  if (step.rotation != null) {
     return (
       <div className="leading-tight">
         <div><span className="font-medium">Inclinación:</span> {step.rotation}°</div>
-        <div><span className="font-medium">Tiempo:</span> {formatSeconds(step.time as number)}</div>
+      </div>
+    )
+  }
+  if (step.time != null) {
+    return (
+      <div className="leading-tight">
+        <div><span className="font-medium">Espera:</span> {formatSeconds(step.time)}</div>
       </div>
     )
   }

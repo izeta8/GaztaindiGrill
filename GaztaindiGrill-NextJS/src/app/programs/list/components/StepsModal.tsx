@@ -41,9 +41,6 @@ const getStepDescription = (step: ProgramStep): ReactNode => {
     return (
       <div className="leading-tight">
         <div><span className="font-medium">Temperatura:</span> {step.temperature}°C</div>
-        {step.time != null && (
-          <div><span className="font-medium">Tiempo:</span> {formatSeconds(step.time)}</div>
-        )}
       </div>
     )
   }
@@ -51,9 +48,6 @@ const getStepDescription = (step: ProgramStep): ReactNode => {
     return (
       <div className="leading-tight">
         <div><span className="font-medium">Posición:</span> {step.position}</div>
-        {step.time != null && (
-          <div><span className="font-medium">Tiempo:</span> {formatSeconds(step.time)}</div>
-        )}
       </div>
     )
   }
@@ -61,9 +55,13 @@ const getStepDescription = (step: ProgramStep): ReactNode => {
     return (
       <div className="leading-tight">
         <div><span className="font-medium">Inclinación:</span> {step.rotation}°</div>
-        {step.time != null && (
-          <div><span className="font-medium">Tiempo:</span> {formatSeconds(step.time)}</div>
-        )}
+      </div>
+    )
+  }
+  if (step.time != null) {
+    return (
+      <div className="leading-tight">
+        <div><span className="font-medium">Espera:</span> {formatSeconds(step.time)}</div>
       </div>
     )
   }

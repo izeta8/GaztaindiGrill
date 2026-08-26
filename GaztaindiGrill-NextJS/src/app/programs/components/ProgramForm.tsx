@@ -15,11 +15,11 @@ import { CategoryModal } from './CategoryModal'
 
 export type Category = { id: number; name: string }
 
-// A wait step only carries time; every other kind moves the grill.
+// A wait step only has time. Everything else moves the grill.
 const isWaitStep = (step: ProgramStep) =>
   step.temperature == null && step.position == null && step.rotation == null && step.action == null
 
-// Consecutive movement steps, labelled the way the notice below the list shows them.
+// Pairs of steps that run back to back, numbered for the notice.
 const backToBackPairs = (steps: ProgramStep[]): string[] => {
   const pairs: string[] = []
   for (let i = 0; i < steps.length - 1; i++) {
@@ -180,7 +180,7 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
     if (stepForm.type === 'wait') {
       if (!stepForm.time) return
       const secs = parseInt(stepForm.time)
-      // The firmware skips a step whose time is not greater than zero.
+      // The firmware skips a step with time 0.
       if (isNaN(secs) || secs <= 0) {
         toast.error('La espera tiene que ser mayor que cero')
         return

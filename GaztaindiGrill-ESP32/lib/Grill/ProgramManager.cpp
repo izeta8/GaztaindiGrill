@@ -202,13 +202,13 @@ void ProgramManager::start_current_step() {
         movement->go_to(resolvedTarget);
         stepState = STEP_MOVING_TO_TARGET;
     } else if (step.rotation != -1) {
-        // Movimiento por rotación. Nadie espera respuesta: el execute_program que lanzó este
-        // programa se contestó hace rato, así que un fallo se anuncia a todos (EVERYONE).
+        // Rotation step. Nobody is waiting for an answer: the execute_program that started
+        // this program was replied to long ago, so a failure is broadcast to EVERYONE.
         movement->go_to_rotor(step.rotation, GrillConstants::PAYLOAD_REQUEST_ID_EVERYONE, "");
         stepState = STEP_MOVING_TO_TARGET;
     } else if (step.time > 0) {
-        // Espera. El reloj se arranca aquí: es el único camino que no pasa por
-        // check_target_reached(), que es quien lo arranca en los pasos con movimiento.
+        // Wait step. The clock starts here because this is the only path that skips
+        // check_target_reached(), which is what starts it on steps that move.
         stepDurationStart = millis();
         stepState = STEP_WAITING_TIME;
     } else {

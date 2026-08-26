@@ -20,11 +20,12 @@ El firmware sigue un diseño orientado a objetos para separar las responsabilida
 
 -   **`ProgramManager`:**
     -   **Es el cerebro de la ejecución de programas.** Contiene la máquina de estados (`ProgramState`, `StepState`) que controla el avance de un programa paso a paso.
-    -   Interpreta el JSON del programa y lo convierte en una secuencia de acciones.
+    -   Interpreta el JSON del programa y lo convierte en una secuencia de acciones. Cada paso es **una sola cosa**, y `start_current_step()` decide cuál en este orden: `action`, `temperature`, `position`, `rotation`, `time` (espera). Un paso sin ninguno de esos campos se salta.
     -   Mantiene el estado del programa actual **en RAM** (no sobrevive a reinicios en la versión actual).
 
 -   **`MovementManager`:**
     -   Responsable de todo el movimiento físico: actuador lineal (posición) y motor de rotación (inclinación).
+    -   Aloja el **seguro de holgura de rotación** descrito en §6.
 
 -   **`GrillMQTT`:**
     -   Es un "wrapper" o envoltorio que simplifica la comunicación con el broker MQTT. Centraliza la lógica para publicar y suscribirse a topics, parsearlos, etc.
@@ -69,8 +70,10 @@ Este es el flujo clave para asegurar que cualquier cliente que se conecte pueda 
   "currentStepIndex": 1,
   "referenceType": "absolute",
   "steps": [
-    { "time": 300, "temperature": 220, "position": 40 },
-    { "time": 600, "position": 20, "stepStartUnix": 1755781200 }
+    { "position": 40 },
+    { "time": 300 },
+    { "action": "flip" },
+    { "position": 20, "stepStartUnix": 1755781200 }
   ]
 }
 ```
@@ -104,3 +107,30 @@ Para evitar "estados fantasma" en los clientes (que la UI muestre un programa en
 -   **Solución Futura (Ideal):** Para implementar una reanudación precisa al segundo, la solución correcta es añadir al circuito un chip de **memoria FRAM (RAM Ferroeléctrica)**.
     -   La FRAM permite escrituras constantes y rápidas sin desgaste y no es volátil.
     -   La arquitectura futura consistiría en guardar el JSON del programa en la Flash una vez, y actualizar el progreso (`paso_actual`, `segundos_transcurridos`) en la FRAM cada segundo.
+
+## 6. Seguro de Holgura de Rotación
+
+La rejilla mide 30 cm de fondo y gira sobre su eje central, así que inclinarla 90° baja su borde 15 cm. El recorrido completo del actuador lineal es también de 30 cm y a la posición 0 % la rejilla ya llega a las brasas: esos 15 cm son **la mitad del recorrido**.
+
+Sin seguro, pedir un giro con la parrilla abajo mete la rejilla en la brasa.
+
+**Qué hace.** Ante un giro con destino, `MovementManager` guarda la posición actual, sube a la altura que ese giro concreto necesita, gira, y vuelve a donde estaba.
+
+```
+IDLE ──(giro pedido, demasiado bajo)──► LIFTING ──(arriba)──► ROTATING ──(rotor parado)──► RETURNING ──► IDLE
+  └──(ya hay holgura)──────────────────────────────────────► ROTATING ──► ...
+```
+
+El guard avanza en cada iteración del `loop()` desde `GrillSystem::handle_rotor_operations()`, que ya solo se ejecuta para la parrilla 0.
+
+**Cuánto sube.** `min_safe_position(θ) = 50·|sin θ| + CLEARANCE_PCT`, con una excepción: a menos de `ROTOR_MARGIN` de la horizontal (0° o 180°) devuelve 0, porque no hay borde colgando y la parrilla puede bajar del todo.
+
+La altura que se exige no es la del ángulo destino sino la del **peor punto del arco recorrido**, que calcula `min_safe_position_for_turn()`. Un volteo de 180° cruza los 90° aunque empiece y acabe en horizontal, así que pide el máximo (`SAFE_ROTATION_POSITION_PCT`, 60 %); un giro de 10° no cruza nada y desde el 20 % no sube.
+
+**Qué cubre y qué no.** Cubre los tres caminos que pasan por `go_to_rotor()`: `action/movement/set_rotation`, los pasos de rotación de un programa y la acción `flip` (vía `turn_around()`). **No** cubre los giros manuales (`rotate_clockwise()` / `rotate_counter_clockwise()`): esos los da alguien mirando la parrilla, y frenarlos con una subida automática estorbaba más de lo que protegía. Tampoco pone tope a los movimientos verticales normales.
+
+**Interacción con los programas.** `has_any_active_target()` cuenta el estado del guard además de los tres targets. Sin eso, entre la subida y el giro hay un instante en que `targetPosition` ya está limpio y `targetDegrees` todavía no está puesto, y `ProgramManager::check_target_reached()` daría el paso por terminado a mitad de maniobra. Con ello, el tiempo de un paso empieza a contar cuando la maniobra entera ha acabado.
+
+**Si no se puede asegurar**, el firmware responde `rotation_unsafe`: o el encoder de posición no contesta al recibir el comando, o la subida no llegó dentro de `MOVEMENT_TIMEOUT`. Como en el segundo caso la respuesta llega tarde, el handler llama a `defer()` y contesta después con `reply_to()`.
+
+> **Supuesto de operación:** el encoder del rotor es incremental y `DeviceEncoder::begin()` lo pone a 0 en cada arranque, sin homing. El firmware da por hecho que **al encender la rejilla está horizontal**. No hay código que lo verifique.

@@ -35,7 +35,7 @@ Full design write-up lives in [ARCHITECTURE.md](ARCHITECTURE.md) — read it bef
 - **`GrillSystem`** — owns the 2 `Grill` instances (`GrillConstants::NUM_GRILLS`).
 - **`Grill`** — facade for a single grill; routes MQTT commands to the right manager.
 - **`ProgramManager`** — state machine (`ProgramState`/`StepState`) that drives step-by-step program execution; program state lives in RAM only and does **not** survive a reboot (deliberate tradeoff to avoid flash wear — see ARCHITECTURE.md §5 for the FRAM-based plan if this ever needs to change).
-- **`MovementManager`** — vertical actuator + rotation motor control.
+- **`MovementManager`** — vertical actuator + rotation motor control, plus the rotation headroom guard: a turn *with a destination* asked for too low raises the grill first, turns, and comes back. Manual rotation is deliberately left out. See ARCHITECTURE.md §6.
 - **`GrillMQTT`** — wrapper centralizing publish/subscribe/topic-parsing logic.
 - **`HardwareManager`, `GrillSensor`, `StatusLed`** — low-level hardware abstraction.
 - **`DualModeCoordinator`** — coordinates the two grills when running in "dual" mode (vs "single").

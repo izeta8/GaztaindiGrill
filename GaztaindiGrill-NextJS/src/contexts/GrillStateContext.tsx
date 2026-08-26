@@ -19,7 +19,7 @@ const initialState: GrillState = {
 
 const GrillStateContext = createContext<{ grillStates: GrillStates } | undefined>(undefined);
 
-// Los topics de acción llevan el sobre { value, requestId }; los de estado, el valor pelado.
+// Action topics carry the { value, requestId } envelope; state topics carry the bare value.
 function unwrapEnvelope(payload: string): string {
   if (!payload.startsWith('{')) return payload;
   try {

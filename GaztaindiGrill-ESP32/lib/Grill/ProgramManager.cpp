@@ -202,13 +202,11 @@ void ProgramManager::start_current_step() {
         movement->go_to(resolvedTarget);
         stepState = STEP_MOVING_TO_TARGET;
     } else if (step.rotation != -1) {
-        // Rotation step. Nobody is waiting for an answer: the execute_program that started
-        // this program was replied to long ago, so a failure is broadcast to EVERYONE.
+        // Rotation step. Nobody is waiting on this one, so failures go to EVERYONE.
         movement->go_to_rotor(step.rotation, GrillConstants::PAYLOAD_REQUEST_ID_EVERYONE, "");
         stepState = STEP_MOVING_TO_TARGET;
     } else if (step.time > 0) {
-        // Wait step. The clock starts here because this is the only path that skips
-        // check_target_reached(), which is what starts it on steps that move.
+        // Wait step. Starts its own clock; moving steps get theirs in check_target_reached().
         stepDurationStart = millis();
         stepState = STEP_WAITING_TIME;
     } else {

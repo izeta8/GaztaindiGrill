@@ -68,6 +68,16 @@ void GrillSensor::update_rotor_encoder() {
     }
 }
 
+void GrillSensor::reset_rotor_encoder() {
+
+    hardware->reset_rotor_encoder();
+    lastRotorEncoderValue = 0;
+
+    Serial.println("Rotor Encoder zeroed");
+    String topic = mqtt->parse_topic(GrillConstants::TOPIC_STATE_SENSOR_ROTATION);
+    mqtt->publish_message(topic, "0", true);
+}
+
 
 // ------------- PT 100 ------------- //
 

@@ -24,6 +24,8 @@ public:
     void update_encoder();
     void update_temperature();
 
+    void reset_rotor_encoder();
+
 private:
        
     int grillIndex;

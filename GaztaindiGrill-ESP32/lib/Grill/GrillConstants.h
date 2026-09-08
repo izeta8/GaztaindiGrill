@@ -62,6 +62,9 @@ public:
     static constexpr const char* TOPIC_CMD_MOVE_ROTATION = "action/movement/rotation";
     static constexpr const char* TOPIC_CMD_SET_POSITION = "action/movement/set_position";
     static constexpr const char* TOPIC_CMD_SET_ROTATION = "action/movement/set_rotation";
+
+    
+    static constexpr const char* TOPIC_CMD_RESET_ROTATION = "action/movement/reset_rotation";
     
     static constexpr const char* TOPIC_CMD_PROG_EXECUTE = "action/program/execute";
     static constexpr const char* TOPIC_CMD_PROG_CANCEL = "action/program/cancel";
@@ -136,6 +139,7 @@ public:
     static constexpr const char* ERROR_NO_PROGRAM_RUNNING = "no_program_running";
     static constexpr const char* ERROR_ENCODER_NOT_ANSWERING = "encoder_not_answering";
     static constexpr const char* ERROR_ROTATION_UNSAFE = "rotation_unsafe";
+    static constexpr const char* ERROR_ROTOR_BUSY = "rotor_busy";
 };
 
 #endif

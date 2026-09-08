@@ -52,6 +52,10 @@ void Grill::reset_encoder() {
     sensor->update_encoder();
 }
 
+void Grill::reset_rotor_encoder() {
+    sensor->reset_rotor_encoder();
+}
+
 //
 // Movements
 //
@@ -248,6 +252,24 @@ void Grill::handle_mqtt_message(const char* pAction, GrillRequest& request) {
         }
 
         if (movement->go_to_rotor(grades, request.id, request.command)) { mqtt->defer(request); }
+    }
+
+    if (topic == GrillConstants::TOPIC_CMD_RESET_ROTATION)
+    {
+        if (!movement->has_rotor()) {
+            mqtt->reply_error(request, GrillConstants::ERROR_NO_ROTOR);
+            return;
+        }
+
+        // The headroom guard sizes its lift from the reported angle. Moving the zero while a
+        // turn or a program is in flight would leave it measuring against a frame that is gone.
+        if (programManager->is_program_running() || movement->has_any_active_target()) {
+            mqtt->reply_error(request, GrillConstants::ERROR_ROTOR_BUSY);
+            return;
+        }
+
+        reset_rotor_encoder();
+        mqtt->print("Rotor zero moved to the current tilt");
     }
 
     if (topic == GrillConstants::TOPIC_CMD_REQ_PROG_STATUS) {

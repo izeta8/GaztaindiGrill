@@ -18,6 +18,7 @@ export const TOPICS = {
       ROTATION: 'action/movement/rotation',
       SET_POSITION: 'action/movement/set_position',
       SET_ROTATION: 'action/movement/set_rotation',
+      RESET_ROTATION: 'action/movement/reset_rotation',
     },
     PROGRAM: {
       EXECUTE: 'action/program/execute',

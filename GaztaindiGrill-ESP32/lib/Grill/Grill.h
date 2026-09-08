@@ -26,6 +26,7 @@ public:
     // Setup
     bool setup_devices();
     void reset_encoder();
+    void reset_rotor_encoder();
 
     void start_reset();
     bool check_reset_status();

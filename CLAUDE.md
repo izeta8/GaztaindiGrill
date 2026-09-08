@@ -25,6 +25,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Because step 1 mirrors with `/MIR`, **any edit made directly inside `addons/gaztaindigrill_api/app` is destroyed on the next deploy** — it's also gitignored, so such an edit would never even become committable. Change `GaztaindiGrill-API/app` and run the script. The HA host, credentials and add-on slug are hardcoded at the top of the script. `addons/gaztaindigrill_api/requirements.txt` is a separate, hand-maintained copy of the API's `requirements.txt` (the deploy script does not sync it) — update both if a dependency changes.
 
+### Deploying the web client to Home Assistant
+
+`GaztaindiGrill-NextJS/deploy.ps1`, run as `npm run deploy` from that project, is the whole path:
+lint + typecheck, then the static export (`output: 'export'` in `next.config.ts` puts it in `out/`),
+then a robocopy `/MIR` of `out/` onto `\\homeassistant.local\share\htdocs` over Samba. `/MIR` means
+**anything already served there is deleted**. The script refuses to run while `npm run dev` is up,
+because `next build` would wreck the dev server's `.next`. Host, share and credentials are
+hardcoded at the top, same as the API's script. `npm run deploy -- -SkipBuild` retries just the
+upload against the export already in `out/`, for when Samba was the only thing that failed.
+The Apache2 add-on serves that directory straight off disk on `http://homeassistant.local:8081/`,
+so **a deploy needs no restart of anything**; the script just checks the site answers when it is done.
+
 ## System architecture (cross-project)
 
 ```mermaid

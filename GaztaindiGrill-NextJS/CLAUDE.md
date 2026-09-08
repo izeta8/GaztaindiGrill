@@ -14,7 +14,25 @@ npm run build
 npm run start
 npm run lint      # next lint
 npm run typecheck # tsc --noEmit, does not touch .next
+npm run deploy    # lint + typecheck + static export, mirrored onto the HA share
 ```
+
+`deploy.ps1` is the whole deploy: it refuses to run while `npm run dev` is up, runs lint and
+typecheck (there is no test suite to run yet), builds the static export that `output: 'export'`
+in `next.config.ts` produces under `out/`, and mirrors it onto `\\homeassistant.local\share\htdocs`
+with robocopy `/MIR` — so whatever was served before is deleted, then checks the site answers.
+Host, share, Samba credentials and the web port are hardcoded at the top of the script.
+
+**Nothing needs restarting after a deploy.** The Apache2 add-on (`605cee21_apache2`) has
+`document_root: /share/htdocs` and reads from disk on every request, so replacing the files is
+live at once, on `http://homeassistant.local:8081/`. Only a change to the add-on's own options
+needs Settings > Add-ons > Apache2 > Restart. A stale browser cache can still pin the old
+`index.html` — the JS and CSS filenames are hashed, so those never go stale.
+
+If only the upload failed, retry it with `npm run deploy -- -SkipBuild`: it reuses the export
+already in `out/` instead of running the checks and the build again. The usual cause is Windows
+allowing a single credential set per SMB server — an Explorer window sitting on the share keeps
+its own connection alive, and the script cannot drop it. Close that window first.
 
 **Do not run `npm run build` while `npm run dev` is up.** `next dev` uses Turbopack and `next build` uses webpack, and both write to the same `.next` directory, so a build wipes the manifests out from under the dev server. It then throws `ENOENT ... build-manifest.json` on every request until you restart it. Use `npm run typecheck` instead: it checks the same types and never touches `.next`.
 

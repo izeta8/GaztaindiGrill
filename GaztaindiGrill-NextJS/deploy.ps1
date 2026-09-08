@@ -114,6 +114,17 @@ try {
         } else {
             Write-Host "Done, but $SiteUrl sends no Cache-Control: the .htaccess is being ignored, so browsers will keep caching the old HTML." -ForegroundColor Yellow
         }
+
+        # The export writes control.html, so an extensionless /control only works
+        # through the rewrite in deploy.htaccess. Check it actually took.
+        try {
+            $deep = Invoke-WebRequest -Uri "${SiteUrl}control" -UseBasicParsing -TimeoutSec 10
+            if ($deep.StatusCode -ne 200) {
+                Write-Host "  ${SiteUrl}control answered $($deep.StatusCode): deep links are not resolving to .html." -ForegroundColor Yellow
+            }
+        } catch {
+            Write-Host "  ${SiteUrl}control is not resolving to control.html - mod_rewrite is off or the .htaccess rewrite is being ignored." -ForegroundColor Yellow
+        }
     }
 } catch {
     Write-Host "Files are in place, but $SiteUrl did not answer - check the Apache2 add-on is started. $($_.Exception.Message)" -ForegroundColor Yellow

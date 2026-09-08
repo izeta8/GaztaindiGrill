@@ -8,6 +8,16 @@
 # Every directive is behind <IfModule>: if the module is not loaded the file does
 # nothing instead of taking the whole site down with a 500.
 
+# The static export writes control.html, not control/index.html, so Apache answers
+# 404 to /control. Resolve an extensionless path to its .html file.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}.html -f
+    RewriteRule ^(.+)$ $1.html [L]
+</IfModule>
+
 <IfModule mod_headers.c>
 
     # Default for everything, HTML above all: the entry point's name never

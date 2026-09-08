@@ -31,6 +31,10 @@ hash. Every directive is behind `<IfModule>`, so a missing module leaves the sit
 of 500-ing. The deploy's last step reports the `Cache-Control` it got back — if it says none came,
 the add-on is ignoring `.htaccess` (`AllowOverride None`) and the file is doing nothing.
 
+It also carries a rewrite: the export writes `control.html`, not `control/index.html`, so without
+it Apache answers 404 to `/control` and every deep link or in-app reload breaks. The rewrite
+resolves an extensionless path to its `.html` file, and the deploy probes `/control` to confirm it.
+
 **Nothing needs restarting after a deploy.** The Apache2 add-on (`605cee21_apache2`) has
 `document_root: /share/htdocs` and reads from disk on every request, so replacing the files is
 live at once, on `http://homeassistant.local:8081/`. Only a change to the add-on's own options

@@ -76,7 +76,7 @@ export function useGrillCommands(grillIndex: number) {
   // Confirmed because it moves the reference every rotation is measured from.
   const handleResetRotation = useCallback(async () => {
     if (!isLeftGrill) return;
-    if (!window.confirm('¿Poner el cero de la rotación en la inclinación actual?')) return;
+    if (!window.confirm('¿Deseas poner la rotación en punto 0?')) return;
     if (await sendCommand(TOPICS.ACTION.MOVEMENT.RESET_ROTATION, '')) {
       toast.success('Cero de la rotación actualizado');
     }

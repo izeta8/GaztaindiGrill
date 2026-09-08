@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { GrillState } from '@/types'
 import { useGrillCommands } from '@/app/control/hooks/useGrillCommands'
 import { Button } from '@/components/ui/Button'
-import { ChevronUp, ChevronDown, CircleStop, RotateCw, RotateCcw, Lock } from 'lucide-react'
+import { ChevronUp, ChevronDown, CircleStop, RotateCw, RotateCcw, Crosshair, Lock } from 'lucide-react'
 import { PAYLOAD_UP, PAYLOAD_DOWN, PAYLOAD_STOP, PAYLOAD_CLOCKWISE, PAYLOAD_COUNTER_CLOCKWISE } from '@/constants/mqtt'
 import { ControlPad } from './ControlPad'
 
@@ -52,9 +52,19 @@ export function ControlColumn({ label, isConnected, isRunning, commands, grillSt
         <div className={`flex flex-col items-center gap-8 transition-all duration-700 ${isRunning ? 'opacity-20 blur-[1px] grayscale pointer-events-none' : ''}`}>
           
           {/* --- FILA 1: PADS DE CONTROL --- */}
-          <div className="flex items-center justify-center gap-3">
+          {/* The zero button is out of flow: in flow it widens the row and the pads stop sitting under the 3D model. */}
+          <div className="relative flex items-center justify-center gap-3">
             {grillIndex === 0 && (
-              <div className="flex flex-col items-center gap-2">
+              <>
+                <Button
+                  onClick={commands.handleResetRotation}
+                  disabled={!isConnected || isRunning}
+                  ariaLabel="Poner a cero la rotación"
+                  className="absolute right-full top-1/2 -translate-y-1/2 mr-3 h-12 w-12 rounded-full p-0 border-none shadow-sm bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Crosshair className="h-5 w-5" />
+                </Button>
+
                 <ControlPad
                   onUp={() => commands.handleRotationCommand(PAYLOAD_COUNTER_CLOCKWISE)}
                   onStop={() => commands.handleRotationCommand(PAYLOAD_STOP)}
@@ -63,16 +73,7 @@ export function ControlColumn({ label, isConnected, isRunning, commands, grillSt
                   movement={grillState.rotation_movement}
                   icons={{ up: RotateCcw, stop: CircleStop, down: RotateCw }}
                 />
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  disabled={!isConnected || isRunning}
-                  onClick={commands.handleResetRotation}
-                  className="w-full max-w-[80px] h-8 rounded-lg text-[10px] font-bold uppercase tracking-tighter"
-                >
-                  PONER A CERO
-                </Button>
-              </div>
+              </>
             )}
 
             <ControlPad

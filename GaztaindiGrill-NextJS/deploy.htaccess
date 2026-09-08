@@ -1,0 +1,24 @@
+# Copied to out/.htaccess by deploy.ps1, so it lands in the Apache2 add-on's
+# document root with the rest of the export.
+#
+# The add-on sends no Cache-Control of its own, only ETag and Last-Modified.
+# With no freshness header the browser guesses one from the file's age, which is
+# why a deployed index.html keeps serving stale long after the files changed.
+#
+# Every directive is behind <IfModule>: if the module is not loaded the file does
+# nothing instead of taking the whole site down with a 500.
+
+<IfModule mod_headers.c>
+
+    # Default for everything, HTML above all: the entry point's name never
+    # changes, so it has to be revalidated. ETag turns that into a cheap 304.
+    Header set Cache-Control "no-cache"
+
+    # _next/static is the exception. Every file there carries a content hash in
+    # its name, so a change is a new URL and the old one can be kept forever.
+    <IfModule mod_setenvif.c>
+        SetEnvIf Request_URI "^/_next/static/" IMMUTABLE_ASSET
+        Header set Cache-Control "public, max-age=31536000, immutable" env=IMMUTABLE_ASSET
+    </IfModule>
+
+</IfModule>

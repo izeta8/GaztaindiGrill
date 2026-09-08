@@ -23,6 +23,7 @@ $WebPort    = 8081
 
 $ScriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
 $OutDir      = Join-Path $ScriptDir 'out'
+$HtaccessSrc = Join-Path $ScriptDir 'deploy.htaccess'
 $RemoteShare = "\\$HaHost\$SambaShare"
 $RemoteSite  = "$RemoteShare\$RemoteDir"
 $SiteUrl     = "http://${HaHost}:$WebPort/"
@@ -72,6 +73,11 @@ if (-not (Test-Path (Join-Path $OutDir 'index.html'))) {
     throw "No static export at $OutDir - build first, or check that output: 'export' is still set in next.config.ts"
 }
 
+# Shipped from a tracked file rather than public/, because whether next copies a
+# dotfile out of public/ is not something the deploy should depend on.
+if (-not (Test-Path $HtaccessSrc)) { throw "Missing $HtaccessSrc" }
+Copy-Item $HtaccessSrc (Join-Path $OutDir '.htaccess') -Force
+
 Write-Host "[3/4] Mirroring out -> $RemoteSite via Samba" -ForegroundColor Cyan
 
 # Windows allows only one credential set per SMB server at a time, so any
@@ -97,10 +103,17 @@ try {
 Write-Host "[4/4] Checking $SiteUrl" -ForegroundColor Cyan
 try {
     $resp = Invoke-WebRequest -Uri $SiteUrl -UseBasicParsing -TimeoutSec 10
-    if ($resp.StatusCode -eq 200) {
-        Write-Host "Done. Serving from $SiteUrl" -ForegroundColor Green
-    } else {
+    if ($resp.StatusCode -ne 200) {
         Write-Host "Files are in place, but $SiteUrl answered $($resp.StatusCode)." -ForegroundColor Yellow
+    } else {
+        # An ignored .htaccess (AllowOverride None, mod_headers missing) fails
+        # silently, and the only symptom is a browser serving yesterday's HTML.
+        $cacheControl = $resp.Headers['Cache-Control']
+        if ($cacheControl) {
+            Write-Host "Done. Serving from $SiteUrl (Cache-Control: $cacheControl)" -ForegroundColor Green
+        } else {
+            Write-Host "Done, but $SiteUrl sends no Cache-Control: the .htaccess is being ignored, so browsers will keep caching the old HTML." -ForegroundColor Yellow
+        }
     }
 } catch {
     Write-Host "Files are in place, but $SiteUrl did not answer - check the Apache2 add-on is started. $($_.Exception.Message)" -ForegroundColor Yellow

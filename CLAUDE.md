@@ -35,7 +35,9 @@ because `next build` would wreck the dev server's `.next`. Host, share and crede
 hardcoded at the top, same as the API's script. `npm run deploy -- -SkipBuild` retries just the
 upload against the export already in `out/`, for when Samba was the only thing that failed.
 The Apache2 add-on serves that directory straight off disk on `http://homeassistant.local:8081/`,
-so **a deploy needs no restart of anything**; the script just checks the site answers when it is done.
+so **a deploy needs no restart of anything**; the last step checks the site answers and that the
+cache headers took. Apache sends no `Cache-Control` on its own, so `deploy.htaccess` rides along as
+the export's `.htaccess` to stop browsers serving a stale `index.html`.
 
 ## System architecture (cross-project)
 

@@ -23,6 +23,14 @@ in `next.config.ts` produces under `out/`, and mirrors it onto `\\homeassistant.
 with robocopy `/MIR` — so whatever was served before is deleted, then checks the site answers.
 Host, share, Samba credentials and the web port are hardcoded at the top of the script.
 
+`deploy.htaccess` is copied into `out/` as `.htaccess` on every deploy. Apache sends no
+`Cache-Control` of its own, so without it browsers guess a freshness lifetime from the file's age
+and keep serving a stale `index.html`. It marks HTML `no-cache` (revalidate, cheap 304 via ETag)
+and `/_next/static/` `immutable` for a year, which is safe because those names carry a content
+hash. Every directive is behind `<IfModule>`, so a missing module leaves the site working instead
+of 500-ing. The deploy's last step reports the `Cache-Control` it got back — if it says none came,
+the add-on is ignoring `.htaccess` (`AllowOverride None`) and the file is doing nothing.
+
 **Nothing needs restarting after a deploy.** The Apache2 add-on (`605cee21_apache2`) has
 `document_root: /share/htdocs` and reads from disk on every request, so replacing the files is
 live at once, on `http://homeassistant.local:8081/`. Only a change to the add-on's own options

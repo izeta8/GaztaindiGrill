@@ -24,13 +24,15 @@ export function useGrillCommands(grillIndex: number) {
   const sendCommand = useCallback(async (topic: string, payload: string) => {
     if (!isConnected) {
       toast.error('MQTT no conectado');
-      return;
+      return false;
     }
     try {
       await sendMqttCommand(`grill/${grillIndex}/${topic}`, payload);
+      return true;
     } catch (error) {
       toast.error('Error al enviar comando');
       console.error('MQTT publish error:', error);
+      return false;
     }
   }, [isConnected, sendMqttCommand, grillIndex]);
 
@@ -71,6 +73,15 @@ export function useGrillCommands(grillIndex: number) {
     sendCommand(TOPICS.ACTION.MOVEMENT.SET_ROTATION, value);
   }, [isLeftGrill, sendCommand]);
 
+  // Confirmed because it moves the reference every rotation is measured from.
+  const handleResetRotation = useCallback(async () => {
+    if (!isLeftGrill) return;
+    if (!window.confirm('¿Poner el cero de la rotación en la inclinación actual?')) return;
+    if (await sendCommand(TOPICS.ACTION.MOVEMENT.RESET_ROTATION, '')) {
+      toast.success('Cero de la rotación actualizado');
+    }
+  }, [isLeftGrill, sendCommand]);
+
   const handleCancelProgram = useCallback(async () => {
     if (window.confirm(`¿Estás seguro de cancelar el programa en la parrilla ${grillName.toLowerCase()}?`)) {
       
@@ -97,6 +108,7 @@ export function useGrillCommands(grillIndex: number) {
     handleSetPosition,
     handleSetTemperature,
     handleSetRotation,
+    handleResetRotation,
     handleCancelProgram
   };
 }

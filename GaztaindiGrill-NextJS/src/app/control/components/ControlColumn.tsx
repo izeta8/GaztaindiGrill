@@ -54,14 +54,25 @@ export function ControlColumn({ label, isConnected, isRunning, commands, grillSt
           {/* --- FILA 1: PADS DE CONTROL --- */}
           <div className="flex items-center justify-center gap-3">
             {grillIndex === 0 && (
-              <ControlPad
-                onUp={() => commands.handleRotationCommand(PAYLOAD_COUNTER_CLOCKWISE)}
-                onStop={() => commands.handleRotationCommand(PAYLOAD_STOP)}
-                onDown={() => commands.handleRotationCommand(PAYLOAD_CLOCKWISE)}
-                isConnected={isConnected}
-                movement={grillState.rotation_movement}
-                icons={{ up: RotateCcw, stop: CircleStop, down: RotateCw }}
-              />
+              <div className="flex flex-col items-center gap-2">
+                <ControlPad
+                  onUp={() => commands.handleRotationCommand(PAYLOAD_COUNTER_CLOCKWISE)}
+                  onStop={() => commands.handleRotationCommand(PAYLOAD_STOP)}
+                  onDown={() => commands.handleRotationCommand(PAYLOAD_CLOCKWISE)}
+                  isConnected={isConnected}
+                  movement={grillState.rotation_movement}
+                  icons={{ up: RotateCcw, stop: CircleStop, down: RotateCw }}
+                />
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={!isConnected || isRunning}
+                  onClick={commands.handleResetRotation}
+                  className="w-full max-w-[80px] h-8 rounded-lg text-[10px] font-bold uppercase tracking-tighter"
+                >
+                  PONER A CERO
+                </Button>
+              </div>
             )}
 
             <ControlPad

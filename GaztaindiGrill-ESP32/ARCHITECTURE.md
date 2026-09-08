@@ -133,4 +133,15 @@ La altura que se exige no es la del ángulo destino sino la del **peor punto del
 
 **Si no se puede asegurar**, el firmware responde `rotation_unsafe`: o el encoder de posición no contesta al recibir el comando, o la subida no llegó dentro de `MOVEMENT_TIMEOUT`. Como en el segundo caso la respuesta llega tarde, el handler llama a `defer()` y contesta después con `reply_to()`.
 
-> **Supuesto de operación:** el encoder del rotor es incremental y `DeviceEncoder::begin()` lo pone a 0 en cada arranque, sin homing. El firmware da por hecho que **al encender la rejilla está horizontal**. No hay código que lo verifique.
+> **Supuesto de operación:** el encoder del rotor es incremental y `DeviceEncoder::begin()` lo pone a 0 en cada arranque, sin homing. El firmware da por hecho que **al encender la rejilla está horizontal**. No hay código que lo verifique, pero corregirlo ya no obliga a reiniciar: ver §7.
+
+## 7. Recolocar el Cero del Rotor
+
+Como el cero lo fija `begin()` al arrancar, lo que la parrilla llama 0° es la inclinación que tenía la rejilla al encenderse. Si se montó torcida, todo el §6 mide contra un cero equivocado.
+
+`grill/{id}/action/movement/reset_rotation` (sin `value`) declara cero la inclinación actual. El handler de `Grill` rechaza antes de tocar nada:
+
+-   **`no_rotor`** en la parrilla 1, que no lleva rotor.
+-   **`rotor_busy`** si hay un programa en marcha o `has_any_active_target()` es cierto. El seguro del §6 calcula cuánto subir a partir del ángulo **reportado**; mover el cero a mitad de maniobra lo dejaría midiendo contra un marco que ya no existe.
+
+**Por qué publica él mismo el 0.** `GrillSensor::reset_rotor_encoder()` pone `lastRotorEncoderValue` a 0 y publica `"0"` retenido en `status/sensor/rotation` a mano, en vez de dejarlo para el `update_rotor_encoder()` del `loop()`. Tiene que hacerlo porque `get_rotor_encoder_value()` trata una lectura de 0 como muestra mala y devuelve el último valor bueno: por esa vía el topic retenido se quedaría con el ángulo viejo para siempre.

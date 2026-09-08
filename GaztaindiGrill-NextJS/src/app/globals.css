@@ -152,3 +152,11 @@
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+/* Sonner puts the close button top-left in LTR. Its stylesheet is injected into
+   <head> at runtime, so this needs more specificity than its own rule to win. */
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-close-button] {
+  left: unset;
+  right: 0;
+  transform: translate(35%, -35%);
+}

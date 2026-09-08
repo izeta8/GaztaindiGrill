@@ -15,7 +15,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <RunningProgramsProvider>
           <CurrentModeProvider>
           {children}
-          <Toaster position="top-center" richColors />
+          <Toaster position="top-center" richColors closeButton />
           </CurrentModeProvider>
         </RunningProgramsProvider>
       </GrillStateProvider>

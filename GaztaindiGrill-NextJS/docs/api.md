@@ -26,7 +26,8 @@ interface Program {
   category_id?: number;
   steps_json: string;      // Un string JSON que contiene un array de ProgramStep
   usage_count: number;
-  creator_name: string;
+  user_id: number;         // Creador. La columna creator_name de texto libre ya no existe
+  user_name: string;       // Resuelto por la API con un JOIN sobre users
   creation_date: string;   // Formato: YYYY-MM-DD
   update_date: string;     // Formato: YYYY-MM-DD
   is_active: number;       // 1 para true, 0 para false
@@ -81,7 +82,8 @@ Obtiene una lista de todos los programas activos.
         "category_id": 1,
         "steps_json": "[{\"position\":50},{\"time\":300},{\"action\":\"flip\"}]",
         "usage_count": 42,
-        "creator_name": "Asador Gaztaindi",
+        "user_id": 1,
+        "user_name": "Asador Gaztaindi",
         "creation_date": "2023-01-15",
         "update_date": "2023-05-20",
         "is_active": 1
@@ -91,7 +93,7 @@ Obtiene una lista de todos los programas activos.
 
 #### `GET /programs/{id}`
 
-Obtiene los detalles de un programa específico por su ID.
+Obtiene los detalles de un programa específico por su ID. No filtra por `is_active`, a diferencia del listado.
 
 *   **Método:** `GET`
 *   **Respuesta Exitosa (200 OK):**
@@ -113,7 +115,7 @@ Crea un nuevo programa.
     {
       "name": "Nuevo Programa",
       "description": "Descripción opcional",
-      "creatorName": "Tu Nombre",
+      "userId": 1,
       "stepsJson": "[{\"position\":30},{\"time\":60}]",
       "categoryId": 2
     }
@@ -167,5 +169,39 @@ Crea una nueva categoría.
       "success": true,
       "id": 3,
       "message": "Categoría creada"
+    }
+    ```
+
+### Usuarios
+
+#### `GET /users`
+
+Obtiene la lista de usuarios activos. `CurrentUserContext` la pide al arrancar para validar el usuario guardado en `localStorage`, y `ProgramForm` la usa para el desplegable de creador.
+
+*   **Método:** `GET`
+*   **Respuesta Exitosa (200 OK):**
+    ```json
+    [
+      { "id": 1, "name": "Gaztaindi", "creation_date": "2026-09-10T23:09:29", "is_active": 1 }
+    ]
+    ```
+
+#### `POST /users/create`
+
+Crea un usuario nuevo. `name` es único, así que un nombre repetido devuelve 409 en vez de 500.
+
+*   **Método:** `POST`
+*   **Cuerpo de la Petición (Request Body):**
+    ```json
+    {
+      "name": "Julen"
+    }
+    ```
+*   **Respuesta Exitosa (201 Created):**
+    ```json
+    {
+      "success": true,
+      "id": 3,
+      "message": "Usuario creado correctamente"
     }
     ```

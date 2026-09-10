@@ -94,4 +94,10 @@ Contiene los programas de cocción con todos sus detalles y pasos.
 | `is_active` | `BOOLEAN` / `TINYINT(1)` | `DEFAULT 1` | Para borrado lógico. 1 para activo, 0 para inactivo. |
 | `reference_type` | `VARCHAR(20)` | `DEFAULT 'absolute'` | Cómo se interpreta el campo `position` de cada paso. `"absolute"`: la posición es el objetivo fijo 0-100%. `"relative"`: la posición es un delta (puede ser negativo) que se suma a la posición de la parrilla en el momento de iniciar la ejecución del programa, y se clampa a 0-100%.
 
-El nombre del creador no se guarda aquí: se lee de `users` mediante el `JOIN` que hacen los endpoints de programas, así que renombrar un usuario cambia el creador que se muestra en todos sus programas. La columna `creator_name` que hacía ese trabajo antes ya no existe.
+El nombre del creador no se guarda aquí: se lee de `users` mediante el `JOIN` que hacen los endpoints de programas, así que renombrar un usuario cambia el creador que se muestra en todos sus programas.
+
+La columna `creator_name` que hacía ese trabajo antes sigue existiendo en la base de datos, ya nullable y sin que la escriba nadie. Se dejó así a propósito para no romper la API vieja durante el despliegue. Queda pendiente soltarla, junto con estrechar `user_id` a `NOT NULL`, que la tabla de arriba ya describe como estado objetivo:
+
+```sql
+ALTER TABLE programs MODIFY COLUMN user_id INT NOT NULL, DROP COLUMN creator_name;
+```

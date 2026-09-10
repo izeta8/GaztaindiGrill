@@ -29,15 +29,23 @@ Because step 1 mirrors with `/MIR`, **any edit made directly inside `addons/gazt
 
 `GaztaindiGrill-NextJS/deploy.ps1`, run as `npm run deploy` from that project, is the whole path:
 lint + typecheck, then the static export (`output: 'export'` in `next.config.ts` puts it in `out/`),
-then a robocopy `/MIR` of `out/` onto `\\homeassistant.local\share\htdocs` over Samba. `/MIR` means
+then a robocopy `/MIR` of `out/` onto `\share\htdocs` on the HA host over Samba. `/MIR` means
 **anything already served there is deleted**. The script refuses to run while `npm run dev` is up,
-because `next build` would wreck the dev server's `.next`. Host, share and credentials are
-hardcoded at the top, same as the API's script. `npm run deploy -- -SkipBuild` retries just the
-upload against the export already in `out/`, for when Samba was the only thing that failed.
-The Apache2 add-on serves that directory straight off disk on `http://homeassistant.local:8081/`,
+because `next build` would wreck the dev server's `.next`. Share and credentials are hardcoded at
+the top, same as the API's script; the **host** is not — it tries `homeassistant.local` and falls
+back to the Tailscale name when that mDNS name does not resolve, so the deploy works from off the
+LAN too (`-HaHost <name>` forces one). Over Tailscale the Samba add-on must also allow
+`100.64.0.0/10` in `allow_hosts`, or it drops the session. `npm run deploy -- -SkipBuild` retries
+just the upload against the export already in `out/`, for when Samba was the only thing that failed.
+The Apache2 add-on serves that directory straight off disk on port 8081,
 so **a deploy needs no restart of anything**; the last step checks the site answers and that the
 cache headers took. Apache sends no `Cache-Control` on its own, so `deploy.htaccess` rides along as
 the export's `.htaccess` to stop browsers serving a stale `index.html`.
+
+`GaztaindiGrill-NextJS/homeassistant/` holds `grill.html` (copied to `config/www` by hand, served at
+`/local/grill.html`) and `dashboard-card.yaml` (pasted into the dashboard by hand). The shim exists
+because an iframe URL is resolved by the browser, not by HA, so a hardcoded host only ever works
+from one network — it forwards `location.hostname` to port 8081 instead.
 
 ## System architecture (cross-project)
 
@@ -58,7 +66,7 @@ flowchart TB
     BROKER -->|"telemetry, command results,<br/>program + mode state"| WEB
 ```
 
-- **HTTP** is used *only* for CRUD on programs/categories, called straight from the browser (`NEXT_PUBLIC_API_URL`) — there is no Next.js server-side proxy. The API is not in the real-time control loop.
+- **HTTP** is used *only* for CRUD on programs/categories, called straight from the browser — there is no Next.js server-side proxy. The API is not in the real-time control loop. Neither the API's host nor the broker's is compiled into the client: both come from the host the page was served from, so one static export works over the LAN and over Tailscale alike (`GaztaindiGrill-NextJS/src/utils/host.ts`).
 - **MQTT** is used for *everything else*: manual movement/rotation commands, program execution, sensor telemetry, mode switching, and connection status (LWT). This happens directly between the web client and the ESP32 — the API does not relay these messages.
 - **The API has no MQTT connection at all** — note there is no edge between it and the broker above. It used to carry a `paho-mqtt` singleton that connected at startup and published nothing (`programs.py` imported `publish` without ever calling it), so it was removed along with the `lifespan`, the `MQTT_*` config, the dependency and the add-on's MQTT options. `GaztaindiGrill-API/docs/architecture.md` §5 records what went and what would have to be decided before reintroducing it.
 

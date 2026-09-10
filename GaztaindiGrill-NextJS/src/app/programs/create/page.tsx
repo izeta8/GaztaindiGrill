@@ -2,6 +2,7 @@
 
 import { toast } from 'sonner'
 import { ProgramForm, type ProgramFormSubmitPayload } from '@/app/programs/components/ProgramForm'
+import { apiBaseUrl } from '@/utils'
 
 export default function CreateProgram() {
 
@@ -18,7 +19,7 @@ export default function CreateProgram() {
 
       if (payload.categoryId != null) body.categoryId = payload.categoryId
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/programs/create`, {
+      const response = await fetch(`${apiBaseUrl()}/programs/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

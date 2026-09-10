@@ -15,7 +15,7 @@ import { FiltersBar } from './components/FiltersBar'
 import type { Program } from '@/types'
 import { TOPICS } from '@/constants/mqtt'
 import { GlobalStatusDock } from '@/components/shared/GlobalStatusDock'
-import { parseSteps } from '@/utils'
+import { apiBaseUrl, parseSteps } from '@/utils'
 
 type Category = { id: number; name: string }
 
@@ -108,7 +108,7 @@ function ProgramsPageContent() {
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/programs`)
+        const res = await fetch(`${apiBaseUrl()}/programs`)
         if (!res.ok) throw new Error('No se pudieron cargar los programas')
         const data: unknown = await res.json()
         const arr = Array.isArray(data) ? (data as Record<string, unknown>[]) : []
@@ -153,7 +153,7 @@ function ProgramsPageContent() {
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`)
+        const res = await fetch(`${apiBaseUrl()}/categories`)
         if (!res.ok) return
         const data = await res.json()
         const arr: ApiCategory[] = Array.isArray(data) ? data : (data?.results || data?.data || [])

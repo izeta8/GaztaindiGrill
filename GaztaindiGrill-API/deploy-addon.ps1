@@ -2,11 +2,19 @@
 # Deploys GaztaindiGrill-API to its Home Assistant local add-on: mirrors
 # app/ onto addons/gaztaindigrill_api/app, pushes the add-on to HA over
 # Samba, and optionally rebuilds + restarts it over SSH.
+#
+# -HaHost forces which address the host is reached by; without it the first of
+# the two below that answers on the Samba port wins.
+
+param([string]$HaHost)
 
 $ErrorActionPreference = 'Stop'
 
 # --------------------------------- Config -----------------------------------
-$HaHost     = '192.168.1.76'
+# The LAN address is unreachable from outside the network; the Tailscale name
+# answers from anywhere in the tailnet, the LAN included.
+$LanHost       = '192.168.1.76'
+$TailscaleHost = 'homeassistant.tailbedb82.ts.net'
 $SambaUser  = 'izeta'
 $SambaPass  = 'izeta'
 $SambaShare = 'addons'
@@ -15,6 +23,28 @@ $HaUser     = 'gaztaindi'
 $AddonSlug  = 'local_gaztaindigrill_api'
 $DoRebuild  = $true
 # -----------------------------------------------------------------------------
+
+# A raw IP always "resolves", so unlike the web client's deploy this one has to
+# probe the port instead of asking DNS.
+function Test-HostReachable($hostName, $port) {
+    $client = New-Object System.Net.Sockets.TcpClient
+    try {
+        $iar = $client.BeginConnect($hostName, $port, $null, $null)
+        if (-not $iar.AsyncWaitHandle.WaitOne(2000, $false)) { return $false }
+        $client.EndConnect($iar)
+        return $true
+    } catch { return $false } finally { $client.Close() }
+}
+
+function Resolve-HaHost {
+    foreach ($candidate in @($LanHost, $TailscaleHost)) {
+        if (Test-HostReachable $candidate 445) { return $candidate }
+    }
+    throw "Neither $LanHost nor $TailscaleHost answers on the Samba port. On the LAN, check the host is up; from outside it, check Tailscale is connected."
+}
+
+if (-not $HaHost) { $HaHost = Resolve-HaHost }
+Write-Host "Deploying to $HaHost" -ForegroundColor DarkGray
 
 $ScriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
 $DevApp      = Join-Path $ScriptDir 'app'
@@ -49,7 +79,7 @@ $global:LASTEXITCODE = 0
 Write-Host "[2/3] Uploading add-on to $RemoteAddon via Samba" -ForegroundColor Cyan
 Close-SambaSessionsTo $HaHost
 cmd /c "net use $RemoteShare /user:$SambaUser $SambaPass" | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "Samba auth against $RemoteShare failed (check user/password/host)." }
+if ($LASTEXITCODE -ne 0) { throw "Samba auth against $RemoteShare failed (check user/password/host). Over Tailscale, the Samba add-on also needs 100.64.0.0/10 in its allow_hosts, or it drops the session with 'network name is no longer available'." }
 try {
     robocopy $AddonRoot $RemoteAddon /MIR /XD __pycache__ /NFL /NDL /NJH /NJS /NP /R:2 /W:2 | Out-Null
     if ($LASTEXITCODE -ge 8) { throw "robocopy (Samba upload) failed (code $LASTEXITCODE)" }

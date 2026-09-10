@@ -1,0 +1,19 @@
+# Source of truth for the Home Assistant dashboard view that embeds the grill. Nothing
+# deploys this: paste it into the dashboard's raw config editor by hand after changing it.
+# The url is relative so the browser resolves it against whatever host opened HA, which is
+# what makes the same view work over the LAN and over Tailscale.
+views:
+  - title: ' '
+    panel: true
+    cards:
+      - type: iframe
+        style: |
+          #root {
+            height: calc(100vh - 48.5px);
+            padding-top: 0 !important;
+          }
+        url: /local/grill.html
+        aspect_ratio: 100vh
+    type: panel
+    icon: ''
+    subview: true

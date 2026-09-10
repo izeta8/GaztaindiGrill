@@ -1,0 +1,9 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Gaztaindi Grill</title>
+<!-- Home Assistant serves this from config/www at /local/grill.html, so the dashboard
+     card can use a relative URL. The app itself stays on the Apache2 add-on: this only
+     carries the host the dashboard was opened with over to port 8081. -->
+<script>
+  location.replace('http://' + location.hostname + ':8081/control.html')
+</script>

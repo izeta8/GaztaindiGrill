@@ -5,13 +5,19 @@
 #
 # -SkipBuild reuses the export already in out/ and goes straight to the upload.
 # Use it to retry when only the Samba step failed.
+#
+# -HaHost forces which name the host is reached by; without it the first of the
+# two below that resolves wins.
 
-param([switch]$SkipBuild)
+param([switch]$SkipBuild, [string]$HaHost)
 
 $ErrorActionPreference = 'Stop'
 
 # --------------------------------- Config -----------------------------------
-$HaHost     = 'homeassistant.local'
+# The .local name is mDNS, so it only answers on the LAN. The Tailscale MagicDNS
+# name answers from anywhere in the tailnet, including the LAN itself.
+$LanHost       = 'homeassistant.local'
+$TailscaleHost = 'homeassistant.tailbedb82.ts.net'
 $SambaUser  = 'izeta'
 $SambaPass  = 'izeta'
 $SambaShare = 'share'
@@ -20,6 +26,19 @@ $RemoteDir  = 'htdocs'
 # from disk per request, so replacing the files needs no restart.
 $WebPort    = 8081
 # -----------------------------------------------------------------------------
+
+function Resolve-HaHost {
+    foreach ($candidate in @($LanHost, $TailscaleHost)) {
+        try {
+            [void][System.Net.Dns]::GetHostAddresses($candidate)
+            return $candidate
+        } catch { }
+    }
+    throw "Neither $LanHost nor $TailscaleHost resolves. On the LAN, check the host is up; from outside it, check Tailscale is connected."
+}
+
+if (-not $HaHost) { $HaHost = Resolve-HaHost }
+Write-Host "Deploying to $HaHost" -ForegroundColor DarkGray
 
 $ScriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
 $OutDir      = Join-Path $ScriptDir 'out'
@@ -89,7 +108,7 @@ if ($stuck) {
 }
 
 cmd /c "net use $RemoteShare /user:$SambaUser $SambaPass" | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "Samba auth against $RemoteShare failed. Check user/password/host, and that nothing else (an Explorer window, a mapped drive) is already connected to $HaHost with other credentials." }
+if ($LASTEXITCODE -ne 0) { throw "Samba auth against $RemoteShare failed. Check user/password/host, and that nothing else (an Explorer window, a mapped drive) is already connected to $HaHost with other credentials. Over Tailscale, the Samba add-on also needs 100.64.0.0/10 in its allow_hosts, or it drops the session with 'network name is no longer available'." }
 try {
     robocopy $OutDir $RemoteSite /MIR /NFL /NDL /NJH /NJS /NP /R:2 /W:2 | Out-Null
     if ($LASTEXITCODE -ge 8) {

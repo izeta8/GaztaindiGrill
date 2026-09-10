@@ -6,6 +6,7 @@ import { ConnectionStatus, ResetStatus } from '@/types'
 import { toast } from 'sonner'
 import { TOPICS, REQUEST_ID_EVERYONE } from '@/constants/mqtt'
 import { commandErrorMessage } from '@/constants/commandErrors'
+import { resolveHost } from '@/utils'
 
 type MqttContextValue = {
   client: MqttClient | null
@@ -48,7 +49,7 @@ const PENDING_COMMAND_TTL_MS = 30_000
 const MqttContext = createContext<MqttContextValue | undefined>(undefined)
 
 function buildUrlAndOptions() {
-  const host = process.env.NEXT_PUBLIC_MQTT_SERVER
+  const host = resolveHost()
   const envPort = process.env.NEXT_PUBLIC_MQTT_PORT
   const envProtocol = process.env.NEXT_PUBLIC_MQTT_PROTOCOL
   const protocol =
@@ -58,7 +59,6 @@ function buildUrlAndOptions() {
   const username = process.env.NEXT_PUBLIC_MQTT_USER
   const password = process.env.NEXT_PUBLIC_MQTT_PASSWORD
 
-  if (!host) throw new Error('Missing NEXT_PUBLIC_MQTT_SERVER')
   const port = envPort || (protocol === 'wss' ? '8884' : '1884')
   const normalizedPath = path ? (path.startsWith('/') ? path : `/${path}`) : ''
   const url = `${protocol}://${host}:${port}${normalizedPath}`

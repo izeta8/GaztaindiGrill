@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { useMqtt } from '@/hooks/useMqtt';
 import { TOPICS } from '@/constants';
+import { resolveHost } from '@/utils';
 import { ConnectionStatus as ConnectionStatusEnum } from '@/types';
 import type { GrillDirection, GrillRotation } from '@/types';
 
@@ -89,7 +90,7 @@ export function useGrillCommands(grillIndex: number) {
       sendCommand(TOPICS.ACTION.PROGRAM.CANCEL, '');
 
       // If environment is localhost get rid of mqtt message so the hook doesnt re-read.
-      const isLocalhost = process.env.NEXT_PUBLIC_MQTT_SERVER === 'localhost';
+      const isLocalhost = resolveHost() === 'localhost';
 
       if (isLocalhost) {
         try {

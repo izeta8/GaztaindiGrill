@@ -3,7 +3,7 @@
 import { BarChart3, Calendar, Pencil, Play, Tag, Eye, Trash2, User, FlameKindling, MoveVertical } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 import type { Program } from "@/types"
-import { formatDate } from "@/utils"
+import { apiBaseUrl, formatDate } from "@/utils"
 import { useState } from "react"
 import { Modal } from "@/components/ui/Modal"
 import { toast } from "sonner"
@@ -40,7 +40,7 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
     }
     try {
       setDeleting(true)
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/programs/${p.id}`, {
+      const res = await fetch(`${apiBaseUrl()}/programs/${p.id}`, {
         method: 'DELETE',
       })
       if (!res.ok) throw new Error('No se pudo eliminar el programa') // User text in Spanish

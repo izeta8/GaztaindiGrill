@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { ProgramForm, type ProgramFormInitialValues, type ProgramFormSubmitPayload } from '@/app/programs/components/ProgramForm'
-import { parseSteps } from '@/utils'
+import { apiBaseUrl, parseSteps } from '@/utils'
 import { Button } from '@/components/ui/Button'
 
 
@@ -16,14 +16,12 @@ function EditProgramPageContent() {
   const [loading, setLoading] = useState(true)
   const [initial, setInitial] = useState<ProgramFormInitialValues | null>(null)
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL
-
   useEffect(() => {
-    if (!id || !apiBase) return
+    if (!id) return
     const load = async () => {
       setLoading(true)
       try {
-        const res = await fetch(`${apiBase}/programs/${id}`)
+        const res = await fetch(`${apiBaseUrl()}/programs/${id}`)
         if (!res.ok) {
           toast.error('No se pudo cargar el programa')
           setLoading(false)
@@ -54,11 +52,11 @@ function EditProgramPageContent() {
       }
     }
     load()
-  }, [id, apiBase])
+  }, [id])
 
   const onSubmit = useMemo(
     () => async (payload: ProgramFormSubmitPayload) => {
-      if (!apiBase || !id) return
+      if (!id) return
       try {
         const body: Record<string, unknown> = {
           name: payload.name,
@@ -71,7 +69,7 @@ function EditProgramPageContent() {
           usageCount: payload.usageCount,
           referenceType: payload.referenceType,
         }
-        const res = await fetch(`${apiBase}/programs/${id}`, {
+        const res = await fetch(`${apiBaseUrl()}/programs/${id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
@@ -87,18 +85,8 @@ function EditProgramPageContent() {
         toast.error('Error de conexión al actualizar el programa')
       }
     },
-    [apiBase, id, router]
+    [id, router]
   )
-
-  if (!apiBase) {
-    return (
-      <Status
-        type="error"
-        title="Configuración faltante"
-        description="No se ha definido NEXT_PUBLIC_API_URL. Añádelo al archivo .env.local y reinicia la app."
-      />
-    )
-  }
 
   if (!id) {
     return (

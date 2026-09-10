@@ -19,9 +19,16 @@ npm run deploy    # lint + typecheck + static export, mirrored onto the HA share
 
 `deploy.ps1` is the whole deploy: it refuses to run while `npm run dev` is up, runs lint and
 typecheck (there is no test suite to run yet), builds the static export that `output: 'export'`
-in `next.config.ts` produces under `out/`, and mirrors it onto `\\homeassistant.local\share\htdocs`
+in `next.config.ts` produces under `out/`, and mirrors it onto `\share\htdocs` on the HA host
 with robocopy `/MIR` — so whatever was served before is deleted, then checks the site answers.
-Host, share, Samba credentials and the web port are hardcoded at the top of the script.
+Share, Samba credentials and the web port are hardcoded at the top of the script.
+
+The **host** is not: `homeassistant.local` is mDNS and only answers on the LAN, so the script tries
+it first and falls back to `homeassistant.tailbedb82.ts.net` when it does not resolve. That makes
+`npm run deploy` work from off the LAN with no extra flag; `-HaHost <name>` forces either one.
+Deploying over Tailscale needs the Samba add-on to allow the tailnet's CGNAT range
+(`100.64.0.0/10`) in its `allow_hosts` — without it the port accepts the connection and Samba drops
+the session, which surfaces as "the specified network name is no longer available".
 
 `deploy.htaccess` is copied into `out/` as `.htaccess` on every deploy. Apache sends no
 `Cache-Control` of its own, so without it browsers guess a freshness lifetime from the file's age
@@ -37,7 +44,7 @@ resolves an extensionless path to its `.html` file, and the deploy probes `/cont
 
 **Nothing needs restarting after a deploy.** The Apache2 add-on (`605cee21_apache2`) has
 `document_root: /share/htdocs` and reads from disk on every request, so replacing the files is
-live at once, on `http://homeassistant.local:8081/`. Only a change to the add-on's own options
+live at once, on port 8081 of whichever name you reached the host by. Only a change to the add-on's own options
 needs Settings > Add-ons > Apache2 > Restart. A stale browser cache can still pin the old
 `index.html` — the JS and CSS filenames are hashed, so those never go stale.
 
@@ -52,7 +59,9 @@ No automated test suite is configured (no jest/vitest setup) — verification is
 
 ## Architecture
 
-- **HTTP to the API** (`GaztaindiGrill-API`, base URL from `NEXT_PUBLIC_API_URL`) is used *only* for CRUD on programs/categories. See [docs/api.md](docs/api.md) for the request/response shapes — note the API's camelCase-request / snake_case-response asymmetry, which this client's code already expects.
+- **No host is baked into the build.** The export is one artifact served both by LAN IP and by Tailscale name, so `resolveHost()` and `apiBaseUrl()` (`src/utils/host.ts`) take the host from `window.location.hostname` at runtime; only ports, protocol and credentials still come from `NEXT_PUBLIC_*`. `npm run dev` is the exception — there the page comes from your machine while the API and broker do not, so `NEXT_PUBLIC_DEV_HOST` overrides it, behind a `NODE_ENV === 'development'` check that a production build folds away. Both helpers return `''` when there is no `window`, so callers must resolve inside effects or handlers: reading them in a component body breaks `next build` at prerender.
+- **`homeassistant/`** holds the two files that live in Home Assistant but whose source of truth is this repo, neither of them deployed by `deploy.ps1`. `grill.html` goes in `config/www` by hand (**never** with robocopy `/MIR`, which would wipe the rest of that directory) and HA serves it at `/local/grill.html`; it is a six-line redirect to port 8081 carrying `location.hostname` across, which is what lets the dashboard card use a relative URL instead of a hardcoded host. `dashboard-card.yaml` is that card's view, pasted into the dashboard's raw config editor by hand. It has to be an explicit `.html` because HA answers 403 to a directory under `/local/`.
+- **HTTP to the API** (`GaztaindiGrill-API`) is used *only* for CRUD on programs/categories. See [docs/api.md](docs/api.md) for the request/response shapes — note the API's camelCase-request / snake_case-response asymmetry, which this client's code already expects.
 - **MQTT directly to the grill** (not routed through the API) handles everything real-time: manual movement/rotation commands, program execution, sensor telemetry, mode switching, and online/offline connection state. [docs/mqtt.md](docs/mqtt.md) documents the whole contract — topic tables, the `{ value, requestId }` envelope, error codes, flows. The topic strings themselves are owned by the firmware's `GrillConstants.h` and mirrored in `src/constants/mqtt.ts`; on any disagreement the firmware wins.
 - **Running-program state** (`src/contexts/RunningProgramsContext.tsx`): there is no cache and no request/response round trip. The ESP32 publishes the *entire* running program (name, steps, `currentStepIndex`, `stepStartUnix` on the current step) **retained** on `grill/{id}/status/program/current`, so the broker hands it to any client the moment it subscribes. The context just stores that payload per grill index and nulls it on `{ isRunning: false }`. See [docs/cache.md](docs/cache.md).
 - **`src/hooks/useMqtt.tsx`** — core MQTT client hook (uses the `mqtt` package). Domain-specific hooks (`useGrillState`, `useGrillCommands`, `useSystemActions`) build on top of it for grill state and command dispatch.

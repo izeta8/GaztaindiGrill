@@ -85,7 +85,7 @@ Rewrites the schema doc: new `users` table in the ERD and the table descriptions
 - Verify: `DESCRIBE users;` and `DESCRIBE programs;` match the doc — `user_id` present and `NOT NULL`,
   no `creator_name`
 
-### 2. Add the users endpoints to the API
+### 2. Add the users endpoints to the API — DONE
 
 `GET /users` (active only) and `POST /users/create`. New router file mirroring `categories.py` line
 for line — same manual parameterized SQL, same `JSONResponse` shapes, same Spanish error messages.
@@ -99,7 +99,7 @@ readable message, since `name` is `UNIQUE`.
 - Verify: `python -m compileall app`, then with the venv up `python -m uvicorn app.main:app --reload`
   and hit `GET /users` + `POST /users/create` from `/docs`
 
-### 3. Move the API from `creator_name` to `user_id`
+### 3. Move the API from `creator_name` to `user_id` — DONE (blocked on making `creator_name` nullable)
 
 - `CreateProgramRequest` / `UpdateProgramRequest`: `creator_name` out, `user_id` (alias `userId`) in.
   The create endpoint's required-field check swaps `creator_name` for `user_id`.
@@ -116,7 +116,7 @@ readable message, since `name` is `UNIQUE`.
   `GET /programs` shows `user_name` on every row; soft-delete one with `DELETE /programs/{id}` and
   confirm it drops out of `GET /programs` but still answers on `GET /programs/{id}`
 
-### 4. Ask for the user on first entry, and let it be changed from the FAB
+### 4. Ask for the user on first entry, and let it be changed from the FAB — DONE
 
 - `src/types/user.ts` — `User { id, name }`, exported from `src/types/index.ts`.
 - `src/contexts/CurrentUserContext.tsx` — holds the current user, reads and writes `localStorage`,
@@ -143,7 +143,7 @@ readable message, since `name` is `UNIQUE`.
   appears and will not close until a user is picked; reload shows no modal; the FAB reopens it and
   cancels cleanly; deactivate that user in MySQL, reload, modal appears again
 
-### 5. Replace the creator text input with a user combobox, and read the joined name everywhere
+### 5. Replace the creator text input with a user combobox, and read the joined name everywhere — DONE
 
 - `ProgramForm.tsx` — the `Creador` `Input` becomes a `Select` over `users` with a `+` button beside
   it, laid out exactly like the existing `Categoría` row, defaulting to `currentUser`. The submit

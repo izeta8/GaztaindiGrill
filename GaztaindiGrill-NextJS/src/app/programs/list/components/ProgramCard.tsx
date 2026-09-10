@@ -97,7 +97,7 @@ export function ProgramCard({ program: p, categoryName, stepsCount, onViewSteps,
           <div className="my-6 grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-gray-700">
             <div className="flex items-center gap-2">
               <User className="h-3.5 w-3.5 text-gray-500" />
-              <span className="font-medium">Creador:</span> {p.creatorName}
+              <span className="font-medium">Creador:</span> {p.userName}
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5 text-gray-500" />

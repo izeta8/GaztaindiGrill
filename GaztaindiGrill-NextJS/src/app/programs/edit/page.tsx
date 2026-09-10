@@ -36,7 +36,7 @@ function EditProgramPageContent() {
           id,
           name: data?.name ?? '',
           description: data?.description ?? '',
-          creatorName: data?.creatorName ?? data?.creator_name ?? '',
+          userId: typeof data?.user_id === 'number' ? data.user_id : null,
           categoryId: typeof categoryId === 'number' ? categoryId : null,
           steps,
           creationDate: data?.creation_date,
@@ -61,7 +61,7 @@ function EditProgramPageContent() {
         const body: Record<string, unknown> = {
           name: payload.name,
           description: payload.description,
-          creatorName: payload.creatorName,
+          userId: payload.userId,
           categoryId: payload.categoryId ?? null,
           stepsJson: payload.stepsJson,
           creationDate: payload.creationDate,

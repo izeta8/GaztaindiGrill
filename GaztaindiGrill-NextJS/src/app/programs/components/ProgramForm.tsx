@@ -12,6 +12,8 @@ import { apiBaseUrl, toDateInputValue, fromDateInputValue } from '@/utils'
 import { StepsList } from './StepsList'
 import { StepModal, type StepFormState } from './StepModal'
 import { CategoryModal } from './CategoryModal'
+import { UserModal } from './UserModal'
+import { useCurrentUser } from '@/contexts/CurrentUserContext'
 
 export type Category = { id: number; name: string }
 
@@ -34,7 +36,7 @@ export type ProgramFormInitialValues = {
   id?: number | string
   name: string
   description?: string
-  creatorName: string
+  userId?: number | null
   categoryId?: number | null
   steps: ProgramStep[]
   creationDate?: string
@@ -47,7 +49,7 @@ export type ProgramFormSubmitPayload = {
   id?: number | string
   name: string
   description?: string
-  creatorName: string
+  userId: number
   categoryId?: number | null
   steps: ProgramStep[]
   stepsJson: string
@@ -68,8 +70,7 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
   
   const [formData, setFormData] = useState({
     name: initialValues?.name || '',
-    description: initialValues?.description || '',
-    creatorName: initialValues?.creatorName || ''
+    description: initialValues?.description || ''
   })
 
   const [steps, setSteps] = useState<ProgramStep[]>(initialValues?.steps || [])
@@ -83,6 +84,35 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
   const [isCreatingCategory, setIsCreatingCategory] = useState(false)
+
+  // Creator. Defaults to whoever is using the app, which is the common case.
+  const { currentUser, users, createUser } = useCurrentUser()
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(
+    initialValues?.userId ?? currentUser?.id ?? null
+  )
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false)
+  const [newUserName, setNewUserName] = useState('')
+  const [isCreatingUser, setIsCreatingUser] = useState(false)
+
+  // currentUser lands after an effect, so the default has to wait for it in create mode.
+  useEffect(() => {
+    if (mode === 'edit' || selectedUserId !== null || !currentUser) return
+    setSelectedUserId(currentUser.id)
+  }, [mode, selectedUserId, currentUser])
+
+  const handleCreateUser = async () => {
+    setIsCreatingUser(true)
+    try {
+      const created = await createUser(newUserName.trim())
+      if (created) {
+        setSelectedUserId(created.id)
+        setNewUserName('')
+        setIsUserModalOpen(false)
+      }
+    } finally {
+      setIsCreatingUser(false)
+    }
+  }
 
   // Edit-only fields
   const [creationDate, setCreationDate] = useState<string>(
@@ -135,14 +165,14 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
     if (mode !== 'edit' || !initialValues) return
     setFormData({
       name: initialValues.name || '',
-      description: initialValues.description || '',
-      creatorName: initialValues.creatorName || ''
+      description: initialValues.description || ''
     })
     setSteps(initialValues.steps || [])
     setReferenceType(initialValues.referenceType || 'absolute')
     setSelectedCategoryId(
       typeof initialValues.categoryId === 'number' ? initialValues.categoryId : null
     )
+    setSelectedUserId(typeof initialValues.userId === 'number' ? initialValues.userId : null)
     setCreationDate(toDateInputValue(initialValues.creationDate))
     setUpdateDate(toDateInputValue(initialValues.updateDate))
     setUsageCount(typeof initialValues.usageCount === 'number' ? String(initialValues.usageCount) : '')
@@ -254,7 +284,7 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
         id: initialValues?.id,
         name: formData.name,
         description: formData.description,
-        creatorName: formData.creatorName,
+        userId: selectedUserId as number,
         categoryId: selectedCategoryId ?? undefined,
         steps,
         stepsJson: JSON.stringify(steps),
@@ -266,9 +296,10 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
       await onSubmit(payload)
       // Reset only on create
       if (mode === 'create') {
-        setFormData({ name: '', description: '', creatorName: '' })
+        setFormData({ name: '', description: '' })
         setSteps([])
         setSelectedCategoryId(null)
+        setSelectedUserId(currentUser?.id ?? null)
         setReferenceType('absolute')
       }
     } catch {
@@ -374,13 +405,28 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
                 rows={2}
               />
 
-              <Input
-                label="Creador"
-                value={formData.creatorName}
-                onChange={(value) => setFormData(prev => ({ ...prev, creatorName: value }))}
-                placeholder="Tu nombre"
-                required
-              />
+              <div>
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <Select
+                      label="Creador"
+                      value={selectedUserId ? String(selectedUserId) : ''}
+                      onChange={(value) => setSelectedUserId(value ? Number(value) : null)}
+                      options={users.map(u => ({ value: String(u.id), label: u.name }))}
+                      required
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setIsUserModalOpen(true)}
+                    ariaLabel="Crear usuario"
+                    className="h-10"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -440,7 +486,7 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
           <div className="bg-white rounded-lg shadow-sm p-6">
             <Button
               type="submit"
-              disabled={isSubmitting || !formData.name || !formData.creatorName || steps.length === 0}
+              disabled={isSubmitting || !formData.name || !selectedUserId || steps.length === 0}
               className="w-full"
               size="lg"
             >
@@ -468,6 +514,16 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
           setNewCategoryName={setNewCategoryName}
           onCreate={handleCreateCategory}
           isCreating={isCreatingCategory}
+        />
+
+        {/* Create User Modal */}
+        <UserModal
+          isOpen={isUserModalOpen}
+          onClose={() => setIsUserModalOpen(false)}
+          newUserName={newUserName}
+          setNewUserName={setNewUserName}
+          onCreate={handleCreateUser}
+          isCreating={isCreatingUser}
         />
       </div>
     </div>

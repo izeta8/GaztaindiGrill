@@ -5,7 +5,8 @@ export interface Program {
   categoryId?: number;
   stepsJson: string;
   usageCount: number;
-  creatorName: string;
+  userId: number;
+  userName: string;
   creationDate: string;
   updateDate: string;
   isActive: boolean;
@@ -27,7 +28,7 @@ export interface CreateProgramRequest {
   description?: string;
   categoryId: number;
   stepsJson: string;
-  creatorName: string;
+  userId: number;
   referenceType: ReferenceType;
 }
 
@@ -39,7 +40,7 @@ export interface UpdateProgramRequest {
   stepsJson?: string;
   usageCount?: number;
   updateDate?: string;
-  creatorName?: string;
+  userId?: number;
   isActive?: number;
   referenceType: ReferenceType;
 }

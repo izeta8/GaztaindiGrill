@@ -12,7 +12,7 @@ export default function CreateProgram() {
       const body: Record<string, unknown> = {
         name: payload.name,
         description: payload.description,
-        creatorName: payload.creatorName,
+        userId: payload.userId,
         stepsJson: payload.stepsJson,
         referenceType: payload.referenceType,
       }
@@ -41,7 +41,7 @@ export default function CreateProgram() {
   return (
     <ProgramForm
       mode="create"
-      initialValues={{ name: '', description: '', creatorName: '', steps: [] }}
+      initialValues={{ name: '', description: '', steps: [] }}
       onSubmit={onSubmit}
       submitLabel="Crear Programa"
     />

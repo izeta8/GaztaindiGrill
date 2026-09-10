@@ -23,7 +23,7 @@ type ApiCategory = { id: number; name: string }
 
 type ApiProgram = Record<string, unknown> & {
   id: number; name: string; steps_json: string;
-  usage_count: number; creator_name: string; creation_date: string; update_date: string; is_active: number;
+  usage_count: number; user_id: number; user_name: string; creation_date: string; update_date: string; is_active: number;
   category_id?: number | null;
   description?: string | null;
   reference_type?: 'absolute' | 'relative' | null;
@@ -119,7 +119,8 @@ function ProgramsPageContent() {
             typeof p.name === 'string' &&
             typeof p.steps_json === 'string' &&
             typeof p.usage_count === 'number' &&
-            typeof p.creator_name === 'string' &&
+            typeof p.user_id === 'number' &&
+            typeof p.user_name === 'string' &&
             typeof p.creation_date === 'string' &&
             typeof p.update_date === 'string' &&
             typeof p.is_active === 'number'
@@ -131,7 +132,8 @@ function ProgramsPageContent() {
             categoryId: typeof p.category_id === 'number' ? p.category_id : undefined,
             stepsJson: p.steps_json,
             usageCount: p.usage_count,
-            creatorName: p.creator_name,
+            userId: p.user_id,
+            userName: p.user_name,
             creationDate: p.creation_date,
             updateDate: p.update_date,
             isActive: p.is_active === 1,
@@ -203,7 +205,7 @@ function ProgramsPageContent() {
         programId: programToExecute.id,
         steps: stepsJSON || '[]',
         name: programToExecute.name,
-        creatorName: programToExecute.creatorName,
+        creatorName: programToExecute.userName,
         description: programToExecute.description,
         usageCount: programToExecute.usageCount,
         referenceType: programToExecute.referenceType
@@ -235,7 +237,7 @@ function ProgramsPageContent() {
     .filter((p) => {
       const idOk = !searchId.trim() || String(p.id) === searchId.trim()
       const nameOk = !searchName.trim() || p.name.toLowerCase().includes(searchName.toLowerCase())
-      const creatorOk = !searchCreator.trim() || (p.creatorName || '').toLowerCase().includes(searchCreator.toLowerCase())
+      const creatorOk = !searchCreator.trim() || (p.userName || '').toLowerCase().includes(searchCreator.toLowerCase())
       const categoryOk = selectedCategory === 'all' || p.categoryId === selectedCategory
       return idOk && nameOk && creatorOk && categoryOk
     })

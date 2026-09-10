@@ -84,7 +84,7 @@ Si algún día accedes a HA por HTTPS (Nabu Casa), el navegador bloqueará el if
 
 ## Tareas
 
-### 1. Resolver el host en runtime, y usarlo para MQTT
+### 1. Resolver el host en runtime, y usarlo para MQTT ✅ hecho
 
 El helper y su primer consumidor. MQTT va primero porque `useMqtt.tsx` ya tiene el patrón de mirar `window.location` (deduce `ws`/`wss` del protocolo de la página), así que el helper cae en un sitio donde ya hay precedente de estilo.
 
@@ -98,7 +98,7 @@ Archivos: `src/utils/host.ts`, `src/utils/index.ts`, `src/hooks/useMqtt.tsx`, `s
 Commit: `feat: connect to the broker on the host the page was served from`
 Verificación: `npm run lint` y `npm run typecheck`. En navegador: cargar `http://<host>:8081/control.html` por LAN y por el nombre de Tailscale, y ver que el indicador de conexión MQTT pasa a online en ambos.
 
-### 2. La API en el host de la página
+### 2. La API en el host de la página ✅ hecho
 
 Los siete puntos de llamada usan `${process.env.NEXT_PUBLIC_API_URL}` interpolado directamente en el `fetch`. Pasan a `apiBaseUrl()`.
 
@@ -112,7 +112,7 @@ Archivos: los seis de arriba
 Commit: `feat: call the api on the host the page was served from`
 Verificación: `npm run lint`, `npm run typecheck` y **`npm run build`** — este último es el que caza el `window is not defined` del prerender. En navegador: `/programs/list` tiene que listar programas por LAN y por Tailscale.
 
-### 3. El shim de HA y la tarjeta del dashboard
+### 3. El shim de HA y la tarjeta del dashboard ✅ hecho
 
 Los dos ficheros que viven en HA pero cuya fuente de verdad tiene que estar en el repo.
 
@@ -142,7 +142,7 @@ Archivos: `GaztaindiGrill-NextJS/homeassistant/grill.html`, `GaztaindiGrill-Next
 Commit: `feat: add the home assistant shim that forwards the dashboard host to apache`
 Verificación: copiar el fichero, abrir `http://<host>:8123/local/grill.html` por LAN y por Tailscale, y comprobar que la barra de direcciones acaba en `:8081/control.html`. Luego pegar el YAML en el dashboard y ver la parrilla dentro del panel.
 
-### 4. Dejar el contrato de env en git
+### 4. Dejar el contrato de env en git ✅ hecho
 
 `.gitignore` ignora `.env*`, así que los nombres nuevos (`NEXT_PUBLIC_DEV_HOST`, `NEXT_PUBLIC_API_PORT`) no quedarían escritos en ninguna parte del repo, y los viejos (`NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_MQTT_SERVER`) tampoco constaría que se han caído. El propio `.gitignore` dice "can opt-in for committing if needed": este es el caso.
 
@@ -162,7 +162,9 @@ Verificación: `npm run dev` sigue levantando y hablando con la HA remota; `git 
 
 ## Preguntas abiertas
 
-**1. `deploy.ps1` no llega a la HA por Tailscale.** Tiene `$HaHost = 'homeassistant.local'` hardcodeado, y ese nombre es mDNS: no resuelve fuera de la LAN. Ahora mismo estás fuera, así que `npm run deploy` fallaría antes de empezar. Cambiarlo a `homeassistant.tailbedb82.ts.net` haría que funcionase desde los dos sitios con Tailscale levantado (Samba pasa por Tailscale sin problema), pero perdería el caso "en la LAN y sin Tailscale". ¿Lo cambio, lo dejo, o lo hago parámetro?
+**1. `deploy.ps1` no llega a la HA por Tailscale.** ✅ resuelto: `-HaHost` es ahora un parámetro y, si no se pasa, el script se queda con el primero de `homeassistant.local` y `homeassistant.tailbedb82.ts.net` que resuelva. Los dos casos funcionan sin acordarse de nada.
+
+Medido al implementarlo, y corrige lo que este plan daba por hecho: **Samba no pasa por Tailscale tal cual**. El puerto 445 responde, pero la sesión se cae con "error 64" porque el add-on Samba trae en `allow_hosts` solo rangos de LAN y el CGNAT de Tailscale es `100.64.0.0/10`. Hay que añadirlo en la config del add-on; no es algo que el repo pueda arreglar.
 
 **2. ¿Automatizar la copia del shim?** Ahora es manual. Un `Copy-Item` suelto a `\\<ha>\config\www\grill.html` en `deploy.ps1` sería idempotente y sin riesgo (copia simple, jamás `/MIR`), y evitaría que el fichero del repo y el del host se separen. Dijiste de no tocar `deploy.ps1`, así que no está en las tareas.
 

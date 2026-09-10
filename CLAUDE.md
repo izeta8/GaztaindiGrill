@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 |---|---|---|
 | `GaztaindiGrill-ESP32/` | Firmware running on the ESP32 that physically drives the grill (vertical position, rotation/tilt, temperature, cooking programs). | C++ / Arduino framework / PlatformIO |
 | `GaztaindiGrill-NextJS/` | Web client used to control the grill in real time and manage programs. | Next.js 15 / React 19 / TypeScript |
-| `GaztaindiGrill-API/` | Backend microservice: CRUD for cooking programs/categories (MySQL). | Python / FastAPI |
+| `GaztaindiGrill-API/` | Backend microservice: CRUD for cooking programs, categories and users (MySQL). | Python / FastAPI |
 | `GaztaindiGrill-API/addons/gaztaindigrill_api/` | Home Assistant add-on packaging of the API: `Dockerfile`, `config.yaml`, `run.sh`, `requirements.txt` are hand-authored and tracked; `app/` is a generated mirror of the API's own `app/` and is **gitignored** — see below. | Python / Docker / Home Assistant Supervisor |
 
 ### Deploying the API to Home Assistant
@@ -53,11 +53,11 @@ from one network — it forwards `location.hostname` to port 8081 instead.
 flowchart TB
     WEB["<b>Web Client</b><br/>GaztaindiGrill-NextJS<br/>(runs in the browser)"]
     API["<b>GaztaindiGrill-API</b><br/>FastAPI"]
-    DB[("MySQL<br/>programs / categories")]
+    DB[("MySQL<br/>programs / categories / users")]
     BROKER{{"<b>MQTT Broker</b><br/>Mosquitto"}}
     ESP["<b>Firmware</b><br/>GaztaindiGrill-ESP32<br/>grill/0 + grill/1"]
 
-    WEB -->|"HTTP CRUD (fetch from the browser)<br/>programs + categories"| API
+    WEB -->|"HTTP CRUD (fetch from the browser)<br/>programs + categories + users"| API
     API -->|"parameterized SQL<br/>mysql-connector"| DB
 
     WEB -->|"MQTT over WebSocket (ws/wss)<br/>grill/{id}/action/...<br/>payload { value, requestId }"| BROKER
@@ -66,7 +66,7 @@ flowchart TB
     BROKER -->|"telemetry, command results,<br/>program + mode state"| WEB
 ```
 
-- **HTTP** is used *only* for CRUD on programs/categories, called straight from the browser — there is no Next.js server-side proxy. The API is not in the real-time control loop. Neither the API's host nor the broker's is compiled into the client: both come from the host the page was served from, so one static export works over the LAN and over Tailscale alike (`GaztaindiGrill-NextJS/src/utils/host.ts`).
+- **HTTP** is used *only* for CRUD on programs, categories and users, called straight from the browser — there is no Next.js server-side proxy. The API is not in the real-time control loop. Neither the API's host nor the broker's is compiled into the client: both come from the host the page was served from, so one static export works over the LAN and over Tailscale alike (`GaztaindiGrill-NextJS/src/utils/host.ts`).
 - **MQTT** is used for *everything else*: manual movement/rotation commands, program execution, sensor telemetry, mode switching, and connection status (LWT). This happens directly between the web client and the ESP32 — the API does not relay these messages.
 - **The API has no MQTT connection at all** — note there is no edge between it and the broker above. It used to carry a `paho-mqtt` singleton that connected at startup and published nothing (`programs.py` imported `publish` without ever calling it), so it was removed along with the `lifespan`, the `MQTT_*` config, the dependency and the add-on's MQTT options. `GaztaindiGrill-API/docs/architecture.md` §5 records what went and what would have to be decided before reintroducing it.
 
@@ -111,7 +111,7 @@ Each project's own docs are more detailed than this overview — read them befor
 - **Commits follow Conventional Commits** in English, lowercase after the prefix, describing the behaviour change rather than the file touched: `feat: let programs run their positions relative to the starting point`, `fix: replace curl with a Python OTA uploader in platformio.ini`, `docs: update TODO.md`. Prefixes in use: `feat`, `fix`, `docs`, `refactor`, `chore` (repo-maintenance work rather than product behaviour).
 - **A commit can span projects when the change genuinely does** — e.g. a new MQTT error code touching both `GaztaindiGrill-ESP32/lib/Grill/GrillConstants.h` and `GaztaindiGrill-NextJS/src/constants/commandErrors.ts` is one behaviour change and reads better as one commit now that it's possible. Still prefer one concern per commit; don't bundle unrelated work across projects just because the repo allows it.
 - **Program steps schema** is shared across firmware, API, and frontend. A step does **one** thing: `action`, `temperature`, `position`, `rotation` or `time` — and `time` alone means a *wait step*, not a delay tacked onto a movement. Movement steps carry no time and advance as soon as they arrive. Units: time in seconds, temperature in °C, position 0-100, rotation 0-360. The program also carries `referenceType` (`absolute` | `relative`). The firmware resolves the type in that order (`ProgramManager::start_current_step()`) and skips a step that has none of them. The API stores the step array as `steps_json` (a JSON string column in MySQL); the frontend treats it as serialized JSON too — don't assume it's structured/typed at the DB level.
-- **API request bodies use camelCase** (`stepsJson`, `creatorName`, `categoryId`) while **API responses and the DB schema use snake_case** (`steps_json`, `creator_name`, `category_id`). This asymmetry is intentional per `docs/api-reference.md` — don't "fix" it in one layer without checking the other.
+- **API request bodies use camelCase** (`stepsJson`, `userId`, `categoryId`) while **API responses and the DB schema use snake_case** (`steps_json`, `user_id`, `category_id`). This asymmetry is intentional per `docs/api-reference.md` — don't "fix" it in one layer without checking the other.
 - **No automated test suites exist in any of these projects.** NextJS `package.json` has only `dev`/`build`/`start`/`lint`; `GaztaindiGrill-ESP32/test/` holds nothing but the PlatformIO placeholder README; the API has no pytest. Verification is manual: flash to hardware and watch serial/MQTT traffic, exercise the UI in a browser, hit the API directly. Do not claim a change is "tested" — say how it was verified.
 - None of these projects use Cursor or Copilot rule files (`.cursorrules`, `.github/copilot-instructions.md`) — this CLAUDE.md set is the AI-assistance documentation layer for the ecosystem.
 

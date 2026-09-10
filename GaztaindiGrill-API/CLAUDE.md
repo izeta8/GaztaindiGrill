@@ -30,7 +30,7 @@ Full write-up in [docs/architecture.md](docs/architecture.md) (component diagram
 
 ### Naming asymmetry (intentional, don't "fix" without checking the other side)
 
-Request bodies use **camelCase** (`stepsJson`, `creatorName`, `categoryId`); the MySQL schema, query results, and JSON responses use **snake_case** (`steps_json`, `creator_name`, `category_id`). The frontend (`GaztaindiGrill-NextJS`) expects this exact split — see its `docs/api.md`.
+Request bodies use **camelCase** (`stepsJson`, `userId`, `categoryId`); the MySQL schema, query results, and JSON responses use **snake_case** (`steps_json`, `user_id`, `category_id`). A program's creator is a row in `users`, reached through `programs.user_id`; the programs endpoints resolve the name with a `JOIN` and return it as `user_name`. The frontend (`GaztaindiGrill-NextJS`) expects this exact split — see its `docs/api.md`.
 
 ### `PATCH` semantics
 

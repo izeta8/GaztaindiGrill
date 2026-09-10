@@ -24,6 +24,7 @@ graph TD
         D["FastAPI: app.main"]
         E["Router: /programs"]
         F["Router: /categories"]
+        F2["Router: /users"]
         G["Core: Lógica de Negocio"]
         H["Core: DB Connector (MySQL)"]
     end
@@ -38,8 +39,8 @@ graph TD
     end
 
     A & B & C -->|HTTP CRUD| D
-    D --> E & F
-    E & F --> G
+    D --> E & F & F2
+    E & F & F2 --> G
     G --> H
     H <-->|SQL parametrizado| J
     A -->|MQTT sobre WebSocket| K
@@ -53,12 +54,13 @@ Fíjate en que **no sale ninguna arista de la API hacia el broker**: el recuadro
 ### 3.1. Aplicación FastAPI (`app/main.py`)
 - **Descripción**: Es el punto de entrada del servicio. Inicializa la aplicación FastAPI y configura middlewares como CORS.
 - **Ciclo de Vida**: No hay gestor `lifespan`. Lo hubo, y su única función era conectar y desconectar el cliente MQTT; al eliminarse este (§5) se quedó vacío y se retiró. La conexión a MySQL no lo necesita: `db.get_connection()` la abre perezosamente y la reutiliza.
-- **Enrutamiento**: Importa e incluye los `APIRouter` de los diferentes dominios de la aplicación (`categories`, `programs`), manteniendo el código de los endpoints modularizado.
+- **Enrutamiento**: Importa e incluye los `APIRouter` de los diferentes dominios de la aplicación (`categories`, `programs`, `users`), manteniendo el código de los endpoints modularizado.
 
 ### 3.2. Módulo de Rutas (`app/api/routes/`)
 - **Descripción**: Contiene la definición de los endpoints HTTP. Cada archivo corresponde a una entidad de negocio.
   - `categories.py`: Endpoints para crear y listar categorías de programas.
   - `programs.py`: Endpoints CRUD (Crear, Leer, Actualizar, Borrar) para los programas de cocción.
+  - `users.py`: Listado de usuarios activos y creación. No hay borrado: la clave foránea desde `programs` lo impide, así que se desactivan con `is_active`.
 - **Flujo**: Reciben las peticiones HTTP, validan los datos de entrada usando esquemas de Pydantic y orquestan la respuesta interactuando con los módulos del `core`.
 
 ### 3.3. Módulo Core (`app/core/`)
@@ -77,7 +79,7 @@ Fíjate en que **no sale ninguna arista de la API hacia el broker**: el recuadro
 - **Función**:
   1.  **Validación**: FastAPI los usa para validar automáticamente los cuerpos de las peticiones (`request body`) en los endpoints `POST` y `PATCH`/`PUT`.
   2.  **Serialización**: Ayudan a formatear y documentar las respuestas de la API.
-  - `programs.py`: Define modelos como `CreateProgramRequest` y `UpdateProgramRequest`, especificando los campos y tipos de datos esperados.
+  - `programs.py`: Define modelos como `CreateProgramRequest`, `UpdateProgramRequest`, `CreateCategoryRequest` y `CreateUserRequest`, especificando los campos y tipos de datos esperados. Pese al nombre del fichero, contiene los de las tres entidades.
 
 ## 4. Flujo de Datos (Ejemplo: Actualizar un Programa)
 

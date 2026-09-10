@@ -23,7 +23,7 @@ flowchart LR
 
 - **HTTP/S:** solo datos persistidos (CRUD) entre **Cliente Web** y **API**.
 - **MQTT:** todo lo demás — comandos manuales, ejecución de programas, telemetría de sensores, modo single/dual y estado de conexión — **exclusivamente entre Cliente Web y Parrilla**.
-- El cliente se conecta por **WebSocket** (`ws://` o `wss://`, puerto 1884/8884 por defecto, configurable con `NEXT_PUBLIC_MQTT_*` — ver `src/hooks/useMqtt.tsx`). El ESP32 se conecta por TCP normal.
+- El cliente se conecta por **WebSocket** (`ws://` o `wss://`, puerto 1884/8884 por defecto, configurable con `NEXT_PUBLIC_MQTT_*` — ver `src/hooks/useMqtt.tsx`). El **host** no se configura: sale de `resolveHost()` (`src/utils/host.ts`), que devuelve aquel desde el que se sirvió la página, de modo que el mismo export estático vale por LAN y por Tailscale. En desarrollo lo sustituye `NEXT_PUBLIC_DEV_HOST`, porque ahí la página la sirve tu máquina y el broker no. El ESP32 se conecta por TCP normal.
 
 ---
 
@@ -273,4 +273,4 @@ Para simular un comando a mano, recuerda el envoltorio (aunque el firmware tambi
 mosquitto_pub -t 'grill/0/action/movement/vertical' -m '{"value":"up","requestId":"manual-1"}'
 ```
 
-Con `NEXT_PUBLIC_MQTT_SERVER=localhost` el cliente activa además algunos atajos de simulación (ver `src/utils/mqttSimulators.ts` y la rama `isLocalhost` de `useGrillCommands`), que publican estado *impostando al ESP32* en vez de mandarle órdenes.
+Cuando `resolveHost()` devuelve `localhost` —o sea `npm run dev` sin `NEXT_PUBLIC_DEV_HOST`— el cliente activa además algunos atajos de simulación (ver `src/utils/mqttSimulators.ts` y la rama `isLocalhost` de `useGrillCommands`), que publican estado *impostando al ESP32* en vez de mandarle órdenes.

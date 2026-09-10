@@ -4,7 +4,11 @@ Este documento describe la API externa utilizada por la aplicación GaztaindiGri
 
 ## URL Base
 
-La URL base para todas las llamadas a la API se configura a través de la variable de entorno `NEXT_PUBLIC_API_URL`.
+La URL base se resuelve en tiempo de ejecución con `apiBaseUrl()` (`src/utils/host.ts`): el host sale de `window.location.hostname` —el mismo desde el que se sirvió la página— y el puerto de `NEXT_PUBLIC_API_PORT` (8000 por defecto). Como el export es estático y se sirve tanto por la IP de la LAN como por el nombre de Tailscale, hornear un host en el build rompería uno de los dos casos.
+
+En `npm run dev` la página la sirve tu máquina, así que el host se toma de `NEXT_PUBLIC_DEV_HOST`. Esa rama solo existe en desarrollo: en un build `NODE_ENV` es `production` y desaparece del bundle.
+
+`apiBaseUrl()` devuelve cadena vacía cuando no hay `window`, que es el caso del prerender. Por eso las llamadas viven dentro de efectos o manejadores, nunca en el cuerpo del componente.
 
 ---
 

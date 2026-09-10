@@ -23,7 +23,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 2. Uploads the add-on to the HA host over Samba.
 3. Rebuilds and restarts the add-on over SSH (`ha addons rebuild` + `restart`).
 
-Because step 1 mirrors with `/MIR`, **any edit made directly inside `addons/gaztaindigrill_api/app` is destroyed on the next deploy** — it's also gitignored, so such an edit would never even become committable. Change `GaztaindiGrill-API/app` and run the script. The HA host, credentials and add-on slug are hardcoded at the top of the script. `addons/gaztaindigrill_api/requirements.txt` is a separate, hand-maintained copy of the API's `requirements.txt` (the deploy script does not sync it) — update both if a dependency changes.
+Because step 1 mirrors with `/MIR`, **any edit made directly inside `addons/gaztaindigrill_api/app` is destroyed on the next deploy** — it's also gitignored, so such an edit would never even become committable. Change `GaztaindiGrill-API/app` and run the script. Credentials and the add-on slug are hardcoded at the top; the **host** is not — it probes the LAN address first and falls back to the Tailscale name when that does not answer on the Samba port, so the deploy works from off the LAN too (`-HaHost <address>` forces one). It probes reachability rather than DNS, because a raw IP always resolves and so would never fall back — the web client's script tests resolution instead, since its LAN name is mDNS. `addons/gaztaindigrill_api/requirements.txt` is a separate, hand-maintained copy of the API's `requirements.txt` (the deploy script does not sync it) — update both if a dependency changes.
 
 ### Deploying the web client to Home Assistant
 

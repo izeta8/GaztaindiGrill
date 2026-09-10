@@ -13,7 +13,11 @@ async def get_programs():
     connection = get_connection()
     try:
         cursor = connection.cursor(dictionary=True)
-        sql = "SELECT * FROM programs"
+        sql = (
+            "SELECT p.*, u.name AS user_name FROM programs p "
+            "JOIN users u ON p.user_id = u.id "
+            "WHERE p.is_active = 1"
+        )
         cursor.execute(sql)
         result = cursor.fetchall()
         return JSONResponse(content=jsonable_encoder(result), status_code=200)
@@ -35,7 +39,7 @@ async def update_program(program_id: int, payload: UpdateProgramRequest):
         "description": payload.description,
         "category_id": payload.category_id,
         "steps_json": payload.steps_json,
-        "creator_name": payload.creator_name,
+        "user_id": payload.user_id,
         "creation_date": payload.creation_date,
         "update_date": payload.update_date,
         "usage_count": payload.usage_count,
@@ -89,7 +93,7 @@ async def update_program(program_id: int, payload: UpdateProgramRequest):
 
 @router.post("/create")
 async def create_program(payload: CreateProgramRequest):
-    if not payload.name or not payload.steps_json or not payload.creator_name:
+    if not payload.name or not payload.steps_json or not payload.user_id:
         return JSONResponse(
             {"success": False, "message": "El nombre, los pasos y el creador son requeridos"},
             status_code=400,
@@ -100,7 +104,7 @@ async def create_program(payload: CreateProgramRequest):
     try:
         cursor = connection.cursor()
         sql = (
-            "INSERT INTO programs (name, description, category_id, steps_json, creator_name, reference_type) "
+            "INSERT INTO programs (name, description, category_id, steps_json, user_id, reference_type) "
             "VALUES (%s, %s, %s, %s, %s, %s)"
         )
         cursor.execute(
@@ -110,7 +114,7 @@ async def create_program(payload: CreateProgramRequest):
                 payload.description,
                 payload.category_id,
                 payload.steps_json,
-                payload.creator_name,
+                payload.user_id,
                 payload.reference_type,
             ),
         )
@@ -136,7 +140,12 @@ async def get_program(program_id: int):
     connection = get_connection()
     try:
         cursor = connection.cursor(dictionary=True)
-        sql = "SELECT * FROM programs WHERE id = %s"
+        # Not filtered by is_active, unlike the list: this is fetched by explicit id.
+        sql = (
+            "SELECT p.*, u.name AS user_name FROM programs p "
+            "JOIN users u ON p.user_id = u.id "
+            "WHERE p.id = %s"
+        )
         cursor.execute(sql, (program_id,))
         program = cursor.fetchone()
 

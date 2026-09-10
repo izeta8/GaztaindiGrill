@@ -1,14 +1,16 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react'
-import { MoreVertical, RotateCcw, X, AlertOctagon } from 'lucide-react'
+import { MoreVertical, RotateCcw, X, AlertOctagon, UserRound } from 'lucide-react'
 import { useSystemActions } from '@/hooks/useSystemActions'
+import { useCurrentUser } from '@/contexts/CurrentUserContext'
 import { cn } from '@/utils'
 
 export function GlobalActionFab() {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const { handleSystemReset, handleEmergencyStop, isConnected } = useSystemActions()
+  const { openUserModal } = useCurrentUser()
 
   // --- CONFIGURACIÓN DE ACCIONES ---
   const actions = [
@@ -34,6 +36,16 @@ export function GlobalActionFab() {
         if (confirmed) {
           await handleEmergencyStop()
         }
+      }
+    },
+    {
+      // Not MQTT-backed, so it stays available while the grill is offline.
+      label: 'Cambiar usuario',
+      icon: UserRound,
+      danger: false,
+      disabled: false,
+      onClick: async () => {
+        openUserModal()
       }
     },
   ]

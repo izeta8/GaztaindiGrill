@@ -15,6 +15,10 @@ class CreateCategoryRequest(BaseModel):
     name: str
 
 
+class CreateUserRequest(BaseModel):
+    name: str
+
+
 class UpdateProgramRequest(BaseModel):
     # All fields optional; only provided fields will be updated
     name: Optional[str] = None

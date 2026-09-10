@@ -94,8 +94,11 @@ if ($DoRebuild) {
     # SUPERVISOR_TOKEN (the SSH add-on only sets it up for login shells) - `ha`
     # then fails with "missing or invalid API token". Wrapping in `bash -lc`
     # forces a login shell so the token is present.
+    # accept-new, because reaching the host by a second name means a first
+    # connection: the default would stop on the fingerprint prompt, and with no
+    # terminal attached the deploy hangs there instead of failing.
     $remoteCmd = "bash -lc 'ha addons rebuild $AddonSlug && ha addons restart $AddonSlug'"
-    ssh -p $HaPort "${HaUser}@${HaHost}" $remoteCmd
+    ssh -p $HaPort -o StrictHostKeyChecking=accept-new "${HaUser}@${HaHost}" $remoteCmd
     if ($LASTEXITCODE -ne 0) { throw "Remote rebuild/restart failed. Verify the slug with: ssh ... 'ha addons'" }
 } else {
     Write-Host '[3/3] Skipped (DoRebuild = $false) - rebuild manually in HA > Add-ons > GaztaindiGrill API' -ForegroundColor Yellow

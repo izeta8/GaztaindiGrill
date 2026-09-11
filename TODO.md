@@ -30,3 +30,19 @@
   Mide su propia temperatura, no la del aire ni la de la brasa: es un índice de radiación,
   repetible en esta parrilla pero no comparable con un termómetro. Sirve para cocinar sin
   tratarlo como grados calibrados. Correcciones lentas, cada 15-30 s; un control rápido oscilaría.
+
+- **Ajustes configurables desde la web.** Cuatro valores que hoy están compilados y que solo se
+  aciertan probando con la parrilla cargada, así que cambiarlos obliga a reflashear:
+
+  1. Velocidad del rotor en manual (el PWM lento de `action/movement/rotation`).
+  2. Márgenes de "ya he llegado": `POSITION_MARGIN` está en 0 y exige clavar el valor exacto,
+     lo que con ruido de encoder puede hacer oscilar al actuador. También `ROTOR_MARGIN` y
+     `TEMPERATURE_MARGIN`.
+  3. `MOVEMENT_TIMEOUT`, que depende de lo rápido que sea el actuador.
+  4. `SENSOR_UPDATE_INTERVAL`, hoy en 1,5 s. Habrá que bajarlo cuando esté el termopar rápido.
+
+  Se guardan en NVS y, si está vacío, se cae a los valores compilados de hoy. Contrato: un
+  `grill/config` retenido con los valores actuales y un comando para cambiarlos.
+
+  Fuera a propósito: `CLEARANCE_PCT` y `ROTATION_MAX_DROP_PCT`, porque de ellos depende el guard
+  de rotación; y la config de red y del broker, que no puede viajar por el propio broker.

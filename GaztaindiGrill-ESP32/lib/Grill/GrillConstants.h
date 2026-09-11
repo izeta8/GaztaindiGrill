@@ -38,7 +38,7 @@ public:
     // Rotor PWM duty. Manual turns run slower so the tilt can be set by eye; anything with a
     // destination runs flat out. Too low a duty stalls a loaded rack instead of moving it, so
     // lower this only against real weight.
-    static constexpr int ROTOR_PWM_MANUAL = 180;
+    static constexpr int ROTOR_PWM_MANUAL = 160;
     static constexpr int ROTOR_PWM_FULL = 255;
 
     // Timeouts

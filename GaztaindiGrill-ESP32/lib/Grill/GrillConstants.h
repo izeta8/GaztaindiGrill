@@ -35,6 +35,12 @@ public:
     // the worst case, because a turn sweeps through 90 degrees whatever its target angle is.
     static constexpr int SAFE_ROTATION_POSITION_PCT = 60;
 
+    // Rotor PWM duty. Manual turns run slower so the tilt can be set by eye; anything with a
+    // destination runs flat out. Too low a duty stalls a loaded rack instead of moving it, so
+    // lower this only against real weight.
+    static constexpr int ROTOR_PWM_MANUAL = 180;
+    static constexpr int ROTOR_PWM_FULL = 255;
+
     // Timeouts
     static constexpr unsigned long RESET_TIMEOUT = 1000;
     static constexpr unsigned long MOVEMENT_TIMEOUT = 30000;

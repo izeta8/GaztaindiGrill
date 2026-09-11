@@ -15,13 +15,17 @@ DeviceRotorDrive::DeviceRotorDrive(int pinIN3, int pinIN4, int pinENB) {
     pinMode(_pinIN3, OUTPUT);
     pinMode(_pinIN4, OUTPUT);
     pinMode(_pinENB, OUTPUT);
-    analogWrite(_pinENB, 255); // Máxima velocidad
+    set_speed(255);
     stop();
 };
 
 void DeviceRotorDrive::stop(void) {
     digitalWrite(_pinIN3, LOW);
     digitalWrite(_pinIN4, LOW);
+};
+
+void DeviceRotorDrive::set_speed(uint8_t duty) {
+    analogWrite(_pinENB, duty);
 };
 
 void DeviceRotorDrive::rotate_counter_clockwise(void) {

@@ -203,9 +203,9 @@ void Grill::handle_mqtt_message(const char* pAction, GrillRequest& request) {
         // No headroom guard here on purpose: turning by hand is somebody watching the grill and
         // stopping it. Only turns with a destination, which run unattended, get lifted.
         if (payload == GrillConstants::PAYLOAD_CLOCKWISE) {
-            movement->rotate_clockwise();
+            movement->rotate_clockwise(GrillConstants::ROTOR_PWM_MANUAL);
         } else if (payload == GrillConstants::PAYLOAD_COUNTER_CLOCKWISE) {
-            movement->rotate_counter_clockwise();
+            movement->rotate_counter_clockwise(GrillConstants::ROTOR_PWM_MANUAL);
         } else if (payload == GrillConstants::PAYLOAD_STOP) {
             movement->stop_rotor();
         }

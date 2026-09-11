@@ -75,15 +75,17 @@ bool MovementManager::has_rotor()
     return hardware->rotor != nullptr;
 }
 
-void MovementManager::rotate_clockwise()
+void MovementManager::rotate_clockwise(int speed)
 {
     if (!has_rotor()) { return; }
+    hardware->rotor->set_speed(speed);
     hardware->rotor->rotate_clockwise();
 }
 
-void MovementManager::rotate_counter_clockwise()
+void MovementManager::rotate_counter_clockwise(int speed)
 {
     if (!has_rotor()) { return; }
+    hardware->rotor->set_speed(speed);
     hardware->rotor->rotate_counter_clockwise();
 }
 
@@ -161,10 +163,10 @@ void MovementManager::start_rotation_to(int degrees) {
     // In the handle_rotor_stop() function that is called in loop, we handle when we have to stop
     if (differenceRight < differenceLeft)
     {
-        rotate_counter_clockwise();
+        rotate_counter_clockwise(GrillConstants::ROTOR_PWM_FULL);
     } else
     {
-        rotate_clockwise();
+        rotate_clockwise(GrillConstants::ROTOR_PWM_FULL);
     }
 }
 

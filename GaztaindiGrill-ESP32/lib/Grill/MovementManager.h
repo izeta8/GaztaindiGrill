@@ -24,8 +24,8 @@ public:
     bool has_rotor();
 
     void turn_around();
-    void rotate_clockwise();
-    void rotate_counter_clockwise();
+    void rotate_clockwise(int speed);
+    void rotate_counter_clockwise(int speed);
     void stop_rotor();
 
     // ------------------- GO_TO ------------------ //

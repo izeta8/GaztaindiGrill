@@ -71,6 +71,7 @@ export function ControlColumn({ label, isConnected, isRunning, commands, grillSt
                   onDown={() => commands.handleRotationCommand(PAYLOAD_CLOCKWISE)}
                   isConnected={isConnected}
                   movement={grillState.rotation_movement}
+                  holdToMove
                   icons={{ up: RotateCcw, stop: CircleStop, down: RotateCw }}
                 />
               </>

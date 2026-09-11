@@ -5,6 +5,10 @@ import React from "react";
 export interface ButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
+  // Optional: forwarded as-is for press-and-hold controls (e.g. ControlPad's holdToMove).
+  onPointerDown?: (e: React.PointerEvent<HTMLButtonElement>) => void;
+  onPointerUp?: () => void;
+  onPointerCancel?: () => void;
   variant?: "primary" | "secondary" | "primarylight" | "danger";
   size?: "sm" | "md" | "lg";
   className?: string;
@@ -16,6 +20,9 @@ export interface ButtonProps {
 export const Button: React.FC<ButtonProps> = ({
   children,
   onClick,
+  onPointerDown,
+  onPointerUp,
+  onPointerCancel,
   variant = "primary",
   size = "md",
   className = "",
@@ -43,6 +50,9 @@ export const Button: React.FC<ButtonProps> = ({
     <button
       type={type}
       onClick={onClick}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
       disabled={disabled}
       aria-label={ariaLabel}
       className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}

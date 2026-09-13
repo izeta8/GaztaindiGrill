@@ -40,6 +40,9 @@ bool GrillSystem::initialize_system(StatusLED* statusLed) {
     // Now that all objects are created, subscribe to everything at once
     resubscribe_all();
 
+    // Before the reset wait, so clients drop a program lost in the reboot straight away.
+    publish_all_program_status();
+
     // Wait for all grills to complete reset (non-blocking wait)
     Serial.println("Waiting for all grills to reach top position...");
     bool allResetted = false;
@@ -283,6 +286,14 @@ void GrillSystem::resubscribe_all() {
     for (int i = 0; i < GrillConstants::NUM_GRILLS; ++i) {
         if (grills[i]) {
             grills[i]->subscribe_to_topics();
+        }
+    }
+}
+
+void GrillSystem::publish_all_program_status() {
+    for (int i = 0; i < GrillConstants::NUM_GRILLS; ++i) {
+        if (grills[i]) {
+            grills[i]->publish_program_status();
         }
     }
 }

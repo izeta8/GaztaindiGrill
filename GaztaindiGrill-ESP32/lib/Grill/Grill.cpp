@@ -145,6 +145,10 @@ bool Grill::is_program_running() {
     return programManager->is_program_running(); 
 }
 
+void Grill::publish_program_status() {
+    programManager->publish_program_status();
+}
+
 //
 // MQTT
 //

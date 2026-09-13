@@ -64,6 +64,7 @@ public:
     // Programs
     void update_program();
     bool is_program_running();
+    void publish_program_status();
     
     // MQTT
     void subscribe_to_topics();

@@ -177,6 +177,8 @@ void connect_to_mqtt() {
         // Re-subscribe to all necessary topics
         if (grillSystem) {
             grillSystem->resubscribe_all();
+            // Null on the first connect at boot; initialize_system() publishes then instead.
+            grillSystem->publish_all_program_status();
         }
 
         // Make the (already synced) time visible to clients on reconnect.

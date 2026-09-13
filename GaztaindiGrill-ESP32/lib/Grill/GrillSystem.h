@@ -34,6 +34,8 @@ public:
     // Called by the dispatcher once the handler returns: anything that did not reject succeeded.
     void reply_ok_if_unanswered(GrillRequest& request);
     void resubscribe_all();
+    // The retained program topic outlives a reboot, so the grill has to overwrite it.
+    void publish_all_program_status();
     
 private:
     Grill* grills[GrillConstants::NUM_GRILLS];

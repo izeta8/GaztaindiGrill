@@ -299,6 +299,10 @@ void MovementManager::reset_rotation_guard() {
     positionBeforeRotation = GrillConstants::NO_TARGET;
 }
 
+bool MovementManager::is_rotating() {
+    return targetDegrees != GrillConstants::NO_TARGET || guardState != GUARD_IDLE;
+}
+
 void MovementManager::handle_rotor_stop() {
     
     int currentRotorPosition = sensor->get_rotor_encoder_value();

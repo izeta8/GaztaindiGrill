@@ -231,6 +231,19 @@ void Grill::handle_mqtt_message(const char* pAction, GrillRequest& request) {
         mqtt->print("Program cancelled");
     }
 
+    if (topic == GrillConstants::TOPIC_CMD_PROG_SKIP_STEP) {
+        if (!programManager->is_program_running()) {
+            mqtt->reply_error(request, GrillConstants::ERROR_NO_PROGRAM_RUNNING);
+            return;
+        }
+        // A turn cut short leaves the rack tilted, and the next step could lower it onto the embers.
+        if (movement->is_rotating()) {
+            mqtt->reply_error(request, GrillConstants::ERROR_SKIP_STEP_DENIED);
+            return;
+        }
+        programManager->skip_current_step();
+    }
+
     if (topic == GrillConstants::TOPIC_CMD_SET_ROTATION)
     {
         if (!movement->has_rotor()) {

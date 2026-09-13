@@ -248,6 +248,17 @@ void ProgramManager::execute_current_action() {
 }
 
 
+void ProgramManager::skip_current_step() {
+    mqtt->print("Skipping step " + String(programCurrentStep + 1));
+
+    // Rotations are never cut short: Grill refuses the skip while the rotor is busy.
+    movement->targetPosition = GrillConstants::NO_TARGET;
+    movement->targetTemperature = GrillConstants::NO_TARGET;
+    movement->stop_lineal_actuator();
+
+    advance_to_next_step();
+}
+
 void ProgramManager::advance_to_next_step() {
     mqtt->print("Step " + String(programCurrentStep + 1) + " completed");
     programCurrentStep++;

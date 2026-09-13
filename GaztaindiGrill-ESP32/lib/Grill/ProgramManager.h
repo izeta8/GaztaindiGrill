@@ -36,6 +36,7 @@ public:
     void execute_program(GrillRequest& request);
     void publish_program_status();
     void finish_program(bool forcedCancelation);
+    void skip_current_step();
     bool is_program_running();
 
 private:

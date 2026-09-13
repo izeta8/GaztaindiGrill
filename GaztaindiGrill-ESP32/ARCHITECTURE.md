@@ -85,6 +85,7 @@ Detalles que importan:
 -   Los campos vacíos de cada paso se **omiten** del JSON en lugar de enviarse a `null`.
 -   `stepStartUnix` se inyecta **solo en el paso actual**: es el timestamp UTC en que arrancó ese paso, y es lo que permite a un cliente recién conectado calcular bien el tiempo restante en lugar de suponer que el paso empezó cuando él llegó.
 -   Cuando no hay nada ejecutándose el payload es `{ "isRunning": false }`, también retenido, lo que limpia el estado en todos los clientes.
+-   El retenido sobrevive a un reinicio del ESP32, así que el firmware lo **reescribe** en tres momentos además de cada avance: al arrancar (`GrillSystem::initialize_system()`, antes de esperar al reset), en cada reconexión al broker (`connect_to_mqtt()`) y cuando rechaza un `cancel` o `skip_step` con `no_program_running`. Tras un reinicio eso publica `false`; tras un corte de red sin reinicio, el programa real que sigue en RAM.
 -   Existe `grill/{id}/action/request/program_status`, que fuerza una republicación. El cliente web **no lo usa**; queda como herramienta de depuración manual.
 
 > Versiones anteriores de este documento describían un esquema de petición/respuesta con `get_running_program_details` y `running_program_details_response`. **Ese esquema ya no existe**, y sus topics tampoco.
@@ -95,12 +96,14 @@ Para evitar "estados fantasma" en los clientes (que la UI muestre un programa en
 
 -   **Al Conectar:** El ESP32 se registra en el broker con una "última voluntad" sobre el topic **global** `grill/connection` (`TOPIC_LWT`): si se desconecta de forma inesperada, el broker publicará `offline` ahí. Es un único topic para todo el sistema, no uno por parrilla — las dos parrillas viven en el mismo microcontrolador, así que caen juntas.
 -   **Al Desconectar:** El broker ejecuta la "voluntad" y notifica a todos los clientes.
--   **En el Cliente:** La aplicación web está suscrita a `grill/connection`. Si recibe `offline`, marca la parrilla como desconectada; si se intenta enviar un comando en ese estado, avisa en vez de fallar en silencio.
+-   **En el Cliente:** La aplicación web está suscrita a `grill/connection`. Si recibe `offline`, marca la parrilla como desconectada; si se intenta enviar un comando en ese estado, avisa en vez de fallar en silencio. El LWT **no** limpia el programa en ejecución: `RunningProgramsContext` no mira `grill/connection`, así que el panel sigue visible (con los botones desactivados) hasta que el ESP32 vuelve y reescribe `status/program/current` (§3).
 -   **Recalibración:** aparte del LWT, `grill/reset_status` (retenido) alterna entre `resetting` y `ready`. Mientras está en `resetting` el firmware rechaza cualquier comando con el código de error `resetting`.
 
 ## 5. Nota sobre la Persistencia de Estado (Futuras Mejoras)
 
 **IMPORTANTE:** La versión actual del firmware **NO guarda el estado de ejecución si el ESP32 se reinicia o se corta la alimentación.**
+
+-   **Efecto:** un corte de luz **cancela** el programa. Al arrancar, el firmware publica `{ "isRunning": false }` en las dos parrillas para que ningún cliente siga mostrando el programa perdido (§3).
 
 -   **Decisión de Diseño:** Se eliminó la lógica de guardado en la memoria Flash interna para simplificar el código y evitar el desgaste prematuro del chip por escrituras constantes.
 

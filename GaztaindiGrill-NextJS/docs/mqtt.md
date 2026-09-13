@@ -175,6 +175,7 @@ Ojo: la API guarda los pasos como **string JSON** (`steps_json`); el cliente hac
 - Los campos vacíos de un paso se **omiten** (el firmware solo escribe los que tienen valor).
 - `stepStartUnix` se inyecta **solo en el paso actual**: es el timestamp UTC en que empezó, y es lo que permite al cliente pintar una cuenta atrás correcta aunque se conecte a mitad.
 - Cuando no hay programa corriendo el payload es simplemente `{ "isRunning": false }`.
+- El firmware lo reescribe al arrancar, en cada reconexión al broker y al rechazar un `cancel` o `skip_step` con `no_program_running`. Así un retenido de antes de un reinicio no deja un programa fantasma en la UI.
 
 ---
 
@@ -199,7 +200,7 @@ sequenceDiagram
 ```
 
 1. El cliente publica el programa completo en `grill/0/action/program/execute`.
-2. El ESP32 lo guarda en RAM (**no** en flash: un reinicio pierde el programa en curso, es un compromiso deliberado para no desgastar la flash) y arranca la máquina de estados.
+2. El ESP32 lo guarda en RAM (**no** en flash: un reinicio pierde el programa en curso, es un compromiso deliberado para no desgastar la flash) y arranca la máquina de estados. Al volver de un reinicio publica `{ "isRunning": false }`, así que para los clientes el programa queda cancelado.
 3. Con cada avance publica `status/program/current` retenido.
 4. Todos los clientes suscritos actualizan su UI. `RunningProgramsContext` se suscribe con comodín a `grill/+/status/program/current`, así que cubre las dos parrillas con una sola suscripción.
 5. **Saltar paso**: el botón de `ProgramExecutionStatus` publica `action/program/skip_step`, sin confirmación. El ESP32 avanza y republica `status/program/current` con el nuevo `currentStepIndex`, o `{ "isRunning": false }` si era el último. En `localhost` no hay ESP32, así que `useGrillCommands` publica ese estado él mismo, igual que hace con el cancel.
@@ -237,7 +238,7 @@ Detalle de implementación en el cliente: `useMqtt.subscribe()` registra el hand
 
 ### Flujo 5: desconexión y reinicio
 
-- **Caída de la parrilla**: el broker publica el LWT `offline` en `grill/connection`. El cliente lo detecta y deja de mostrar estado obsoleto. Si se intenta publicar un comando con la parrilla `offline`, `useMqtt.publish()` avisa con un toast en vez de fallar en silencio.
+- **Caída de la parrilla**: el broker publica el LWT `offline` en `grill/connection`. El cliente marca la parrilla como desconectada y desactiva los controles. Si se intenta publicar un comando con la parrilla `offline`, `useMqtt.publish()` avisa con un toast en vez de fallar en silencio. El panel del programa en ejecución **no** se limpia con el LWT: sigue visible hasta que el ESP32 vuelve y reescribe `status/program/current`.
 - **Recalibración**: `grill/reset_status` pasa a `resetting` y vuelve a `ready`. Mientras está en `resetting`, el firmware rechaza cualquier comando con el error `resetting`.
 
 ---
@@ -253,7 +254,7 @@ El firmware envía **códigos**, nunca texto de interfaz: así reescribir un men
 | `no_rotor` | Comando de rotación dirigido a una parrilla sin rotor (la 1). |
 | `rotation_out_of_range` | `set_rotation` fuera de `[0, 360)`. |
 | `mode_change_denied` | El cambio de modo no se pudo aplicar. |
-| `no_program_running` | `cancel` o `skip_step` sin programa en curso. |
+| `no_program_running` | `cancel` o `skip_step` sin programa en curso. Antes de contestar, el firmware republica `status/program/current`, que corrige al cliente que creía ver un programa. |
 | `rotation_unsafe` | Un giro con destino que no se puede asegurar: el encoder de posición no contesta, o la subida previa no llegó dentro de `MOVEMENT_TIMEOUT`. |
 | `rotor_busy` | `reset_rotation` con un programa en marcha o un movimiento sin terminar. |
 | `encoder_not_answering` | Programa `relative` que no puede anclar su posición inicial. |

@@ -94,6 +94,7 @@ function GrillControlContent() {
         {isAnyProgramRunning() && (
           <ProgramExecutionStatus
             handleCancelPrograms={[commands0.handleCancelProgram, commands1.handleCancelProgram]}
+            handleSkipSteps={[commands0.handleSkipStep, commands1.handleSkipStep]}
             isConnected={isConnected}
           />
         )}

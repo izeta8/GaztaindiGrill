@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { useMqtt } from '@/hooks/useMqtt';
+import { useRunningPrograms } from '@/contexts/RunningProgramsContext';
 import { TOPICS } from '@/constants';
 import { resolveHost } from '@/utils';
 import { ConnectionStatus as ConnectionStatusEnum } from '@/types';
@@ -17,7 +18,8 @@ export function useGrillCommands(grillIndex: number) {
   // publish stays for the localhost simulation below, which impersonates the ESP32 rather than
   // commanding it; real commands go through sendMqttCommand so they get an answer back.
   const { publish, sendCommand: sendMqttCommand, espConnectionStatus, clientConnectionStatus } = useMqtt();
-  
+  const { runningPrograms } = useRunningPrograms();
+
   const isConnected = espConnectionStatus === ConnectionStatusEnum.Online && clientConnectionStatus === ConnectionStatusEnum.Online;
   const isLeftGrill = grillIndex === 0;
   const grillName = isLeftGrill ? 'Izquierda' : 'Derecha';
@@ -103,6 +105,32 @@ export function useGrillCommands(grillIndex: number) {
     }
   }, [grillName, sendCommand, publish, grillIndex]);
 
+  const handleSkipStep = useCallback(async () => {
+    sendCommand(TOPICS.ACTION.PROGRAM.SKIP_STEP, '');
+
+    // On localhost there is no ESP32 to publish the next step, so do it as the firmware would.
+    const program = runningPrograms[grillIndex as 0 | 1];
+    if (resolveHost() !== 'localhost' || !program) return;
+
+    const nextStepIndex = program.currentStepIndex + 1;
+    const payload = nextStepIndex >= program.steps.length
+      ? { isRunning: false }
+      : {
+          ...program,
+          currentStepIndex: nextStepIndex,
+          steps: program.steps.map((s, i) => ({
+            ...s,
+            stepStartUnix: i === nextStepIndex ? Math.floor(Date.now() / 1000) : undefined
+          }))
+        };
+
+    try {
+      await publish(`grill/${grillIndex}/${TOPICS.STATUS.PROGRAM.CURRENT}`, JSON.stringify(payload), { qos: 1, retain: true });
+    } catch (error) {
+      console.error("Error updating local state in broker (simulation):", error);
+    }
+  }, [sendCommand, runningPrograms, publish, grillIndex]);
+
   return {
     handleDirectionCommand,
     handleRotationCommand,
@@ -110,6 +138,7 @@ export function useGrillCommands(grillIndex: number) {
     handleSetTemperature,
     handleSetRotation,
     handleResetRotation,
-    handleCancelProgram
+    handleCancelProgram,
+    handleSkipStep
   };
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
-import { Pause, LayoutGrid } from "lucide-react";
+import { Pause, LayoutGrid, SkipForward } from "lucide-react";
 import { useRunningPrograms } from "@/contexts/RunningProgramsContext";
 import { ExecutionTabs } from "./execution/ExecutionTabs";
 import { ExecutionDetails } from "./execution/ExecutionDetails";
@@ -10,10 +10,11 @@ import { ExecutionSteps } from "./execution/ExecutionSteps";
 
 type ProgramExecutionStatusProps = {
   handleCancelPrograms: [(() => void), (() => void)];
+  handleSkipSteps: [(() => void), (() => void)];
   isConnected: boolean;
 }
 
-export function ProgramExecutionStatus({ handleCancelPrograms, isConnected }: ProgramExecutionStatusProps) {
+export function ProgramExecutionStatus({ handleCancelPrograms, handleSkipSteps, isConnected }: ProgramExecutionStatusProps) {
   const { runningPrograms } = useRunningPrograms();
   const [activeTab, setActiveTab] = useState<0 | 1>(0);
 
@@ -80,6 +81,15 @@ export function ProgramExecutionStatus({ handleCancelPrograms, isConnected }: Pr
               steps={runningProgram.steps} 
               currentStepIndex={currentStepIndex} 
             />
+
+            <Button
+              onClick={() => handleSkipSteps[activeTab]()}
+              disabled={!isConnected || !runningProgram?.isRunning}
+              variant="secondary"
+              className="w-full py-3 mb-2 rounded-lg text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all"
+            >
+              <SkipForward className="h-3.5 w-3.5 mr-2" /> Saltar Paso
+            </Button>
 
             <Button
               onClick={() => {

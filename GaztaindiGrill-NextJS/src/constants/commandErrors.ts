@@ -11,7 +11,6 @@ export const COMMAND_ERROR_MESSAGES: Record<string, string> = {
   encoder_not_answering: 'El encoder no responde: no se puede iniciar un programa relativo',
   rotation_unsafe: 'No se puede girar: la parrilla no ha podido subir a una altura segura',
   rotor_busy: 'No se puede poner el rotor en cero mientras la parrilla se mueve o hay un programa en marcha',
-  skip_step_denied: 'No se puede saltar el paso mientras la parrilla gira',
   resetting: 'La parrilla se está reiniciando, espera unos segundos',
 }
 

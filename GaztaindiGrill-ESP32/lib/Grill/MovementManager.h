@@ -53,8 +53,6 @@ public:
     int min_safe_position_for_turn(int fromAngle, int toAngle);
     void update_rotation_guard();
     void reset_rotation_guard();
-    // True from the lift before a turn until the rack is back down after it.
-    bool is_rotating();
 
     // -------------- GO_TO TARGETS ------------- //
     int targetTemperature;

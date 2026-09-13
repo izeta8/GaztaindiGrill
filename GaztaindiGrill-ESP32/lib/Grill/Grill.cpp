@@ -236,11 +236,6 @@ void Grill::handle_mqtt_message(const char* pAction, GrillRequest& request) {
             mqtt->reply_error(request, GrillConstants::ERROR_NO_PROGRAM_RUNNING);
             return;
         }
-        // A turn cut short leaves the rack tilted, and the next step could lower it onto the embers.
-        if (movement->is_rotating()) {
-            mqtt->reply_error(request, GrillConstants::ERROR_SKIP_STEP_DENIED);
-            return;
-        }
         programManager->skip_current_step();
     }
 

@@ -1,10 +1,11 @@
-## Features pendientes de planificar
 
-- **Saltar al siguiente paso durante una ejecución**, en vez de esperar a que termine el actual.
+
+## Features pendientes de planificar
 
 - **Recuperación tras reinicio del ESP32.** Persistir en NVS el programa en curso (`programId`,
   paso, `stepStartUnix`) y al arrancar publicar que había uno a medias, para reanudar o abortar.
-  Hoy un reinicio con brasa encendida deja la parrilla parada sin avisar a nadie.
+  Hoy un reinicio cancela el programa: la UI ya lo quita (el firmware publica `isRunning: false`
+  al arrancar), pero la parrilla se queda parada sin avisar a nadie de que se cortó.
 
 - **Historial de cocinados.** Tabla nueva en la API: programa, usuario, inicio/fin y temperaturas
   muestreadas. Base para repetir lo que salió bien y para depurar ejecuciones fallidas.

@@ -38,7 +38,9 @@ Por eso van dos llamadas:
 
 ## Tareas
 
-### 1. Publicar el estado de programa al arrancar y al reconectar
+### 1. Publicar el estado de programa al arrancar y al reconectar — HECHA (`5991977`)
+
+> `pio run` OK. Hecha en `develop`, sin rama propia.
 
 - `Grill`: exponer `publish_program_status()`, que delega en `programManager`.
 - `GrillSystem`: `publish_all_program_status()`, recorriendo `grills[]` con la misma comprobación
@@ -56,7 +58,9 @@ Verificación: `pio run`. En hardware, con `mosquitto_sub -v -t 'grill/#'`:
 - Lanzar un programa, desenchufar el cable de red unos segundos: al reconectar se republica el
   programa con el paso actual, y sigue en marcha.
 
-### 2. Republicar el estado real al rechazar con `no_program_running`
+### 2. Republicar el estado real al rechazar con `no_program_running` — HECHA (staged)
+
+> `pio run` OK.
 
 - `Grill::handle_mqtt_message()`: en las ramas de `TOPIC_CMD_PROG_CANCEL` y
   `TOPIC_CMD_PROG_SKIP_STEP`, llamar a `programManager->publish_program_status()` antes del

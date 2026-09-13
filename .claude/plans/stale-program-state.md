@@ -1,8 +1,6 @@
 # Estado de programa desincronizado entre ESP32 y cliente
 
-Rama sugerida: `fix/stale-program-state`. Ahora estás en `develop` con trabajo de
-`skip-program-step` a medias (task 2 en stage, task 3 pendiente). Conviene commitear eso antes de
-sacar la rama.
+Rama sugerida: `fix/stale-program-state`. Al final se hizo directamente en `develop`.
 
 ## El problema
 
@@ -58,7 +56,7 @@ Verificación: `pio run`. En hardware, con `mosquitto_sub -v -t 'grill/#'`:
 - Lanzar un programa, desenchufar el cable de red unos segundos: al reconectar se republica el
   programa con el paso actual, y sigue en marcha.
 
-### 2. Republicar el estado real al rechazar con `no_program_running` — HECHA (staged)
+### 2. Republicar el estado real al rechazar con `no_program_running` — HECHA (`bb71840`)
 
 > `pio run` OK.
 
@@ -84,3 +82,7 @@ dejarlo fuera: con la tarea 1 es muy difícil llegar a ese estado. Si lo quieres
 **2. ¿Orden respecto a `skip-program-step`?** La tarea 2 toca la rama de skip, que ya está
 commiteada (`841cb1d`), así que no hay conflicto. Solo hace falta que la task 2 de skip esté
 commiteada antes de cambiar de rama.
+
+---
+
+*Plan cerrado. Se conserva por las alternativas descartadas y su porqué, que no están en el código ni en los docs.*

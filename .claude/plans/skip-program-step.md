@@ -1,6 +1,6 @@
 # Saltar al siguiente paso durante una ejecución
 
-Rama sugerida: `feat/skip-program-step` (ahora estás en `develop`, árbol limpio).
+Rama sugerida: `feat/skip-program-step`. Al final se hizo directamente en `develop`.
 
 ## Qué cambia
 
@@ -94,7 +94,7 @@ Verificación: `npm run lint` + `npm run build`. En navegador: con un programa e
 
 Auditor pasado en las tareas 1 y 4, sin divergencias.
 
-### 4. Permitir saltar también durante la inclinación — HECHA (staged)
+### 4. Permitir saltar también durante la inclinación — HECHA (`51bf395`)
 
 - `Grill.cpp`: fuera el rechazo por giro; solo queda `no_program_running`.
 - `ProgramManager::skip_current_step()`: limpia también `targetDegrees`, llama a
@@ -119,3 +119,7 @@ y arranca el paso siguiente.
 **2. Sin confirmación** antes de saltar.
 
 **3. Por parrilla** (`grill/{id}/...`), igual que el cancel.
+
+---
+
+*Plan cerrado. Se conserva por las alternativas descartadas y su porqué, que no están en el código ni en los docs.*

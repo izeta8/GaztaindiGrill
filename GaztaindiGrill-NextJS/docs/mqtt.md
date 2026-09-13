@@ -117,6 +117,7 @@ sequenceDiagram
 | `grill/{id}/action/movement/reset_rotation` | `""` | Pone el cero del rotor en la inclinación actual, sin reiniciar. Republica `status/sensor/rotation` a `0`. Sin rotor → `no_rotor`; con un programa o un movimiento en marcha → `rotor_busy`. |
 | `grill/{id}/action/program/execute` | objeto programa (ver abajo) | Ejecuta un programa completo. |
 | `grill/{id}/action/program/cancel` | `""` | Cancela el programa en curso. Si no hay ninguno → `no_program_running`. |
+| `grill/{id}/action/program/skip_step` | `""` | Abandona el paso en curso y arranca el siguiente, en cualquier fase del paso: para actuador y rotor donde estén y anula el seguro de giro. Si era el último, el programa termina. Si no hay programa → `no_program_running`. |
 | `grill/{id}/action/request/program_status` | — | Fuerza una publicación de `status/program/current`. **El cliente no lo usa hoy**; existe en firmware y constantes como herramienta de depuración manual. |
 
 El payload de `execute` (`value`) es el objeto que arma `src/app/programs/list/page.tsx`:
@@ -201,6 +202,7 @@ sequenceDiagram
 2. El ESP32 lo guarda en RAM (**no** en flash: un reinicio pierde el programa en curso, es un compromiso deliberado para no desgastar la flash) y arranca la máquina de estados.
 3. Con cada avance publica `status/program/current` retenido.
 4. Todos los clientes suscritos actualizan su UI. `RunningProgramsContext` se suscribe con comodín a `grill/+/status/program/current`, así que cubre las dos parrillas con una sola suscripción.
+5. **Saltar paso**: el botón de `ProgramExecutionStatus` publica `action/program/skip_step`, sin confirmación. El ESP32 avanza y republica `status/program/current` con el nuevo `currentStepIndex`, o `{ "isRunning": false }` si era el último. En `localhost` no hay ESP32, así que `useGrillCommands` publica ese estado él mismo, igual que hace con el cancel.
 
 ### Flujo 2: sincronización de un cliente nuevo
 
@@ -251,7 +253,7 @@ El firmware envía **códigos**, nunca texto de interfaz: así reescribir un men
 | `no_rotor` | Comando de rotación dirigido a una parrilla sin rotor (la 1). |
 | `rotation_out_of_range` | `set_rotation` fuera de `[0, 360)`. |
 | `mode_change_denied` | El cambio de modo no se pudo aplicar. |
-| `no_program_running` | `cancel` sin programa en curso. |
+| `no_program_running` | `cancel` o `skip_step` sin programa en curso. |
 | `rotation_unsafe` | Un giro con destino que no se puede asegurar: el encoder de posición no contesta, o la subida previa no llegó dentro de `MOVEMENT_TIMEOUT`. |
 | `rotor_busy` | `reset_rotation` con un programa en marcha o un movimiento sin terminar. |
 | `encoder_not_answering` | Programa `relative` que no puede anclar su posición inicial. |

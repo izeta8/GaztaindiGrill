@@ -131,6 +131,10 @@ La altura que se exige no es la del ángulo destino sino la del **peor punto del
 
 **Interacción con los programas.** `has_any_active_target()` cuenta el estado del guard además de los tres targets. Sin eso, entre la subida y el giro hay un instante en que `targetPosition` ya está limpio y `targetDegrees` todavía no está puesto, y `ProgramManager::check_target_reached()` daría el paso por terminado a mitad de maniobra. Con ello, el tiempo de un paso empieza a contar cuando la maniobra entera ha acabado.
 
+**Saltar un paso no espera al guard.** `action/program/skip_step` llega a `ProgramManager::skip_current_step()`, que limpia los tres targets, llama a `reset_rotation_guard()` y para actuador y rotor donde estén, en cualquier fase: subiendo, girando o volviendo. Saltar a mitad de giro deja la rejilla inclinada, y el paso siguiente arranca desde ahí.
+
+> **Riesgo conocido, pendiente:** `go_to()` no mira la inclinación, así que un paso de posición puede bajar una rejilla inclinada hasta la brasa. No lo introduce el salto: tras un paso `rotation` que acaba inclinado (p. ej. 90°) el guard vuelve a `max(posición previa, suelo)`, y un `position` bajo justo después baja igualmente. El arreglo previsto es un suelo en `go_to()` con `min_safe_position()` del ángulo actual.
+
 **Si no se puede asegurar**, el firmware responde `rotation_unsafe`: o el encoder de posición no contesta al recibir el comando, o la subida no llegó dentro de `MOVEMENT_TIMEOUT`. Como en el segundo caso la respuesta llega tarde, el handler llama a `defer()` y contesta después con `reply_to()`.
 
 > **Supuesto de operación:** el encoder del rotor es incremental y `DeviceEncoder::begin()` lo pone a 0 en cada arranque, sin homing. El firmware da por hecho que **al encender la rejilla está horizontal**. No hay código que lo verifique, pero corregirlo ya no obliga a reiniciar: ver §7.

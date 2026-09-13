@@ -228,6 +228,8 @@ void Grill::handle_mqtt_message(const char* pAction, GrillRequest& request) {
 
     if (topic == GrillConstants::TOPIC_CMD_PROG_CANCEL) {
         if (!programManager->is_program_running()) {
+            // The client only asks because it thinks a program is running, so correct its state too.
+            programManager->publish_program_status();
             mqtt->reply_error(request, GrillConstants::ERROR_NO_PROGRAM_RUNNING);
             return;
         }
@@ -237,6 +239,7 @@ void Grill::handle_mqtt_message(const char* pAction, GrillRequest& request) {
 
     if (topic == GrillConstants::TOPIC_CMD_PROG_SKIP_STEP) {
         if (!programManager->is_program_running()) {
+            programManager->publish_program_status();
             mqtt->reply_error(request, GrillConstants::ERROR_NO_PROGRAM_RUNNING);
             return;
         }

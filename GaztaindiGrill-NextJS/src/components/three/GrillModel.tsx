@@ -23,7 +23,7 @@ export function GrillModel({ ...props }: GrillModelProps) {
   const grillState1 = useGrillState(1)
   
   // Solo obtenemos la escena base del caché
-  const { scene } = useGLTF('/models/parrilla_model_v2.glb')
+  const { scene } = useGLTF('/models/parrilla_model_v4.glb')
   
   // Clonamos la escena para tener una instancia única por componente
   const clonedScene = useMemo(() => scene.clone(), [scene])
@@ -33,6 +33,8 @@ export function GrillModel({ ...props }: GrillModelProps) {
   
   const leftGrillRef = useRef<THREE.Object3D | null>(null)
   const rightGrillRef = useRef<THREE.Object3D | null>(null)
+  const rotorRef = useRef<THREE.Object3D | null>(null)
+  const rotorBaseX = useRef(0)
   const leftTextRef = useRef<THREE.Group | null>(null)
   const rightTextRef = useRef<THREE.Group | null>(null)
 
@@ -45,6 +47,11 @@ export function GrillModel({ ...props }: GrillModelProps) {
   useMemo(() => {
     if (nodes.padre_parrilla_ezkerra) leftGrillRef.current = nodes.padre_parrilla_ezkerra
     if (nodes.padre_parrilla_eskubi) rightGrillRef.current = nodes.padre_parrilla_eskubi
+    // The node already carries a small X tilt that levels it inside its parent; the rotor angle adds to it.
+    if (nodes['rotor_cilindro+parrilla']) {
+      rotorRef.current = nodes['rotor_cilindro+parrilla']
+      rotorBaseX.current = rotorRef.current.rotation.x
+    }
   }, [nodes])
 
   const findBase = (root: THREE.Object3D) => {
@@ -85,9 +92,19 @@ export function GrillModel({ ...props }: GrillModelProps) {
     }
   }
 
+  const updateRotor = (degrees: number) => {
+    if (!rotorRef.current) return
+
+    const target = rotorBaseX.current + THREE.MathUtils.degToRad(degrees)
+    // Shortest way round, so 359 -> 0 does not spin the rack a full turn backwards.
+    const delta = THREE.MathUtils.euclideanModulo(target - rotorRef.current.rotation.x + Math.PI, Math.PI * 2) - Math.PI
+    rotorRef.current.rotation.x += delta * 0.1
+  }
+
   useFrame(() => {
     updateGrill(leftGrillRef, leftTextRef, grillState0.position)
     updateGrill(rightGrillRef, rightTextRef, grillState1.position)
+    updateRotor(grillState0.rotation)
   })
 
   const textLabels = [
@@ -138,4 +155,4 @@ export function GrillModel({ ...props }: GrillModelProps) {
   )
 }
 
-useGLTF.preload('/models/parrilla_model_v2.glb')
+useGLTF.preload('/models/parrilla_model_v4.glb')

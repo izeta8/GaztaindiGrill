@@ -57,6 +57,8 @@ its own connection alive, and the script cannot drop it. Close that window first
 
 No automated test suite is configured (no jest/vitest setup) — verification is manual in the browser, against the real grill. To watch or fake MQTT traffic while developing, use `mosquitto_sub -v -t 'grill/#'` and `mosquitto_pub` directly against the broker.
 
+Without the grill, `npm run fake-grill` (`scripts/fake-grill.mjs`) stands in for the ESP32 against a local broker on `mqtt://localhost:1883` (`MQTT_URL` overrides it). It publishes the LWT, mode and reset status, moves position and rotation for real on `set_position`, `set_rotation` and the manual commands, sends a temperature every 5 s, and answers on `status/result`. It does not run programs. The broker needs a WebSocket listener on 1884 and `allow_anonymous true`, and `.env.local` must leave `NEXT_PUBLIC_DEV_HOST` and the MQTT credentials unset so the page talks to localhost. With no API running, the user modal does not open and the control page still works.
+
 ## Architecture
 
 - **No host is baked into the build.** The export is one artifact served both by LAN IP and by Tailscale name, so `resolveHost()` and `apiBaseUrl()` (`src/utils/host.ts`) take the host from `window.location.hostname` at runtime; only ports, protocol and credentials still come from `NEXT_PUBLIC_*`. `npm run dev` is the exception — there the page comes from your machine while the API and broker do not, so `NEXT_PUBLIC_DEV_HOST` overrides it, behind a `NODE_ENV === 'development'` check that a production build folds away. Both helpers return `''` when there is no `window`, so callers must resolve inside effects or handlers: reading them in a component body breaks `next build` at prerender.

@@ -1,6 +1,5 @@
 "use client"
 
-import { useState, useEffect } from 'react'
 import { GrillState } from '@/types'
 import { useGrillCommands } from '@/app/control/hooks/useGrillCommands'
 import { Button } from '@/components/ui/Button'
@@ -18,19 +17,6 @@ interface ControlColumnProps {
 }
 
 export function ControlColumn({ label, isConnected, isRunning, commands, grillState, grillIndex }: ControlColumnProps) {
-  const [targetPos, setTargetPos] = useState(grillState?.position?.toString() || '')
-
-  useEffect(() => {
-    if (!isRunning && grillState?.position !== undefined) {
-      setTargetPos(grillState.position.toString())
-    }
-  }, [grillState?.position, isRunning])
-
-  const handleSendPosition = () => {
-    if (targetPos === '') return
-    commands.handleSetPosition(targetPos)
-  }
-
   return (
     <div className="flex flex-col items-center">
       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">{label}</span>
@@ -51,7 +37,7 @@ export function ControlColumn({ label, isConnected, isRunning, commands, grillSt
 
         <div className={`flex flex-col items-center gap-8 transition-all duration-700 ${isRunning ? 'opacity-20 blur-[1px] grayscale pointer-events-none' : ''}`}>
           
-          {/* --- FILA 1: PADS DE CONTROL --- */}
+          {/* --- PADS DE CONTROL --- */}
           {/* The zero button is out of flow: in flow it widens the row and the pads stop sitting under the 3D model. */}
           <div className="relative flex items-center justify-center gap-3">
             {grillIndex === 0 && (
@@ -85,49 +71,6 @@ export function ControlColumn({ label, isConnected, isRunning, commands, grillSt
               movement={grillState.movement}
               icons={{ up: ChevronUp, stop: CircleStop, down: ChevronDown }}
             />
-          </div>
-
-          {/* --- FILA 2: SLIDERS Y ENTRADA DE POSICIÓN --- */}
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative w-16 h-44 bg-white rounded-3xl shadow-inner border border-gray-100 flex items-center justify-center overflow-hidden">
-              <div
-                className="absolute bottom-0 w-full bg-blue-500/10 transition-all duration-700 ease-out pointer-events-none"
-                style={{ height: `${grillState?.position || 0}%` }}
-              />
-              <input
-                type="range"
-                min="0" max="100" step="5"
-                value={targetPos}
-                onChange={(e) => setTargetPos(e.target.value)}
-                disabled={!isConnected || isRunning}
-                className="absolute h-36 w-2 appearance-none bg-transparent cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:w-10 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:rounded-lg [&::-webkit-slider-thumb]:shadow-md rotate-180"
-                style={{ writingMode: 'vertical-lr', WebkitAppearance: 'slider-vertical' }}
-              />
-            </div>
-
-            <div className="flex flex-col items-center gap-2 w-full max-w-[80px]">
-              <div className="relative w-full">
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="5"
-                  placeholder="%"
-                  value={targetPos}
-                  onChange={(e) => setTargetPos(e.target.value)}
-                  disabled={!isConnected || isRunning}
-                  className="w-full h-10 px-2 bg-white border border-gray-100 rounded-xl text-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-50"
-                />
-              </div>
-              <Button
-                size="sm"
-                disabled={!isConnected || isRunning || targetPos === ''}
-                onClick={handleSendPosition}
-                className="w-full h-8 rounded-lg text-[10px] font-bold uppercase tracking-tighter"
-              >
-                ENVIAR
-              </Button>
-            </div>
           </div>
         </div>
       </div>

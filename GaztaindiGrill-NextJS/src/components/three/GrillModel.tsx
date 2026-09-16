@@ -20,8 +20,9 @@ export interface GrillModelProps {
   onGrillSelect?: (index: 0 | 1) => void
   // Points the camera at one grill, framing its whole travel.
   focusGrill?: 0 | 1
-  // A see-through copy of the focused rack at another height, dragged up and down by the pointer.
-  ghost?: {
+  // The height being picked for the focused grill, drawn solid and dragged by the pointer, while
+  // the grill at its real height fades out.
+  target?: {
     position: number
     onDrag: (position: number) => void
   }
@@ -39,9 +40,12 @@ export const positionForHeight = (height: number) => ((height - MIN_HEIGHT) / (M
 // Left grill from a corner so the rotor tilt shows, right grill straight on.
 const FOCUS_DIRECTIONS = [new THREE.Vector3(1.2, 0.9, 1), new THREE.Vector3(0, 0.4, 1)]
 
-// How far past the canvas edge the corners of the rack's box may land, per camera. Above 1 for the
-// corner view: from there the box corners stick out well beyond the rack itself.
-const FOCUS_FILL = [1.3, 0.95]
+// How far towards the canvas edge the corners of the rack's travel box may land, per camera. Higher
+// for the corner view: from there the box corners stick out well beyond the rack itself.
+const FOCUS_FILL = [0.8, 0.6]
+
+// Everything but the focused grill, kept for context and greyed out so it reads as not draggable.
+const FADED_MATERIAL = new THREE.MeshStandardMaterial({ color: '#9ca3af', transparent: true, opacity: 0.25, depthWrite: false })
 
 // Pointer travel in px above which a click is really the end of a drag.
 const CLICK_MAX_DELTA = 4
@@ -63,9 +67,9 @@ const grillIndexAt = (intersections: THREE.Intersection[]) => {
   return undefined
 }
 
-const GHOST_MATERIAL = new THREE.MeshBasicMaterial({ color: '#f59e0b', transparent: true, opacity: 0.4, depthWrite: false })
+const CURRENT_POSITION_OPACITY = 0.2
 
-export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, ghost, ...props }: GrillModelProps) {
+export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, target, ...props }: GrillModelProps) {
   const grillState0 = useGrillState(0)
   const grillState1 = useGrillState(1)
   
@@ -216,32 +220,42 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, ghost
     gl.domElement.style.cursor = grillIndexAt(event.intersections) === undefined ? 'auto' : 'pointer'
   }
 
-  const hasGhost = focusGrill !== undefined && ghost !== undefined
-  const ghostRef = useRef(ghost)
-  ghostRef.current = ghost
+  const hasTarget = focusGrill !== undefined && target !== undefined
+  const targetRef = useRef(target)
+  targetRef.current = target
 
-  const ghostObject = useMemo(() => {
-    if (focusGrill === undefined || !hasGhost) return null
-    const copy = nodes[GRILL_NODE_NAMES[focusGrill]].clone(true)
-    // Only the rack: a see-through column would cover the real one.
-    copy.children.forEach((child) => { child.visible = child.name.startsWith('padre_rejilla') })
-    copy.traverse((child) => {
-      if (child instanceof THREE.Mesh) child.material = GHOST_MATERIAL
-    })
-    return copy
-  }, [nodes, focusGrill, hasGhost])
+  // Cloned before the effect below fades the real grill, so the copy keeps the .glb materials.
+  const targetObject = useMemo(() => {
+    if (focusGrill === undefined || !hasTarget) return null
+    return nodes[GRILL_NODE_NAMES[focusGrill]].clone(true)
+  }, [nodes, focusGrill, hasTarget])
 
   useFrame(() => {
-    if (!ghostObject || !ghostRef.current) return
-    ghostObject.position.y = heightForPosition(ghostRef.current.position)
-    const ghostRotor = ghostObject.getObjectByName('rotor_cilindro+parrilla')
-    if (ghostRotor && rotorRef.current) ghostRotor.rotation.x = rotorRef.current.rotation.x
+    if (!targetObject || !targetRef.current) return
+    targetObject.position.y = heightForPosition(targetRef.current.position)
+    const targetRotor = targetObject.getObjectByName('rotor_cilindro+parrilla')
+    if (targetRotor && rotorRef.current) targetRotor.rotation.x = rotorRef.current.rotation.x
   })
+
+  useEffect(() => {
+    if (focusGrill === undefined || !hasTarget) return
+    const faded: THREE.Material[] = []
+    nodes[GRILL_NODE_NAMES[focusGrill]].traverse((mesh) => {
+      if (!(mesh instanceof THREE.Mesh) || Array.isArray(mesh.material)) return
+      const material = mesh.material.clone()
+      material.transparent = true
+      material.opacity = CURRENT_POSITION_OPACITY
+      material.depthWrite = false
+      mesh.material = material
+      faded.push(material)
+    })
+    return () => faded.forEach((material) => material.dispose())
+  }, [nodes, focusGrill, hasTarget])
 
   // Drags by the height difference under the pointer, projected on a vertical plane facing the
   // camera, so the rack follows the finger from any angle.
   useEffect(() => {
-    if (focusGrill === undefined || !hasGhost) return
+    if (focusGrill === undefined || !hasTarget) return
     const canvas = gl.domElement
     const grill = nodes[GRILL_NODE_NAMES[focusGrill]]
     const raycaster = new THREE.Raycaster()
@@ -261,16 +275,16 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, ghost
 
     const handleDown = (event: PointerEvent) => {
       const y = heightUnder(event)
-      if (y === null || !ghostRef.current) return
+      if (y === null || !targetRef.current) return
       canvas.setPointerCapture(event.pointerId)
-      drag = { startY: y, startPosition: ghostRef.current.position }
+      drag = { startY: y, startPosition: targetRef.current.position }
     }
 
     const handleMove = (event: PointerEvent) => {
       if (!drag) return
       const y = heightUnder(event)
       if (y === null) return
-      ghostRef.current?.onDrag(positionForHeight(heightForPosition(drag.startPosition) + y - drag.startY))
+      targetRef.current?.onDrag(positionForHeight(heightForPosition(drag.startPosition) + y - drag.startY))
     }
 
     const handleUp = (event: PointerEvent) => {
@@ -288,12 +302,15 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, ghost
       canvas.removeEventListener('pointerup', handleUp)
       canvas.removeEventListener('pointercancel', handleUp)
     }
-  }, [hasGhost, focusGrill, nodes, gl, camera])
+  }, [hasTarget, focusGrill, nodes, gl, camera])
 
-  // A focused view shows its grill alone: the walls and the other grill would hide it.
+  // Swaps materials on this clone's meshes only; the cached .glb materials stay untouched.
   useEffect(() => {
     if (focusGrill === undefined) return
-    clonedScene.children.forEach((child) => { child.visible = child.name === GRILL_NODE_NAMES[focusGrill] })
+    clonedScene.children.forEach((child) => {
+      if (child.name === GRILL_NODE_NAMES[focusGrill]) return
+      child.traverse((mesh) => { if (mesh instanceof THREE.Mesh) mesh.material = FADED_MATERIAL })
+    })
   }, [clonedScene, focusGrill])
 
   useEffect(() => {
@@ -317,7 +334,7 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, ghost
         onPointerOut={onGrillSelect ? () => { gl.domElement.style.cursor = 'auto' } : undefined}
       />
 
-      {ghostObject && <primitive object={ghostObject} />}
+      {targetObject && <primitive object={targetObject} />}
 
       {showLabels && textLabels.map((label) => (
         <group ref={label.ref} key={label.id}>

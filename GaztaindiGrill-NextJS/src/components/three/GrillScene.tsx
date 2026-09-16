@@ -24,7 +24,7 @@ interface GrillSceneProps {
   showLabels?: boolean
   onGrillSelect?: (index: 0 | 1) => void
   focusGrill?: 0 | 1
-  ghost?: GrillModelProps['ghost']
+  target?: GrillModelProps['target']
 }
 
 export default function GrillScene({
@@ -34,7 +34,7 @@ export default function GrillScene({
   showLabels = true,
   onGrillSelect,
   focusGrill,
-  ghost,
+  target,
 }: GrillSceneProps) {
   return (
     
@@ -52,7 +52,6 @@ export default function GrillScene({
             environment={{ files: '/hdri/potsdamer_platz_1k.hdr' }}
             intensity={0.5} 
             adjustCamera={false}
-            shadows={focusGrill === undefined ? 'contact' : false}
           >
             <Center top>
               <GrillModel 
@@ -60,7 +59,7 @@ export default function GrillScene({
                 showLabels={showLabels}
                 onGrillSelect={onGrillSelect}
                 focusGrill={focusGrill}
-                ghost={ghost}
+                target={target}
               />
             </Center>
           </Stage>
@@ -78,16 +77,13 @@ export default function GrillScene({
             />
           )}
           
-          {/* A focused grill floats with its walls hidden, so a floor shadow would sit under nothing. */}
-          {focusGrill === undefined && (
-            <ContactShadows
-              position={[0, -1.5, 0]}
-              opacity={0.4}
-              scale={10}
-              blur={2}
-              far={4.5}
-            />
-          )}
+          <ContactShadows
+            position={[0, -1.5, 0]}
+            opacity={0.4}
+            scale={10}
+            blur={2}
+            far={4.5}
+          />
 
         </Suspense>
       </Canvas>

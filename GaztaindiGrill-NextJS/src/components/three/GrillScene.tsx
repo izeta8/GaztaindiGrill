@@ -17,14 +17,26 @@ function Loader() {
 }
 
 
-export default function GrillScene() {
+interface GrillSceneProps {
+  className?: string
+  cameraPosition?: [number, number, number]
+  controls?: boolean
+  showLabels?: boolean
+}
+
+export default function GrillScene({
+  className = 'w-full h-[290px]',
+  cameraPosition = [0, 6.2, 9],
+  controls = true,
+  showLabels = true,
+}: GrillSceneProps) {
   return (
     
-    <div className="w-full h-[290px] ">
+    <div className={className}>
     {/* <div className="w-full h-[250px] bg-white rounded-xl shadow-inner border border-gray-100 overflow-hidden relative"> */}
       <Canvas
         shadows
-        camera={{ position: [0, 6.2, 9], fov: 23 }} 
+        camera={{ position: cameraPosition, fov: 23 }} 
         gl={{ antialias: true, alpha: true }}
       >
         <Suspense fallback={<Loader />}>
@@ -38,20 +50,23 @@ export default function GrillScene() {
             <Center top>
               <GrillModel 
                 scale={1} 
+                showLabels={showLabels}
               />
             </Center>
           </Stage>
           
-          <OrbitControls 
-            enablePan={false} 
-            minPolarAngle={Math.PI / 2.2} 
-            maxPolarAngle={Math.PI / 2}
-            minAzimuthAngle={-Math.PI / 12}
-            maxAzimuthAngle={Math.PI / 6}
-            enableZoom={true}
-            autoRotate={false}
-            target={[0, 0.1, 0]}
-          />
+          {controls && (
+            <OrbitControls 
+              enablePan={false} 
+              minPolarAngle={Math.PI / 2.2} 
+              maxPolarAngle={Math.PI / 2}
+              minAzimuthAngle={-Math.PI / 12}
+              maxAzimuthAngle={Math.PI / 6}
+              enableZoom={true}
+              autoRotate={false}
+              target={[0, 0.1, 0]}
+            />
+          )}
           
           <ContactShadows 
             position={[0, -1.5, 0]} 

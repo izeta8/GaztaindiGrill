@@ -16,9 +16,19 @@ interface GrillModelProps {
   position?: [number, number, number]
   rotation?: [number, number, number]
   scale?: number | [number, number, number]
+  showLabels?: boolean
 }
 
-export function GrillModel({ ...props }: GrillModelProps) {
+const MIN_HEIGHT = 1  // Altura cuando la parrilla está al 0%
+const MAX_HEIGHT = 1.8  // Altura cuando la parrilla está al 100%
+
+export const GRILL_NODE_NAMES = ['padre_parrilla_ezkerra', 'padre_parrilla_eskubi'] as const
+
+export const heightForPosition = (percent: number) => MIN_HEIGHT + (percent / 100) * (MAX_HEIGHT - MIN_HEIGHT)
+
+export const positionForHeight = (height: number) => ((height - MIN_HEIGHT) / (MAX_HEIGHT - MIN_HEIGHT)) * 100
+
+export function GrillModel({ showLabels = true, ...props }: GrillModelProps) {
   const grillState0 = useGrillState(0)
   const grillState1 = useGrillState(1)
   
@@ -38,15 +48,12 @@ export function GrillModel({ ...props }: GrillModelProps) {
   const leftTextRef = useRef<THREE.Group | null>(null)
   const rightTextRef = useRef<THREE.Group | null>(null)
 
-  const MIN_HEIGHT = 1  // Altura cuando la parrilla está al 0%
-  const MAX_HEIGHT = 1.8  // Altura cuando la parrilla está al 100%
-  
   const box3 = useMemo(() => new THREE.Box3(), [])
   const vector3 = useMemo(() => new THREE.Vector3(), [])
 
   useMemo(() => {
-    if (nodes.padre_parrilla_ezkerra) leftGrillRef.current = nodes.padre_parrilla_ezkerra
-    if (nodes.padre_parrilla_eskubi) rightGrillRef.current = nodes.padre_parrilla_eskubi
+    if (nodes[GRILL_NODE_NAMES[0]]) leftGrillRef.current = nodes[GRILL_NODE_NAMES[0]]
+    if (nodes[GRILL_NODE_NAMES[1]]) rightGrillRef.current = nodes[GRILL_NODE_NAMES[1]]
     // The node already carries a small X tilt that levels it inside its parent; the rotor angle adds to it.
     if (nodes['rotor_cilindro+parrilla']) {
       rotorRef.current = nodes['rotor_cilindro+parrilla']
@@ -71,7 +78,7 @@ export function GrillModel({ ...props }: GrillModelProps) {
   ) => {
     if (!grillRef.current) return
 
-    const targetY = MIN_HEIGHT + (positionPercent / 100) * (MAX_HEIGHT - MIN_HEIGHT)
+    const targetY = heightForPosition(positionPercent)
     grillRef.current.position.y = THREE.MathUtils.lerp(grillRef.current.position.y, targetY, 0.1)
     
     if (textRef.current) {
@@ -118,7 +125,7 @@ export function GrillModel({ ...props }: GrillModelProps) {
       {/* 4. Renderizamos la escena clonada */}
       <primitive object={clonedScene} />
 
-      {textLabels.map((label) => (
+      {showLabels && textLabels.map((label) => (
         <group ref={label.ref} key={label.id}>
           <LabelText text={`${Math.round(label.position)}%`} size={0.35} color="white" />
 

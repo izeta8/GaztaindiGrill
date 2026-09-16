@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense } from 'react'
+import { Suspense, useState } from 'react'
 import { useMqtt } from '@/hooks/useMqtt'
 import { ConnectionStatus as ConnectionStatusEnum, GrillModes } from '@/types'
 import { useRunningPrograms } from '@/contexts/RunningProgramsContext'
@@ -11,6 +11,7 @@ import { GlobalStatusDock } from '@/components/shared/GlobalStatusDock'
 import GrillScene from '@/components/three/GrillScene'
 import { ControlColumn } from './components/ControlColumn'
 import { ProgramExecutionStatus } from './components/ProgramExecutionStatus'
+import { GrillPositionModal } from './components/GrillPositionModal'
 import { Loader2 } from 'lucide-react'
 
 function GrillControlContent() {
@@ -27,6 +28,16 @@ function GrillControlContent() {
 
   const isDualMode = currentMode === GrillModes.Dual
 
+  const [selectedGrill, setSelectedGrill] = useState<0 | 1 | null>(null)
+
+  const handleGrillSelect = (index: 0 | 1) => {
+    // In dual mode both grills move together through grill 0.
+    const target = isDualMode ? 0 : index
+    const isRunning = isDualMode ? isAnyProgramRunning() : !!runningPrograms[target]
+    if (!isConnected || isRunning) return
+    setSelectedGrill(target)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-4 px-2 pb-20 font-sans">
       <div className="max-w-4xl mx-auto">
@@ -42,7 +53,7 @@ function GrillControlContent() {
 
         {/* Modelo 3D */}
         <div className='mt-3'>
-          <GrillScene />
+          <GrillScene onGrillSelect={currentMode === undefined ? undefined : handleGrillSelect} />
         </div>
 
         {/* Esperar a que se fetcheé el modo */}
@@ -99,6 +110,11 @@ function GrillControlContent() {
           />
         )}
       </div>
+
+      <GrillPositionModal
+        grillIndex={selectedGrill}
+        onClose={() => setSelectedGrill(null)}
+      />
     </div>
   )
 }

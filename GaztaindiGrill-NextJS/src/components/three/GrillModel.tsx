@@ -107,9 +107,10 @@ export function GrillModel({ ...props }: GrillModelProps) {
     updateRotor(grillState0.rotation)
   })
 
+  // Only the left grill has a thermocouple
   const textLabels = [
-    { ref: leftTextRef, position: grillState0.position, id: 'left' },
-    { ref: rightTextRef, position: grillState1.position, id: 'right' }
+    { ref: leftTextRef, position: grillState0.position, temperature: grillState0.temperature, hasThermocouple: true, id: 'left' },
+    { ref: rightTextRef, position: grillState1.position, temperature: null, hasThermocouple: false, id: 'right' }
   ]
 
   return (
@@ -119,39 +120,62 @@ export function GrillModel({ ...props }: GrillModelProps) {
 
       {textLabels.map((label) => (
         <group ref={label.ref} key={label.id}>
-         <Text3D
-            font="/fonts/Geist_Regular.json" 
-            size={0.35}
-            height={0.05}
-            curveSegments={12}
-            bevelEnabled
-            bevelThickness={0.05}
-            bevelSize={0.01}
-            bevelSegments={1}
-            ref={(mesh) => {
-              if (mesh) mesh.geometry.center()
-            }}
-            onUpdate={(self) => {
-              self.geometry.center()
-            }}
-          >
-            {`${Math.round(label.position)}%`}
-            
-            <meshBasicMaterial 
-              color="white" 
-              polygonOffset={true}
-              polygonOffsetFactor={3}
+          <LabelText text={`${Math.round(label.position)}%`} size={0.35} color="white" />
+
+          {label.hasThermocouple && (
+            <LabelText
+              text={label.temperature === null ? '—°C' : `${label.temperature}°C`}
+              size={0.22}
+              color={label.temperature === null ? '#a3a3a3' : '#fb923c'}
+              position={[0, -0.42, 0]}
             />
-            
-            <Outlines 
-              thickness={1}
-              color="#525252" 
-              angle={Math.PI / 2}
-            />
-          </Text3D>
+          )}
         </group>
       ))}
     </group>
+  )
+}
+
+interface LabelTextProps {
+  text: string
+  size: number
+  color: string
+  position?: [number, number, number]
+}
+
+function LabelText({ text, size, color, position }: LabelTextProps) {
+  return (
+    <Text3D
+      position={position}
+      font="/fonts/Geist_Regular.json" 
+      size={size}
+      height={0.05}
+      curveSegments={12}
+      bevelEnabled
+      bevelThickness={0.05}
+      bevelSize={0.01}
+      bevelSegments={1}
+      ref={(mesh) => {
+        if (mesh) mesh.geometry.center()
+      }}
+      onUpdate={(self) => {
+        self.geometry.center()
+      }}
+    >
+      {text}
+      
+      <meshBasicMaterial 
+        color={color} 
+        polygonOffset={true}
+        polygonOffsetFactor={3}
+      />
+      
+      <Outlines 
+        thickness={1}
+        color="#525252" 
+        angle={Math.PI / 2}
+      />
+    </Text3D>
   )
 }
 

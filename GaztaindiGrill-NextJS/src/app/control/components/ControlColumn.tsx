@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { GrillState } from '@/types'
 import { useGrillCommands } from '@/app/control/hooks/useGrillCommands'
 import { Button } from '@/components/ui/Button'
-import { ChevronUp, ChevronDown, CircleStop, RotateCw, RotateCcw, Crosshair, Lock, Thermometer } from 'lucide-react'
+import { ChevronUp, ChevronDown, CircleStop, RotateCw, RotateCcw, Crosshair, Lock } from 'lucide-react'
 import { PAYLOAD_UP, PAYLOAD_DOWN, PAYLOAD_STOP, PAYLOAD_CLOCKWISE, PAYLOAD_COUNTER_CLOCKWISE } from '@/constants/mqtt'
 import { ControlPad } from './ControlPad'
 
@@ -33,20 +33,7 @@ export function ControlColumn({ label, isConnected, isRunning, commands, grillSt
 
   return (
     <div className="flex flex-col items-center">
-      <div className="flex items-center gap-3 mb-4">
-        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</span>
-
-        {/* Only the left grill has a thermocouple */}
-        {grillIndex === 0 && (
-          <span
-            title={grillState.temperature === null ? 'Sin lectura del termopar' : 'Temperatura'}
-            className={`flex items-center gap-1 text-xs font-bold tabular-nums ${grillState.temperature === null ? 'text-gray-300' : 'text-orange-600'}`}
-          >
-            <Thermometer className="h-3.5 w-3.5" />
-            {grillState.temperature === null ? '—' : grillState.temperature}°C
-          </span>
-        )}
-      </div>
+      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">{label}</span>
 
       <div className="relative">
         

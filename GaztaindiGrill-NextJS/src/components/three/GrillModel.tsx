@@ -23,7 +23,7 @@ export function GrillModel({ ...props }: GrillModelProps) {
   const grillState1 = useGrillState(1)
   
   // Solo obtenemos la escena base del caché
-  const { scene } = useGLTF('/models/parrilla_model_v4.glb')
+  const { scene } = useGLTF('/models/parrilla_model_v5.glb')
   
   // Clonamos la escena para tener una instancia única por componente
   const clonedScene = useMemo(() => scene.clone(), [scene])
@@ -155,4 +155,4 @@ export function GrillModel({ ...props }: GrillModelProps) {
   )
 }
 
-useGLTF.preload('/models/parrilla_model_v4.glb')
+useGLTF.preload('/models/parrilla_model_v5.glb')

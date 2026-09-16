@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useMqtt } from '@/hooks/useMqtt';
 import { TOPICS } from '@/constants/mqtt';
 import { ConnectionStatus, type GrillState } from '@/types';
@@ -10,12 +10,15 @@ type GrillStates = { 0: GrillState; 1: GrillState; };
 
 const initialState: GrillState = { 
   position: 0, 
-  temperature: 0, 
+  temperature: null, 
   rotation: 0, 
   movement: 'stop', 
   rotation_movement: 'stop',
   lastUpdate: null 
 };
+
+// The firmware sends a reading every 5 s without retaining it, so three missed ones mean no reading.
+const TEMPERATURE_STALE_MS = 15000;
 
 const GrillStateContext = createContext<{ grillStates: GrillStates } | undefined>(undefined);
 
@@ -45,6 +48,7 @@ export function GrillStateProvider({ children }: { children: React.ReactNode }) 
     0: { ...initialState }, 
     1: { ...initialState } 
   });
+  const temperatureTimers = useRef<Partial<Record<0 | 1, ReturnType<typeof setTimeout>>>>({});
 
   const handleUpdate = useCallback((topic: string, payload: Uint8Array) => {
     const idx = parseGrillIndex(topic);
@@ -72,6 +76,18 @@ export function GrillStateProvider({ children }: { children: React.ReactNode }) 
         lastUpdate: new Date() 
       }
     }));
+
+    if (key === 'temperature') {
+      clearTimeout(temperatureTimers.current[idx]);
+      temperatureTimers.current[idx] = setTimeout(() => {
+        setGrillStates(prev => ({ ...prev, [idx]: { ...prev[idx], temperature: null } }));
+      }, TEMPERATURE_STALE_MS);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timers = temperatureTimers.current;
+    return () => Object.values(timers).forEach(clearTimeout);
   }, []);
 
   useEffect(() => {

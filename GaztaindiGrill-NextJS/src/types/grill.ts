@@ -3,7 +3,7 @@ import { PAYLOAD_CLOCKWISE, PAYLOAD_COUNTER_CLOCKWISE, PAYLOAD_STOP, PAYLOAD_UP,
 // Grill control types
 export interface GrillState {
   position: number; // 0-100
-  temperature: number; // degrees celsius
+  temperature: number | null; // degrees celsius, null when there is no reading
   rotation: number; // 0-360 (only for left grill)
   movement: GrillDirection; // current vertical movement direction
   rotation_movement: GrillRotation; // current rotation movement direction

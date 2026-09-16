@@ -30,7 +30,8 @@ export default function GrillScene() {
         <Suspense fallback={<Loader />}>
         
           <Stage 
-            environment="city" 
+            // Served locally: the "city" preset fetches this file from a CDN at runtime, and without it the model never loads.
+            environment={{ files: '/hdri/potsdamer_platz_1k.hdr' }}
             intensity={0.5} 
             adjustCamera={false}
           >

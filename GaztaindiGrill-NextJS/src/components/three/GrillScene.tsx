@@ -3,7 +3,7 @@
 import React, { Suspense } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Stage, Center, ContactShadows, Html } from '@react-three/drei'
-import { GrillModel } from './GrillModel'
+import { GrillModel, type GrillModelProps } from './GrillModel'
 
 function Loader() {
   return (
@@ -24,6 +24,7 @@ interface GrillSceneProps {
   showLabels?: boolean
   onGrillSelect?: (index: 0 | 1) => void
   focusGrill?: 0 | 1
+  ghost?: GrillModelProps['ghost']
 }
 
 export default function GrillScene({
@@ -33,6 +34,7 @@ export default function GrillScene({
   showLabels = true,
   onGrillSelect,
   focusGrill,
+  ghost,
 }: GrillSceneProps) {
   return (
     
@@ -58,6 +60,7 @@ export default function GrillScene({
                 showLabels={showLabels}
                 onGrillSelect={onGrillSelect}
                 focusGrill={focusGrill}
+                ghost={ghost}
               />
             </Center>
           </Stage>

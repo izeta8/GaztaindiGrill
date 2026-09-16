@@ -12,7 +12,7 @@ type GLTFResult = GLTF & {
   materials: { [key: string]: THREE.Material }
 }
 
-interface GrillModelProps {
+export interface GrillModelProps {
   position?: [number, number, number]
   rotation?: [number, number, number]
   scale?: number | [number, number, number]
@@ -20,6 +20,11 @@ interface GrillModelProps {
   onGrillSelect?: (index: 0 | 1) => void
   // Points the camera at one grill, framing its whole travel.
   focusGrill?: 0 | 1
+  // A see-through copy of the focused rack at another height, dragged up and down by the pointer.
+  ghost?: {
+    position: number
+    onDrag: (position: number) => void
+  }
 }
 
 const MIN_HEIGHT = 1  // Altura cuando la parrilla está al 0%
@@ -33,6 +38,10 @@ export const positionForHeight = (height: number) => ((height - MIN_HEIGHT) / (M
 
 // Left grill from a corner so the rotor tilt shows, right grill straight on.
 const FOCUS_DIRECTIONS = [new THREE.Vector3(1.2, 0.9, 1), new THREE.Vector3(0, 0.4, 1)]
+
+// How far past the canvas edge the corners of the rack's box may land, per camera. Above 1 for the
+// corner view: from there the box corners stick out well beyond the rack itself.
+const FOCUS_FILL = [1.3, 0.95]
 
 // Pointer travel in px above which a click is really the end of a drag.
 const CLICK_MAX_DELTA = 4
@@ -54,7 +63,9 @@ const grillIndexAt = (intersections: THREE.Intersection[]) => {
   return undefined
 }
 
-export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, ...props }: GrillModelProps) {
+const GHOST_MATERIAL = new THREE.MeshBasicMaterial({ color: '#f59e0b', transparent: true, opacity: 0.4, depthWrite: false })
+
+export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, ghost, ...props }: GrillModelProps) {
   const grillState0 = useGrillState(0)
   const grillState1 = useGrillState(1)
   
@@ -153,15 +164,31 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, ...pr
     box.min.y -= Math.max(0, grill.position.y - MIN_HEIGHT)
     box.max.y += Math.max(0, MAX_HEIGHT - grill.position.y)
 
-    const sphere = box.getBoundingSphere(new THREE.Sphere())
-    const fov = (camera as THREE.PerspectiveCamera).fov
-    const distance = sphere.radius / Math.sin(THREE.MathUtils.degToRad(fov / 2))
+    const center = box.getCenter(new THREE.Vector3())
+    const direction = FOCUS_DIRECTIONS[index].clone().normalize()
+    const place = (distance: number) => {
+      camera.position.copy(center).addScaledVector(direction, distance)
+      camera.lookAt(center)
+      camera.updateMatrixWorld()
+    }
 
-    const target = sphere.center.clone().add(FOCUS_DIRECTIONS[index].clone().normalize().multiplyScalar(distance))
-    const isStable = camera.position.distanceTo(target) < 1e-3
-    camera.position.copy(target)
-    camera.lookAt(sphere.center)
-    return isStable
+    // Place at a guess, then scale the distance by how much of the screen the box takes: a
+    // bounding sphere leaves the travel too small to drag with any precision.
+    const previous = camera.position.clone()
+    const guess = box.getSize(new THREE.Vector3()).length() * 2
+    place(guess)
+    let extent = 0
+    for (const x of [box.min.x, box.max.x]) {
+      for (const y of [box.min.y, box.max.y]) {
+        for (const z of [box.min.z, box.max.z]) {
+          const corner = new THREE.Vector3(x, y, z).project(camera)
+          extent = Math.max(extent, Math.abs(corner.x), Math.abs(corner.y))
+        }
+      }
+    }
+    place((guess * extent) / FOCUS_FILL[index])
+
+    return previous.distanceTo(camera.position) < 1e-3
   }
 
   useFrame(() => {
@@ -189,6 +216,80 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, ...pr
     gl.domElement.style.cursor = grillIndexAt(event.intersections) === undefined ? 'auto' : 'pointer'
   }
 
+  const hasGhost = focusGrill !== undefined && ghost !== undefined
+  const ghostRef = useRef(ghost)
+  ghostRef.current = ghost
+
+  const ghostObject = useMemo(() => {
+    if (focusGrill === undefined || !hasGhost) return null
+    const copy = nodes[GRILL_NODE_NAMES[focusGrill]].clone(true)
+    // Only the rack: a see-through column would cover the real one.
+    copy.children.forEach((child) => { child.visible = child.name.startsWith('padre_rejilla') })
+    copy.traverse((child) => {
+      if (child instanceof THREE.Mesh) child.material = GHOST_MATERIAL
+    })
+    return copy
+  }, [nodes, focusGrill, hasGhost])
+
+  useFrame(() => {
+    if (!ghostObject || !ghostRef.current) return
+    ghostObject.position.y = heightForPosition(ghostRef.current.position)
+    const ghostRotor = ghostObject.getObjectByName('rotor_cilindro+parrilla')
+    if (ghostRotor && rotorRef.current) ghostRotor.rotation.x = rotorRef.current.rotation.x
+  })
+
+  // Drags by the height difference under the pointer, projected on a vertical plane facing the
+  // camera, so the rack follows the finger from any angle.
+  useEffect(() => {
+    if (focusGrill === undefined || !hasGhost) return
+    const canvas = gl.domElement
+    const grill = nodes[GRILL_NODE_NAMES[focusGrill]]
+    const raycaster = new THREE.Raycaster()
+    const pointer = new THREE.Vector2()
+    const plane = new THREE.Plane()
+    const hit = new THREE.Vector3()
+    let drag: { startY: number; startPosition: number } | null = null
+
+    const heightUnder = (event: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect()
+      pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1)
+      raycaster.setFromCamera(pointer, camera)
+      const normal = camera.getWorldDirection(new THREE.Vector3()).setY(0).normalize().negate()
+      plane.setFromNormalAndCoplanarPoint(normal, grill.getWorldPosition(new THREE.Vector3()))
+      return raycaster.ray.intersectPlane(plane, hit) ? hit.y : null
+    }
+
+    const handleDown = (event: PointerEvent) => {
+      const y = heightUnder(event)
+      if (y === null || !ghostRef.current) return
+      canvas.setPointerCapture(event.pointerId)
+      drag = { startY: y, startPosition: ghostRef.current.position }
+    }
+
+    const handleMove = (event: PointerEvent) => {
+      if (!drag) return
+      const y = heightUnder(event)
+      if (y === null) return
+      ghostRef.current?.onDrag(positionForHeight(heightForPosition(drag.startPosition) + y - drag.startY))
+    }
+
+    const handleUp = (event: PointerEvent) => {
+      drag = null
+      if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId)
+    }
+
+    canvas.addEventListener('pointerdown', handleDown)
+    canvas.addEventListener('pointermove', handleMove)
+    canvas.addEventListener('pointerup', handleUp)
+    canvas.addEventListener('pointercancel', handleUp)
+    return () => {
+      canvas.removeEventListener('pointerdown', handleDown)
+      canvas.removeEventListener('pointermove', handleMove)
+      canvas.removeEventListener('pointerup', handleUp)
+      canvas.removeEventListener('pointercancel', handleUp)
+    }
+  }, [hasGhost, focusGrill, nodes, gl, camera])
+
   // A focused view shows its grill alone: the walls and the other grill would hide it.
   useEffect(() => {
     if (focusGrill === undefined) return
@@ -215,6 +316,8 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, ...pr
         onPointerMove={onGrillSelect ? handlePointerMove : undefined}
         onPointerOut={onGrillSelect ? () => { gl.domElement.style.cursor = 'auto' } : undefined}
       />
+
+      {ghostObject && <primitive object={ghostObject} />}
 
       {showLabels && textLabels.map((label) => (
         <group ref={label.ref} key={label.id}>

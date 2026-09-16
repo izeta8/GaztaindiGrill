@@ -30,12 +30,19 @@ function GrillControlContent() {
 
   const [selectedGrill, setSelectedGrill] = useState<0 | 1 | null>(null)
 
+  const isGrillLocked = (index: 0 | 1) =>
+    !isConnected || (isDualMode ? isAnyProgramRunning() : !!runningPrograms[index])
+
   const handleGrillSelect = (index: 0 | 1) => {
     // In dual mode both grills move together through grill 0.
     const target = isDualMode ? 0 : index
-    const isRunning = isDualMode ? isAnyProgramRunning() : !!runningPrograms[target]
-    if (!isConnected || isRunning) return
+    if (isGrillLocked(target)) return
     setSelectedGrill(target)
+  }
+
+  const handleMoveGrill = (index: 0 | 1, position: number) => {
+    const commands = index === 0 ? commands0 : commands1
+    commands.handleSetPosition(String(position))
   }
 
   return (
@@ -113,7 +120,9 @@ function GrillControlContent() {
 
       <GrillPositionModal
         grillIndex={selectedGrill}
+        isLocked={selectedGrill !== null && isGrillLocked(selectedGrill)}
         onClose={() => setSelectedGrill(null)}
+        onMove={handleMoveGrill}
       />
     </div>
   )

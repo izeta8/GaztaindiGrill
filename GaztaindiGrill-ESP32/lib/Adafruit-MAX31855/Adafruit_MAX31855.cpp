@@ -52,11 +52,7 @@
 */
 /**************************************************************************/
 Adafruit_MAX31855::Adafruit_MAX31855(int8_t _sclk, int8_t _cs, int8_t _miso)
-    : spi_dev(_cs, _sclk, _miso, -1, 1000000) { 
-      _pin_cs = _cs;
-      // pinMode(_pin_cs, OUTPUT);
-      // digitalWrite(_pin_cs, HIGH);
-    }
+    : spi_dev(_cs, _sclk, _miso, -1, 1000000) {}
 
 /**************************************************************************/
 /*!
@@ -66,8 +62,8 @@ Adafruit_MAX31855::Adafruit_MAX31855(int8_t _sclk, int8_t _cs, int8_t _miso)
     @param _spi which spi buss to use.
 */
 /**************************************************************************/
-// Adafruit_MAX31855::Adafruit_MAX31855(int8_t _cs, SPIClass *_spi)
-//     : spi_dev(_cs, 1000000, SPI_BITORDER_MSBFIRST, SPI_MODE0, _spi) {}
+Adafruit_MAX31855::Adafruit_MAX31855(int8_t _cs, SPIClass *_spi)
+    : spi_dev(_cs, 1000000, SPI_BITORDER_MSBFIRST, SPI_MODE0, _spi) {}
 
 /**************************************************************************/
 /*!
@@ -76,21 +72,8 @@ Adafruit_MAX31855::Adafruit_MAX31855(int8_t _sclk, int8_t _cs, int8_t _miso)
     @return True if the device was successfully initialized, otherwise false.
 */
 /**************************************************************************/
-// bool Adafruit_MAX31855::begin(void) {
-//   initialized = spi_dev.begin();
-//   return initialized;
-// }
- 
 bool Adafruit_MAX31855::begin(void) {
-  pinMode(_pin_cs, OUTPUT); // Asegúrate de que el pin CS esté configurado como salida
-  digitalWrite(_pin_cs, HIGH); // Mantén el pin CS alto por defecto
-
-  SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE0));
-  digitalWrite(_pin_cs, LOW);
   initialized = spi_dev.begin();
-  digitalWrite(_pin_cs, HIGH);
-  SPI.endTransaction();
-
   return initialized;
 }
 
@@ -212,52 +195,27 @@ void Adafruit_MAX31855::setFaultChecks(uint8_t faults) {
     @return The raw 32 bit value read.
 */
 /**************************************************************************/
-// uint32_t Adafruit_MAX31855::spiread32(void) {
-//   uint32_t d = 0;
-//   uint8_t buf[4];
-
-//   // backcompatibility!
-//   if (!initialized) {
-//     begin();
-//   }
-
-//   spi_dev.read(buf, 4);
-
-//   d = buf[0];
-//   d <<= 8;
-//   d |= buf[1];
-//   d <<= 8;
-//   d |= buf[2];
-//   d <<= 8;
-//   d |= buf[3];
-
-//   // Serial.println(d, HEX);
-
-//   return d;
-// }  
-  
 uint32_t Adafruit_MAX31855::spiread32(void) {
-    uint32_t d = 0;
-    uint8_t buf[4];
+  uint32_t d = 0;
+  uint8_t buf[4];
 
-    // backcompatibility!
-    if (!initialized) {
-        begin();
-    }
-    SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE0));
-    digitalWrite(_pin_cs, LOW); 
-    spi_dev.read(buf, 4);
-    digitalWrite(_pin_cs, HIGH);
-    SPI.endTransaction();
+  // backcompatibility!
+  if (!initialized) {
+    begin();
+  }
 
-    d = buf[0];
-    d <<= 8;
-    d |= buf[1];
-    d <<= 8;
-    d |= buf[2];
-    d <<= 8;
-    d |= buf[3];
+  spi_dev.read(buf, 4);
 
-    return d;
+  d = buf[0];
+  d <<= 8;
+  d |= buf[1];
+  d <<= 8;
+  d |= buf[2];
+  d <<= 8;
+  d |= buf[3];
+
+  // Serial.println(d, HEX);
+
+  return d;
 }
 

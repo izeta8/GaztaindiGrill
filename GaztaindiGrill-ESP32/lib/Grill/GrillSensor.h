@@ -36,7 +36,7 @@ private:
     // Last values
     long lastEncoderValue;
     int lastRotorEncoderValue;
-    int lastTemperatureValue;
+    bool temperatureError;
 };
 
 #endif

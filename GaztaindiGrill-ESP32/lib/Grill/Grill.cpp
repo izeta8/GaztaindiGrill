@@ -101,6 +101,10 @@ void Grill::update_rotor_encoder() {
     sensor->update_rotor_encoder();
 }
 
+void Grill::update_temperature() {
+    sensor->update_temperature();
+}
+
 //
 // Handle stops
 //

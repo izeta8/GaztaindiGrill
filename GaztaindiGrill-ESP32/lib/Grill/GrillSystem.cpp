@@ -138,19 +138,15 @@ void GrillSystem::handle_rotor_operations() {
 }
 
 void GrillSystem::handle_temperature_updates() {
-    // Temperature handling (currently commented out in original)
-    // Uncomment and modify as needed:
-    
-    // if (grills[0]) {
-    //     grills[0]->handle_temperature_stop(); 
-    //     
-    //     // Temperatura irakutzeko pausa, MQTT ez kargatzeko.
-    //     unsigned long currentMillisTemp = millis();
-    //     if (currentMillisTemp - previousMillisTemp >= intervalTemp) {
-    //         previousMillisTemp = currentMillisTemp;
-    //         grills[0]->update_temperature(); // Kontuan euki ezkerreko parrillak bakarrik eukikoula pt100
-    //     }
-    // }
+
+    // Only the left grill has a thermocouple
+    if (grills[0]) {
+        unsigned long currentMillisTemp = millis();
+        if (currentMillisTemp - previousMillisTemp >= GrillConstants::TEMPERATURE_UPDATE_INTERVAL) {
+            previousMillisTemp = currentMillisTemp;
+            grills[0]->update_temperature();
+        }
+    }
 }
 
 void GrillSystem::set_system_mode(Mode newMode) {

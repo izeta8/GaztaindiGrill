@@ -49,7 +49,6 @@ private:
     
     // Temperature update timing
     unsigned long previousMillisTemp;
-    const long intervalTemp = 1500;
 };
 
 #endif

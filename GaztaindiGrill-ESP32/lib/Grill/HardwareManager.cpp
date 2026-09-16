@@ -27,7 +27,7 @@ bool HardwareManager::setup_devices() {
     // ROTOR LIMIT SWITCH (RESET)
     pinMode(PIN_CS_LIMIT_ROTOR, INPUT_PULLUP);
     
-    // ROTOR AND PT100 (LEFT SIDE ONLY)
+    // ROTOR AND THERMOCOUPLE (LEFT SIDE ONLY)
     if (grillIndex == 0)
     {
         // Rotor
@@ -40,15 +40,9 @@ bool HardwareManager::setup_devices() {
             return false;
         }
 
-        // Thermocouple
-        // pinMode(PIN_SPI_CS_GRILL_PT, OUTPUT);
-        // digitalWrite(PIN_SPI_CS_GRILL_PT, HIGH);
-        // thermocouple = new Adafruit_MAX31855(PIN_SPI_SCK, PIN_SPI_CS_GRILL_PT, PIN_SPI_MISO);
-        // SPI.beginTransaction((SPISettings(1000000, MSBFIRST, SPI_MODE0))); // Use SPI settings
-        // if (!thermocouple->begin()) {
-        //     print("Error Begin Thermocouple");
-        //     return false;
-        // }
+        // Thermocouple. Hardware SPI: software SPI would take pins 18/19 from the encoders and the W5500.
+        thermocouple = new Adafruit_MAX31855(PIN_SPI_CS_GRILL_PT);
+        thermocouple->begin();
     }
 
     return true;

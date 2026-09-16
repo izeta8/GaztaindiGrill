@@ -3,7 +3,7 @@
 
 GrillSensor::GrillSensor(int index, GrillMQTT* mqtt, HardwareManager* hardware, ModeManager* modeManager):
     grillIndex(index), mqtt(mqtt), hardware(hardware), modeManager(modeManager),
-    lastEncoderValue(GrillConstants::ENCODER_ERROR), lastRotorEncoderValue(0), lastTemperatureValue(0) {}
+    lastEncoderValue(GrillConstants::ENCODER_ERROR), lastRotorEncoderValue(0), temperatureError(false) {}
 
 
 // ------------- ENCODER ------------- //
@@ -79,26 +79,32 @@ void GrillSensor::reset_rotor_encoder() {
 }
 
 
-// ------------- PT 100 ------------- //
+// ------------- THERMOCOUPLE ------------- //
 
 int GrillSensor::get_temperature() {
+    if (!hardware->thermocouple) { return -1; }
+
+    // NaN when the MAX31855 flags a fault, e.g. the thermocouple is unplugged.
     double temperature = hardware->thermocouple->readCelsius();
-    if (isnan(temperature)) {
-        mqtt->print("Error reading temperature!");
-        return -1;
-    }
+    if (isnan(temperature)) { return -1; }
+
     return (int) temperature;
 }
 
 void GrillSensor::update_temperature() {
     int temperature = get_temperature();
-    if (temperature == lastTemperatureValue || temperature < 0) { return; }
-    lastTemperatureValue = temperature;
+
+    if (!is_valid_temperature(temperature)) {
+        if (!temperatureError) { mqtt->print("Error reading temperature!"); }
+        temperatureError = true;
+        return;
+    }
+    temperatureError = false;
 
     String temperatureStr = String(temperature);
     Serial.println("Temperature = " + temperatureStr);
     String topic = mqtt->parse_topic(GrillConstants::TOPIC_STATE_SENSOR_TEMP);
-    mqtt->publish_message(topic, temperatureStr, true);
+    mqtt->publish_message(topic, temperatureStr);
 }
 
 bool GrillSensor::is_valid_temperature(int temperature) 

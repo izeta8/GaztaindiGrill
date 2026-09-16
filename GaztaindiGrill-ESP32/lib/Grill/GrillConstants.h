@@ -46,7 +46,7 @@ public:
     static constexpr unsigned long MOVEMENT_TIMEOUT = 30000;
     
     // Time intervals
-    static constexpr unsigned long SENSOR_UPDATE_INTERVAL = 1500;
+    static constexpr unsigned long TEMPERATURE_UPDATE_INTERVAL = 5000;
     static constexpr unsigned long PROGRAM_UPDATE_INTERVAL = 100;
     
     // --- MQTT TOPICS ---

@@ -48,6 +48,7 @@ public:
     // Sensor updates
     void update_rotor_encoder();
     void update_encoder(); 
+    void update_temperature();
 
     // Handle stops
     void handle_rotor_stop();

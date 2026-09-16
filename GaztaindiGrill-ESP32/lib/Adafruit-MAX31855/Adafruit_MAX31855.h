@@ -56,8 +56,7 @@ private:
   Adafruit_SPIDevice spi_dev;
   bool initialized = false;
   uint8_t faultMask = MAX31855_FAULT_ALL;
-  uint32_t spiread32(void); 
-  int8_t _pin_cs;
+  uint32_t spiread32(void);
 };
 
 #endif

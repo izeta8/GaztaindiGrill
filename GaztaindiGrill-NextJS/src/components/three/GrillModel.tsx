@@ -78,6 +78,10 @@ const ROTOR_NODE_NAME = 'rotor_cilindro+parrilla'
 // Degrees per step while dragging. Typing in the modal is exact.
 const ROTATION_DRAG_STEP = 15
 
+// Where the rotor angle sits: out past the rotor and over the top of the structure, clear of the
+// position labels, which ride up with their rack.
+const ROTOR_LABEL_OFFSET = { x: -0.45, y: 1.1 }
+
 // The heights a rack at the picked tilt may not stay at, shown under it.
 const FORBIDDEN_MATERIAL = new THREE.MeshBasicMaterial({ color: '#dc2626', transparent: true, opacity: 0.18, depthWrite: false })
 
@@ -237,6 +241,18 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
   targetRef.current = target
 
   const forbiddenRef = useRef<THREE.Mesh | null>(null)
+
+  // Over the rotor and clear of the structure, so the angle stays put while the rack moves.
+  const rotorLabelPosition = useMemo((): [number, number, number] | null => {
+    const rotor = nodes[ROTOR_NODE_NAME]
+    const structure = nodes['estructura_base']
+    if (!rotor || !structure) return null
+
+    clonedScene.updateWorldMatrix(true, true)
+    const rotorCenter = new THREE.Box3().setFromObject(rotor).getCenter(new THREE.Vector3())
+    const structureTop = new THREE.Box3().setFromObject(structure).max.y
+    return [rotorCenter.x + ROTOR_LABEL_OFFSET.x, structureTop + ROTOR_LABEL_OFFSET.y, rotorCenter.z]
+  }, [clonedScene, nodes])
 
   // Footprint of the rack and how far it hangs below its node, measured once: the forbidden
   // slab is drawn where the rack itself would be, not where its parent node sits.
@@ -407,6 +423,12 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
         <mesh ref={forbiddenRef} material={FORBIDDEN_MATERIAL} visible={false}>
           <boxGeometry args={[1, 1, 1]} />
         </mesh>
+      )}
+
+      {showLabels && rotorLabelPosition && (
+        <group position={rotorLabelPosition}>
+          <LabelText text={`${Math.round(grillState0.rotation)}°`} size={0.3} color="white" />
+        </group>
       )}
 
       {showLabels && textLabels.map((label) => (

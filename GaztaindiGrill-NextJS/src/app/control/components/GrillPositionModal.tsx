@@ -135,16 +135,17 @@ function GrillPositionView({ grillIndex, isLocked, onClose, onMove }: GrillPosit
           }}
         />
 
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
-          <ValueField
-            label="Posición objetivo"
-            value={positionDraft}
-            unit="%"
-            onChange={handlePositionDraft}
-            onBlur={() => setPositionDraft(String(target))}
-          />
-
-          {hasRotor && (
+        {/* Only the field for what the selector is moving, so there is one number to read. */}
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
+          {mode === 'height' || !hasRotor ? (
+            <ValueField
+              label="Posición objetivo"
+              value={positionDraft}
+              unit="%"
+              onChange={handlePositionDraft}
+              onBlur={() => setPositionDraft(String(target))}
+            />
+          ) : (
             <ValueField
               label="Inclinación objetivo"
               value={rotationDraft}

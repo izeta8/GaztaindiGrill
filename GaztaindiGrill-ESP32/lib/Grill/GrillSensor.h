@@ -17,6 +17,8 @@ public:
     int  get_temperature();
     bool limit_switch_pressed(const int cs_limit_switch);
     bool is_valid_temperature(int temperature);
+    // Mean of the last good readings, or -1 while the thermocouple fails or has not answered.
+    int  get_average_temperature();
     bool is_at_top();
 
     // ---------- HOME ASSISTANT UPDATE ---------- //
@@ -37,6 +39,11 @@ private:
     long lastEncoderValue;
     int lastRotorEncoderValue;
     bool temperatureError;
+
+    // Ring buffer of the last good readings, filled by update_temperature().
+    int temperatureSamples[GrillConstants::TEMPERATURE_AVERAGE_SAMPLES];
+    int temperatureSampleCount;
+    int temperatureSampleNext;
 };
 
 #endif

@@ -3,7 +3,8 @@
 
 GrillSensor::GrillSensor(int index, GrillMQTT* mqtt, HardwareManager* hardware, ModeManager* modeManager):
     grillIndex(index), mqtt(mqtt), hardware(hardware), modeManager(modeManager),
-    lastEncoderValue(GrillConstants::ENCODER_ERROR), lastRotorEncoderValue(0), temperatureError(false) {}
+    lastEncoderValue(GrillConstants::ENCODER_ERROR), lastRotorEncoderValue(0), temperatureError(false),
+    temperatureSampleCount(0), temperatureSampleNext(0) {}
 
 
 // ------------- ENCODER ------------- //
@@ -97,9 +98,15 @@ void GrillSensor::update_temperature() {
     if (!is_valid_temperature(temperature)) {
         if (!temperatureError) { mqtt->print("Error reading temperature!"); }
         temperatureError = true;
+        // Old readings would let a regulator keep moving on a sensor that no longer answers.
+        temperatureSampleCount = 0;
         return;
     }
     temperatureError = false;
+
+    temperatureSamples[temperatureSampleNext] = temperature;
+    temperatureSampleNext = (temperatureSampleNext + 1) % GrillConstants::TEMPERATURE_AVERAGE_SAMPLES;
+    if (temperatureSampleCount < GrillConstants::TEMPERATURE_AVERAGE_SAMPLES) { temperatureSampleCount++; }
 
     String temperatureStr = String(temperature);
     Serial.println("Temperature = " + temperatureStr);
@@ -110,4 +117,12 @@ void GrillSensor::update_temperature() {
 bool GrillSensor::is_valid_temperature(int temperature) 
 {
     return (temperature != -1);
+}
+
+int GrillSensor::get_average_temperature() {
+    if (temperatureSampleCount == 0) { return -1; }
+
+    long sum = 0;
+    for (int i = 0; i < temperatureSampleCount; i++) { sum += temperatureSamples[i]; }
+    return (int) lround((double) sum / temperatureSampleCount);
 } 

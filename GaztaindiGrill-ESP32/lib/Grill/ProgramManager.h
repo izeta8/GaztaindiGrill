@@ -60,10 +60,27 @@ private:
     enum StepState {
         STEP_STARTING,
         STEP_MOVING_TO_TARGET,
+        STEP_REACHING_TEMPERATURE,
         STEP_WAITING_TIME,
         STEP_EXECUTING_ACTION,
         STEP_COMPLETED
     } stepState = STEP_STARTING;
+
+    // How the temperature hold is going. Changes are logged; only one change at a time matters.
+    enum HoldStatus {
+        HOLD_REACHING,
+        HOLD_HOLDING,
+        HOLD_FIRE_TOO_WEAK,    // at the lowest it may go and still too cold
+        HOLD_FIRE_TOO_STRONG,  // at the top and still too hot
+        HOLD_NOT_REACHED,      // the step gave up waiting and moved on
+        HOLD_SENSOR_FAILED     // no reading: the grill stays where it is
+    } holdStatus = HOLD_REACHING;
+
+    void start_temperature_hold(int temperature);
+    void stop_temperature_hold();
+    void update_temperature_hold();
+    void check_temperature_reached();
+    void set_hold_status(HoldStatus status);
 
     void start_current_step();
     void check_target_reached();
@@ -78,6 +95,12 @@ private:
     unsigned long stepDurationStart;
     uint32_t stepStartUnix; // Timestamp of when a step started (this is to indicate in the client how many seconds has being executing)
     int positionAnchor; // Grill position (0-100%) captured at execute_program(); used as the base for "relative" referenceType.
+
+    // Temperature a step asked for, kept through the steps after it. NO_TARGET when not holding.
+    int holdTemperature;
+    bool holdReached;               // entered the band at least once since the step started
+    unsigned long holdStartedAt;
+    unsigned long lastCorrectionAt; // the settle time counts from here
 };
 
 #endif

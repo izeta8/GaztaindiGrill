@@ -10,7 +10,6 @@ MovementManager::MovementManager(int index, GrillMQTT* mqtt, HardwareManager* ha
     modeManager(modeManager),
     targetPosition(GrillConstants::NO_TARGET),
     targetDegrees(GrillConstants::NO_TARGET),
-    targetTemperature(GrillConstants::NO_TARGET),
     statusLed(statusLed),
     isLinearResetting(false),
     guardState(GUARD_IDLE),
@@ -353,7 +352,7 @@ void MovementManager::go_to(int position) {
 
     mqtt->print("New target: " + String(position) + " (current: " + String(currentPercentage) + ")");
 
-    // In the function handle_temperature_stop(), which is called in loop, we handle when we have to stop.
+    // handle_position_stop(), called every loop, stops the actuator once it gets there.
     if (currentPercentage < position) {
         go_up();
     } else if (currentPercentage > position) {
@@ -370,37 +369,6 @@ void MovementManager::handle_position_stop() {
     } 
 }
 
-
-void MovementManager::go_to_temp(int temperature) {
-
-    targetTemperature = temperature;
-    int currentTemperature = sensor->get_temperature();
-
-    // If the temperature is not valid, we exit the method
-    if (!sensor->is_valid_temperature(currentTemperature)) {return;}
-
-    mqtt->print("New target: " + String(targetTemperature) + " (current: " + String(currentTemperature) + ")");
-
-    // In the function handle_temperature_stop(), which is called in loop, we handle when we have to stop.
-    if (currentTemperature < targetTemperature) {
-        go_up();
-    } else if (currentTemperature > targetTemperature) {
-        go_down();
-    }
-}
-
-void MovementManager::handle_temperature_stop() {
-
-    int currentTemperature = sensor->get_temperature();
- 
-    // If the temperature is not valid, we exit the method
-    if (!sensor->is_valid_temperature(currentTemperature)) {return;}
-
-    if (abs(currentTemperature - targetTemperature) <= GrillConstants::TEMPERATURE_MARGIN && targetTemperature != GrillConstants::NO_TARGET ) {
-        stop_lineal_actuator();
-        targetTemperature = GrillConstants::NO_TARGET;
-    } 
-}
 
 /// ------------------------------------ ///
 ///             RESET SYSTEMS            /// 
@@ -430,7 +398,6 @@ void MovementManager::emergency_stop()
     stop_lineal_actuator();
     stop_rotor();
     isLinearResetting = false;
-    targetTemperature = GrillConstants::NO_TARGET;
     targetDegrees = GrillConstants::NO_TARGET;
     targetPosition = GrillConstants::NO_TARGET;
     // Otherwise a held rotation would stay armed and fire on the next lift.
@@ -448,8 +415,7 @@ bool MovementManager::has_any_active_target() {
     // targetPosition is already cleared and targetDegrees is not set yet; without this last
     // check ProgramManager::check_target_reached() would call the step done mid-manoeuvre,
     // before the rack has turned at all.
-    return (targetTemperature != GrillConstants::NO_TARGET ||
-            targetPosition != GrillConstants::NO_TARGET ||
+    return (targetPosition != GrillConstants::NO_TARGET ||
             targetDegrees != GrillConstants::NO_TARGET ||
             guardState != GUARD_IDLE);
 }

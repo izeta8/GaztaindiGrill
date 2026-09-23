@@ -9,7 +9,11 @@ ProgramManager::ProgramManager(int index, GrillMQTT* mqtt, MovementManager* move
     programCurrentStep(0),
     stepDurationStart(0),
     stepStartUnix(0),
-    positionAnchor(0)
+    positionAnchor(0),
+    holdTemperature(GrillConstants::NO_TARGET),
+    holdReached(false),
+    holdStartedAt(0),
+    lastCorrectionAt(0)
      {}
 
     
@@ -116,10 +120,10 @@ void ProgramManager::finish_program(bool forcedCancelation = false) {
     // Clear targets and stop actuator.
     movement->targetPosition = GrillConstants::NO_TARGET;
     movement->targetDegrees = GrillConstants::NO_TARGET;
-    movement->targetTemperature = GrillConstants::NO_TARGET;
     // A rotation held waiting for a lift has to go too, or it would fire once the grill is up.
     movement->reset_rotation_guard();
     movement->stop_lineal_actuator();
+    stop_temperature_hold();
     
     // Clear the in-memory program
     programCurrentStep = 0;
@@ -150,6 +154,9 @@ void ProgramManager::update_program() {
         return;
     }
     
+    // Runs on every pass, whatever the step: a hold outlives the step that started it.
+    update_temperature_hold();
+
     Step& currentStep = currentProgram.steps[programCurrentStep];
     
     // Máquina de estados para el paso actual
@@ -160,6 +167,10 @@ void ProgramManager::update_program() {
             
         case STEP_MOVING_TO_TARGET:
             check_target_reached();
+            break;
+
+        case STEP_REACHING_TEMPERATURE:
+            check_temperature_reached();
             break;
             
         case STEP_WAITING_TIME:
@@ -189,10 +200,11 @@ void ProgramManager::start_current_step() {
         // Es una acción
         stepState = STEP_EXECUTING_ACTION;
     } else if (step.temperature != -1) {
-        // Movimiento por temperatura
-        movement->go_to_temp(step.temperature);
-        stepState = STEP_MOVING_TO_TARGET;
+        start_temperature_hold(step.temperature);
+        stepState = STEP_REACHING_TEMPERATURE;
     } else if (step.position != GrillConstants::NO_TARGET) {
+        // An explicit height replaces whatever temperature was being held.
+        stop_temperature_hold();
         // Movimiento por posición (absoluta o relativa al punto de inicio del programa)
         int resolvedTarget = resolve_target_position(step.position);
         mqtt->print("Position step: raw=" + String(step.position) +
@@ -253,7 +265,9 @@ void ProgramManager::skip_current_step() {
 
     movement->targetPosition = GrillConstants::NO_TARGET;
     movement->targetDegrees = GrillConstants::NO_TARGET;
-    movement->targetTemperature = GrillConstants::NO_TARGET;
+    // Skipping the temperature step itself means that temperature is no longer wanted. Skipping
+    // a later step keeps holding it.
+    if (stepState == STEP_REACHING_TEMPERATURE) { stop_temperature_hold(); }
     // Otherwise a held rotation would still fire once the lift it was waiting for ends.
     movement->reset_rotation_guard();
     movement->stop_lineal_actuator();
@@ -269,6 +283,99 @@ void ProgramManager::advance_to_next_step() {
 
     // We must notify that the step has changed.
     publish_program_status(); 
+}
+
+// ------------- TEMPERATURE HOLD ------------- //
+
+void ProgramManager::start_temperature_hold(int temperature) {
+    holdTemperature = temperature;
+    holdReached = false;
+    holdStartedAt = millis();
+    // Counted as settled already, so the first correction does not wait.
+    lastCorrectionAt = millis() - GrillConstants::TEMPERATURE_SETTLE_MS;
+    holdStatus = HOLD_REACHING;
+    mqtt->print("Holding " + String(temperature) + " +-" + String(GrillConstants::TEMPERATURE_BAND));
+}
+
+void ProgramManager::stop_temperature_hold() {
+    if (holdTemperature == GrillConstants::NO_TARGET) { return; }
+    holdTemperature = GrillConstants::NO_TARGET;
+    mqtt->print("Temperature hold stopped");
+}
+
+void ProgramManager::check_temperature_reached() {
+    bool timedOut = millis() - holdStartedAt >= GrillConstants::TEMPERATURE_REACH_TIMEOUT_MS;
+    if (!holdReached && !timedOut) { return; }
+
+    // A program never hangs on a fire that cannot get there; it carries on and keeps trying.
+    if (!holdReached) { set_hold_status(HOLD_NOT_REACHED); }
+
+    // Only this step is over: the hold carries on through the steps after it.
+    stepDurationStart = millis();
+    stepState = STEP_WAITING_TIME;
+}
+
+void ProgramManager::update_temperature_hold() {
+    if (holdTemperature == GrillConstants::NO_TARGET) { return; }
+
+    // Another move owns the actuator: this hold's last correction, or the rotation guard. The
+    // settle time counts from when it ends, not from when it started.
+    if (movement->has_any_active_target()) {
+        lastCorrectionAt = millis();
+        return;
+    }
+    if (millis() - lastCorrectionAt < GrillConstants::TEMPERATURE_SETTLE_MS) { return; }
+
+    int temperature = sensor->get_average_temperature();
+    long position = sensor->get_encoder_value();
+
+    if (!sensor->is_valid_temperature(temperature) || position == (long)GrillConstants::ENCODER_ERROR) {
+        set_hold_status(HOLD_SENSOR_FAILED);
+        return;
+    }
+
+    int error = temperature - holdTemperature;
+
+    if (abs(error) <= GrillConstants::TEMPERATURE_BAND) {
+        holdReached = true;
+        set_hold_status(HOLD_HOLDING);
+        return;
+    }
+
+    // Too cold means closer to the embers, which is down. A tilted rack has a floor above 0.
+    int lowest = movement->has_rotor() ? movement->min_safe_position(sensor->get_rotor_encoder_value()) : 0;
+
+    if (error < 0 && position <= lowest) {
+        set_hold_status(HOLD_FIRE_TOO_WEAK);
+        return;
+    }
+    if (error > 0 && position >= 100) {
+        set_hold_status(HOLD_FIRE_TOO_STRONG);
+        return;
+    }
+
+    int target = (int)position + ((error < 0) ? -GrillConstants::TEMPERATURE_STEP_PCT
+                                              : GrillConstants::TEMPERATURE_STEP_PCT);
+    mqtt->print("Temperature " + String(temperature) + " for " + String(holdTemperature) +
+                ", moving from " + String(position) + " to " + String(target));
+    movement->go_to(target);
+    lastCorrectionAt = millis();
+
+    // Moving again means the fire or the sensor came back: those warnings no longer hold.
+    if (holdStatus == HOLD_FIRE_TOO_WEAK || holdStatus == HOLD_FIRE_TOO_STRONG ||
+        holdStatus == HOLD_SENSOR_FAILED) {
+        set_hold_status(holdReached ? HOLD_HOLDING : HOLD_REACHING);
+    }
+}
+
+void ProgramManager::set_hold_status(HoldStatus status) {
+    if (status == holdStatus) { return; }
+    holdStatus = status;
+
+    static const char* const names[] = {
+        "reaching", "holding", "fire_too_weak", "fire_too_strong", "not_reached", "sensor_failed"
+    };
+    mqtt->print("Temperature hold: " + String(names[status]));
 }
 
 int ProgramManager::resolve_target_position(int stepPosition) {

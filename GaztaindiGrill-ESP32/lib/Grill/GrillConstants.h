@@ -19,9 +19,16 @@ public:
     
     // Margins
     static constexpr int POSITION_MARGIN = 0;
-    static constexpr int TEMPERATURE_MARGIN = 2;
     static constexpr int ROTOR_MARGIN = 3;
     static constexpr int SYNC_MARGIN = 0; // Margin for dual mode synchronization
+
+    // Temperature steps. The thermocouple rides with the rack, so these are what the meat gets,
+    // not the embers. The sensor lags about 30 s, so a narrow band wants small steps.
+    static constexpr int TEMPERATURE_BAND = 5;                             // degrees either side
+    static constexpr int TEMPERATURE_STEP_PCT = 2;                         // travel per correction
+    static constexpr unsigned long TEMPERATURE_SETTLE_MS = 10000;          // wait after a correction
+    static constexpr unsigned long TEMPERATURE_REACH_TIMEOUT_MS = 600000;  // the step moves on anyway
+    static constexpr int TEMPERATURE_AVERAGE_SAMPLES = 2;                  // one per TEMPERATURE_UPDATE_INTERVAL
 
     // Rotation headroom. The rack is 30 cm deep and turns on its central axis, so tilting it
     // 90 degrees drops its lower edge 15 cm. The linear actuator's whole travel is also 30 cm

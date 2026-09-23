@@ -154,3 +154,28 @@ Como el cero lo fija `begin()` al arrancar, lo que la parrilla llama 0° es la i
 -   **`rotor_busy`** si hay un programa en marcha o `has_any_active_target()` es cierto. El seguro del §6 calcula cuánto subir a partir del ángulo **reportado**; mover el cero a mitad de maniobra lo dejaría midiendo contra un marco que ya no existe.
 
 **Por qué publica él mismo el 0.** `GrillSensor::reset_rotor_encoder()` pone `lastRotorEncoderValue` a 0 y publica `"0"` retenido en `status/sensor/rotation` a mano, en vez de dejarlo para el `update_rotor_encoder()` del `loop()`. Tiene que hacerlo porque `get_rotor_encoder_value()` trata una lectura de 0 como muestra mala y devuelve el último valor bueno: por esa vía el topic retenido se quedaría con el ángulo viejo para siempre.
+
+## 8. Pasos de Temperatura
+
+El termopar va montado a la altura de la rejilla y sube y baja con ella. No mide la brasa sino lo que le llega a la carne, así que las temperaturas de los programas se escriben en esa escala: no son comparables con una pistola de infrarrojos apuntando al carbón.
+
+**Qué hace un paso `temperature`.** `ProgramManager` arranca una regulación por pasos:
+
+-   Decide sobre la media de las últimas `TEMPERATURE_AVERAGE_SAMPLES` lecturas de `GrillSensor`, no sobre la última.
+-   Dentro de `TEMPERATURE_BAND` no mueve nada. Por debajo baja la parrilla `TEMPERATURE_STEP_PCT` (se acerca a la brasa); por encima la sube.
+-   Tras cada corrección espera `TEMPERATURE_SETTLE_MS` a que el termopar reaccione. La espera cuenta desde que el actuador llega, no desde que arranca.
+
+El paso termina la primera vez que la lectura entra en el margen. Si no entra en `TEMPERATURE_REACH_TIMEOUT_MS`, el programa sigue igualmente: nunca se queda colgado por un fuego que no llega.
+
+**Mantener, no buscar una vez.** La regulación sobrevive al paso que la arrancó y sigue durante los pasos siguientes, que es lo que compensa una brasa que se va apagando. La paran:
+
+-   un paso `position`, porque pide una altura explícita;
+-   otro paso `temperature`, que la sustituye;
+-   saltar el propio paso de temperatura (saltar un paso posterior no la para);
+-   el fin o la cancelación del programa, y la parada de emergencia, que ahora cancela el programa en marcha para que nada vuelva a mover la parrilla después de pararla.
+
+Un paso `rotation` o `flip` no la para: mientras `has_any_active_target()` sea cierto (el giro o la subida del seguro del §6) la regulación no corrige, y retoma cuando termina.
+
+**Límites.** Mueve con `go_to()`, así que con la rejilla inclinada nunca baja del suelo seguro del §6. Si hace falta más calor y ya está en ese suelo, o menos y ya está al 100 %, no mueve y lo registra como `fire_too_weak` o `fire_too_strong`. Sin lectura del termopar o del encoder no mueve (`sensor_failed`).
+
+**Ajuste.** Todas las cifras son constantes en `GrillConstants.h`. Con un margen estrecho y un sensor que tarda unos 30 s en asentarse, si la parrilla no para de corregir el orden de ajuste es: subir `TEMPERATURE_SETTLE_MS`, bajar `TEMPERATURE_STEP_PCT` y, por último, ampliar `TEMPERATURE_BAND`.

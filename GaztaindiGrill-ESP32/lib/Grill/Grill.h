@@ -53,7 +53,6 @@ public:
     // Handle stops
     void handle_rotor_stop();
     void handle_position_stop();
-    void handle_temperature_stop();
 
     // Rotation clearance guard
     void update_rotation_guard();

@@ -40,6 +40,9 @@ bool Grill::check_reset_status() {
 }
 
 void Grill::emergency_stop() {
+    // A program left running would move the grill again on its next step, or on its next
+    // temperature correction, right after somebody stopped it.
+    if (programManager->is_program_running()) { programManager->finish_program(true); }
     movement->emergency_stop();
 }
 
@@ -116,9 +119,6 @@ void Grill::handle_position_stop() {
     movement->handle_position_stop();
 }
 
-void Grill::handle_temperature_stop() {
-    movement->handle_temperature_stop();
-}
 
 //
 // Rotation clearance guard

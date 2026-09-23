@@ -30,7 +30,6 @@ public:
 
     // ------------------- GO_TO ------------------ //
     void go_to(int position);
-    void go_to_temp(int temperature);
     // Returns true when the answer is deferred: a lift had to start first, so whether the
     // turn happens is only known later. The requester travels with the call so a second
     // command arriving mid-lift cannot steal the first one's answer. With a finalPosition the
@@ -47,7 +46,6 @@ public:
     // ---- HANDLE STOPS (GO_TO / PROGRAM) ---- //
     void handle_rotor_stop();
     void handle_position_stop();
-    void handle_temperature_stop();
 
     // ---------- ROTATION HEADROOM GUARD ---------- //
     int min_safe_position(int degrees);
@@ -57,7 +55,6 @@ public:
     void reset_rotation_guard();
 
     // -------------- GO_TO TARGETS ------------- //
-    int targetTemperature;
     int targetDegrees;
     int targetPosition;
     bool has_any_active_target();

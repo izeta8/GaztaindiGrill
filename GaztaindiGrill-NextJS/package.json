@@ -9,6 +9,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "fake-grill": "node scripts/fake-grill.mjs",
+    "fake-program": "node scripts/fake-program.mjs",
     "deploy": "powershell -ExecutionPolicy Bypass -File ./deploy.ps1"
   },
   "dependencies": {

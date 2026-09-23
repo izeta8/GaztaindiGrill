@@ -7,6 +7,8 @@ const TICK_MS = 100
 const POSITION_PER_SECOND = 8
 const DEGREES_PER_SECOND = 30
 const TEMPERATURE_INTERVAL_MS = 5000
+// There is no fire to regulate, so a temperature step just waits this long.
+const TEMPERATURE_STEP_MS = 5000
 
 const grills = [0, 1].map((id) => ({
   id,
@@ -19,6 +21,12 @@ const grills = [0, 1].map((id) => ({
   rotationDirection: 'stop',
   positionAfterRotation: null,
   published: { position: null, rotation: null },
+  program: null,
+  stepIndex: 0,
+  stepStartUnix: 0,
+  stepStage: 'waiting',
+  waitUntil: 0,
+  anchor: 0,
 }))
 let mode = 'single'
 
@@ -41,9 +49,7 @@ client.on('connect', () => {
   publish('grill/reset_status', 'ready', true)
   publish('grill/current_mode', mode, true)
   publish('grill/time', Math.floor(Date.now() / 1000), true)
-  for (const g of grills) {
-    publish(`grill/${g.id}/status/program/current`, JSON.stringify({ isRunning: false }), true)
-  }
+  for (const g of grills) publishProgram(g)
 })
 
 client.on('error', (err) => console.error('[fake-grill]', err.message))
@@ -110,12 +116,31 @@ client.on('message', (topic, buffer) => {
       g.rotation = 0
       g.targetRotation = null
       break
+    case 'action/program/execute':
+      if (!Array.isArray(value?.steps)) return reply(base, requestId, command, 'no_steps')
+      if (!g.hasRotor && value.steps.some((s) => s.temperature != null)) {
+        return reply(base, requestId, command, 'no_sensor')
+      }
+      g.program = value
+      g.anchor = Math.round(g.position)
+      startStep(g, 0)
+      break
     case 'action/program/cancel':
+      if (!g.program) {
+        publishProgram(g)
+        return reply(base, requestId, command, 'no_program_running')
+      }
+      stopProgram(g)
+      break
     case 'action/program/skip_step':
-      publish(`${base}/status/program/current`, JSON.stringify({ isRunning: false }), true)
-      return reply(base, requestId, command, 'no_program_running')
+      if (!g.program) {
+        publishProgram(g)
+        return reply(base, requestId, command, 'no_program_running')
+      }
+      startStep(g, g.stepIndex + 1)
+      break
     case 'action/request/program_status':
-      publish(`${base}/status/program/current`, JSON.stringify({ isRunning: false }), true)
+      publishProgram(g)
       break
   }
   reply(base, requestId, command)
@@ -129,9 +154,68 @@ function handleSystem(command, value, requestId) {
   } else if (command === 'request_current_mode') {
     publish('grill/current_mode', mode)
   } else if (command === 'emergency_stop') {
-    for (const g of grills) Object.assign(g, { direction: 'stop', targetPosition: null, rotationDirection: 'stop', targetRotation: null, positionAfterRotation: null })
+    for (const g of grills) {
+      Object.assign(g, { direction: 'stop', targetPosition: null, rotationDirection: 'stop', targetRotation: null, positionAfterRotation: null })
+      if (g.program) stopProgram(g)
+    }
   }
   reply('grill', requestId, command)
+}
+
+// Same shape as ProgramManager::publish_program_status(): the whole program, retained.
+function publishProgram(g) {
+  const status = g.program
+    ? {
+        ...g.program,
+        isRunning: true,
+        currentStepIndex: g.stepIndex,
+        elapsedTime: 0,
+        steps: g.program.steps.map((s, i) => (i === g.stepIndex ? { ...s, stepStartUnix: g.stepStartUnix } : s)),
+      }
+    : { isRunning: false }
+  publish(`grill/${g.id}/status/program/current`, JSON.stringify(status), true)
+}
+
+function stopProgram(g) {
+  Object.assign(g, { program: null, direction: 'stop', targetPosition: null, targetRotation: null, positionAfterRotation: null })
+  publishProgram(g)
+}
+
+// Resolves the step type in the firmware's order: action, temperature, position, rotation, time.
+function startStep(g, index) {
+  if (index >= g.program.steps.length) return stopProgram(g)
+
+  const step = g.program.steps[index]
+  const now = Date.now()
+  g.stepIndex = index
+  g.stepStartUnix = Math.floor(now / 1000)
+  g.stepStage = 'moving'
+
+  if (step.action === 'flip' && g.hasRotor) {
+    g.targetRotation = (Math.round(g.rotation) + 180) % 360
+  } else if (step.temperature != null) {
+    g.stepStage = 'waiting'
+    g.waitUntil = now + TEMPERATURE_STEP_MS
+  } else if (step.position != null) {
+    const target = g.program.referenceType === 'relative' ? g.anchor + step.position : step.position
+    g.targetPosition = Math.max(0, Math.min(100, target))
+  } else if (step.rotation != null && g.hasRotor) {
+    g.targetRotation = step.rotation
+  } else {
+    g.stepStage = 'waiting'
+    g.waitUntil = now + (step.time || 0) * 1000
+  }
+  publishProgram(g)
+}
+
+function updateProgram(g) {
+  if (!g.program) return
+  const now = Date.now()
+  if (g.stepStage === 'moving' && g.targetPosition === null && g.targetRotation === null && g.positionAfterRotation === null) {
+    g.stepStage = 'waiting'
+    g.waitUntil = now + (g.program.steps[g.stepIndex].time || 0) * 1000
+  }
+  if (g.stepStage === 'waiting' && now >= g.waitUntil) startStep(g, g.stepIndex + 1)
 }
 
 setInterval(() => {
@@ -172,6 +256,8 @@ setInterval(() => {
       g.published.rotation = rotation
       publish(`grill/${g.id}/status/sensor/rotation`, rotation, true)
     }
+
+    updateProgram(g)
   }
 }, TICK_MS)
 

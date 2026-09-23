@@ -273,6 +273,50 @@ void Grill::handle_mqtt_message(const char* pAction, GrillRequest& request) {
         if (movement->go_to_rotor(grades, request.id, request.command)) { mqtt->defer(request); }
     }
 
+    if (topic == GrillConstants::TOPIC_CMD_SET_POSE)
+    {
+        if (!movement->has_rotor()) {
+            mqtt->reply_error(request, GrillConstants::ERROR_NO_ROTOR);
+            return;
+        }
+
+        // An object payload never reaches request.value, so the pose is parsed from the raw one.
+        // Taken bare too, for a mosquitto_pub without the envelope.
+        JsonDocument doc;
+        if (deserializeJson(doc, request.raw) != DeserializationError::Ok) {
+            mqtt->reply_error(request, GrillConstants::ERROR_INVALID_JSON);
+            return;
+        }
+
+        JsonVariant pose = doc.as<JsonVariant>();
+        if (doc[GrillConstants::JSON_VALUE].is<JsonObject>()) { pose = doc[GrillConstants::JSON_VALUE]; }
+
+        if (!pose[GrillConstants::JSON_POSITION].is<int>() || !pose[GrillConstants::JSON_ROTATION].is<int>()) {
+            mqtt->reply_error(request, GrillConstants::ERROR_INVALID_JSON);
+            return;
+        }
+
+        int grades = pose[GrillConstants::JSON_ROTATION];
+        if (grades < 0 || grades >= 360) {
+            mqtt->reply_error(request, GrillConstants::ERROR_ROTATION_OUT_OF_RANGE);
+            return;
+        }
+
+        // The manoeuvre reads the tilt it starts from, so it cannot begin on top of another one.
+        if (programManager->is_program_running() || movement->has_any_active_target()) {
+            mqtt->reply_error(request, GrillConstants::ERROR_ROTOR_BUSY);
+            return;
+        }
+
+        if (sensor->get_encoder_value() == (long)GrillConstants::ENCODER_ERROR) {
+            mqtt->reply_error(request, GrillConstants::ERROR_ROTATION_UNSAFE);
+            return;
+        }
+
+        int position = pose[GrillConstants::JSON_POSITION];
+        if (movement->go_to_rotor(grades, request.id, request.command, position)) { mqtt->defer(request); }
+    }
+
     if (topic == GrillConstants::TOPIC_CMD_RESET_ROTATION)
     {
         if (!movement->has_rotor()) {

@@ -16,6 +16,7 @@ MovementManager::MovementManager(int index, GrillMQTT* mqtt, HardwareManager* ha
     guardState(GUARD_IDLE),
     pendingRotationDegrees(GrillConstants::NO_TARGET),
     positionBeforeRotation(GrillConstants::NO_TARGET),
+    positionAfterRotation(GrillConstants::NO_TARGET),
     pendingRotationRequestId(GrillConstants::PAYLOAD_REQUEST_ID_EVERYONE),
     pendingRotationCommand(""),
     liftStartedAt(0)
@@ -110,7 +111,8 @@ void MovementManager::turn_around() {
 
 // ------------- ROTOR ------------- //
 
-bool MovementManager::go_to_rotor(int degrees, const String& requestId, const String& command) {
+bool MovementManager::go_to_rotor(int degrees, const String& requestId, const String& command,
+                                  int finalPosition) {
 
     // The MQTT boundary (Grill::handle_mqtt_message) validates this too, and can answer the
     // client. Kept here as well because turn_around() reaches this directly.
@@ -125,8 +127,23 @@ bool MovementManager::go_to_rotor(int degrees, const String& requestId, const St
         return false;
     }
 
+    // Already at the angle: a set_pose here is just a move, and a plain rotation has nothing to
+    // do. Starting the rotor for a turn of zero would only make it twitch.
+    int turn = (degrees - sensor->get_rotor_encoder_value() + 360) % 360;
+    if (turn > 180) { turn = 360 - turn; }
+
+    if (turn <= GrillConstants::ROTOR_MARGIN) {
+        if (finalPosition != GrillConstants::NO_TARGET) { go_to(finalPosition); }
+        return false;
+    }
+
+    positionAfterRotation = finalPosition;
+
     // Only as high as this particular turn needs: a small tilt asks for far less than a flip.
     int required = min_safe_position_for_turn(sensor->get_rotor_encoder_value(), degrees);
+
+    // Lifting straight to the destination when it is higher saves coming back down afterwards.
+    if (finalPosition > required) { required = finalPosition; }
 
     if (currentPosition < required) {
 
@@ -260,24 +277,24 @@ void MovementManager::update_rotation_guard() {
             // handle_rotor_stop() clears the target once the rotor settles on the angle.
             if (targetDegrees == GrillConstants::NO_TARGET) {
 
-                // Nothing was lifted, so there is nowhere to come back down to.
-                if (positionBeforeRotation == GrillConstants::NO_TARGET) {
+                // Where set_pose asked to end, or back where the lift started. Without either
+                // there is nowhere to go: nothing was lifted and nobody asked for a height.
+                int destination = (positionAfterRotation != GrillConstants::NO_TARGET)
+                                      ? positionAfterRotation
+                                      : positionBeforeRotation;
+
+                if (destination == GrillConstants::NO_TARGET) {
                     reset_rotation_guard();
                     break;
                 }
 
                 // The rack may have settled still tilted, and then it cannot come all the way
-                // back: the floor for the angle it stopped at wins over where it started.
-                int finalAngle = sensor->get_rotor_encoder_value();
-                int safetyFloor = min_safe_position(finalAngle);
-                int returnTo = (positionBeforeRotation > safetyFloor) ? positionBeforeRotation : safetyFloor;
-
-                mqtt->print("Rotation done at " + String(finalAngle) + ", returning to " +
-                            String(returnTo) + " (was " + String(positionBeforeRotation) +
-                            ", floor " + String(safetyFloor) + ")");
+                // down: go_to() raises the destination to the floor of the angle it stopped at.
+                mqtt->print("Rotation done at " + String(sensor->get_rotor_encoder_value()) +
+                            ", going to " + String(destination));
 
                 guardState = GUARD_RETURNING;
-                go_to(returnTo);
+                go_to(destination);
             }
             break;
 
@@ -297,6 +314,7 @@ void MovementManager::reset_rotation_guard() {
     guardState = GUARD_IDLE;
     pendingRotationDegrees = GrillConstants::NO_TARGET;
     positionBeforeRotation = GrillConstants::NO_TARGET;
+    positionAfterRotation = GrillConstants::NO_TARGET;
 }
 
 void MovementManager::handle_rotor_stop() {

@@ -17,6 +17,7 @@ const grills = [0, 1].map((id) => ({
   rotation: 0,
   targetRotation: null,
   rotationDirection: 'stop',
+  positionAfterRotation: null,
   published: { position: null, rotation: null },
 }))
 let mode = 'single'
@@ -88,6 +89,22 @@ client.on('message', (topic, buffer) => {
       g.targetRotation = degrees
       break
     }
+    case 'action/movement/set_pose': {
+      // Turns first and moves afterwards, like the guard on the real grill. The safe-height
+      // lift is left out: it changes when the rack arrives, not where it ends up.
+      if (!g.hasRotor) return reply(base, requestId, command, 'no_rotor')
+      if (typeof value?.position !== 'number' || typeof value?.rotation !== 'number') {
+        return reply(base, requestId, command, 'invalid_json')
+      }
+      if (!(value.rotation >= 0 && value.rotation < 360)) {
+        return reply(base, requestId, command, 'rotation_out_of_range')
+      }
+      g.direction = 'stop'
+      g.rotationDirection = 'stop'
+      g.targetRotation = value.rotation
+      g.positionAfterRotation = Math.max(0, Math.min(100, value.position))
+      break
+    }
     case 'action/movement/reset_rotation':
       if (!g.hasRotor) return reply(base, requestId, command, 'no_rotor')
       g.rotation = 0
@@ -112,7 +129,7 @@ function handleSystem(command, value, requestId) {
   } else if (command === 'request_current_mode') {
     publish('grill/current_mode', mode)
   } else if (command === 'emergency_stop') {
-    for (const g of grills) Object.assign(g, { direction: 'stop', targetPosition: null, rotationDirection: 'stop', targetRotation: null })
+    for (const g of grills) Object.assign(g, { direction: 'stop', targetPosition: null, rotationDirection: 'stop', targetRotation: null, positionAfterRotation: null })
   }
   reply('grill', requestId, command)
 }
@@ -133,7 +150,13 @@ setInterval(() => {
     if (g.targetRotation !== null) {
       const delta = ((g.targetRotation - g.rotation + 540) % 360) - 180
       g.rotation = Math.abs(delta) <= turn ? g.targetRotation : (g.rotation + Math.sign(delta) * turn + 360) % 360
-      if (g.rotation === g.targetRotation) g.targetRotation = null
+      if (g.rotation === g.targetRotation) {
+        g.targetRotation = null
+        if (g.positionAfterRotation !== null) {
+          g.targetPosition = g.positionAfterRotation
+          g.positionAfterRotation = null
+        }
+      }
     } else if (g.rotationDirection === 'clockwise' || g.rotationDirection === 'counter_clockwise') {
       g.rotation = (g.rotation + (g.rotationDirection === 'clockwise' ? turn : -turn) + 360) % 360
     }

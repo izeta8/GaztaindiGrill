@@ -18,6 +18,8 @@ export const TOPICS = {
       ROTATION: 'action/movement/rotation',
       SET_POSITION: 'action/movement/set_position',
       SET_ROTATION: 'action/movement/set_rotation',
+      // Height and tilt in one manoeuvre: { position: 0-100, rotation: 0-359 }.
+      SET_POSE: 'action/movement/set_pose',
       RESET_ROTATION: 'action/movement/reset_rotation',
     },
     PROGRAM: {

@@ -114,6 +114,7 @@ sequenceDiagram
 | `grill/{id}/action/movement/rotation` | `clockwise` / `counter_clockwise` / `stop` | Rotación continua, **sin seguro de altura**: la da alguien mirando la parrilla. Solo la parrilla 0 tiene rotor; en la 1 devuelve `no_rotor`. |
 | `grill/{id}/action/movement/set_position` | `0`–`100` | Ir a una posición concreta. |
 | `grill/{id}/action/movement/set_rotation` | `0`–`359` | Ir a un ángulo concreto. Si la parrilla está demasiado baja para inclinarse sin tocar la brasa, **sube primero, gira y vuelve**, y la respuesta se difiere hasta que el giro arranca. Fuera de rango → `rotation_out_of_range`; sin rotor → `no_rotor`; si no se puede asegurar → `rotation_unsafe`. |
+| `grill/{id}/action/movement/set_pose` | `{ "position": 0-100, "rotation": 0-359 }` | Altura e inclinación en una sola maniobra: sube lo que pida el giro, gira y acaba en la altura pedida, sin bajar del suelo seguro del ángulo final. La usa la vista de posición de la web. Sin rotor → `no_rotor`; falta un campo → `invalid_json`; ángulo fuera de rango → `rotation_out_of_range`; con un programa o un movimiento en marcha → `rotor_busy`; si no se puede asegurar → `rotation_unsafe`. La respuesta se difiere igual que en `set_rotation`. |
 | `grill/{id}/action/movement/reset_rotation` | `""` | Pone el cero del rotor en la inclinación actual, sin reiniciar. Republica `status/sensor/rotation` a `0`. Sin rotor → `no_rotor`; con un programa o un movimiento en marcha → `rotor_busy`. |
 | `grill/{id}/action/program/execute` | objeto programa (ver abajo) | Ejecuta un programa completo. |
 | `grill/{id}/action/program/cancel` | `""` | Cancela el programa en curso. Si no hay ninguno → `no_program_running`. |
@@ -249,14 +250,14 @@ El firmware envía **códigos**, nunca texto de interfaz: así reescribir un men
 
 | Código | Cuándo |
 | --- | --- |
-| `invalid_json` | El programa recibido en `execute` no deserializa. |
+| `invalid_json` | El programa recibido en `execute` no deserializa, o a `set_pose` le falta `position` o `rotation`. |
 | `no_steps` | El programa no trae array `steps`. |
 | `no_rotor` | Comando de rotación dirigido a una parrilla sin rotor (la 1). |
-| `rotation_out_of_range` | `set_rotation` fuera de `[0, 360)`. |
+| `rotation_out_of_range` | `set_rotation` o `set_pose` fuera de `[0, 360)`. |
 | `mode_change_denied` | El cambio de modo no se pudo aplicar. |
 | `no_program_running` | `cancel` o `skip_step` sin programa en curso. Antes de contestar, el firmware republica `status/program/current`, que corrige al cliente que creía ver un programa. |
 | `rotation_unsafe` | Un giro con destino que no se puede asegurar: el encoder de posición no contesta, o la subida previa no llegó dentro de `MOVEMENT_TIMEOUT`. |
-| `rotor_busy` | `reset_rotation` con un programa en marcha o un movimiento sin terminar. |
+| `rotor_busy` | `reset_rotation` o `set_pose` con un programa en marcha o un movimiento sin terminar. |
 | `encoder_not_answering` | Programa `relative` que no puede anclar su posición inicial. |
 | `resetting` | Cualquier comando recibido durante una recalibración. |
 

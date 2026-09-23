@@ -68,6 +68,8 @@ public:
     static constexpr const char* TOPIC_CMD_MOVE_ROTATION = "action/movement/rotation";
     static constexpr const char* TOPIC_CMD_SET_POSITION = "action/movement/set_position";
     static constexpr const char* TOPIC_CMD_SET_ROTATION = "action/movement/set_rotation";
+    // Height and tilt in one manoeuvre: { "position": 0-100, "rotation": 0-359 }.
+    static constexpr const char* TOPIC_CMD_SET_POSE = "action/movement/set_pose";
 
     
     static constexpr const char* TOPIC_CMD_RESET_ROTATION = "action/movement/reset_rotation";

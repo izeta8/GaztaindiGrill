@@ -33,8 +33,10 @@ public:
     void go_to_temp(int temperature);
     // Returns true when the answer is deferred: a lift had to start first, so whether the
     // turn happens is only known later. The requester travels with the call so a second
-    // command arriving mid-lift cannot steal the first one's answer.
-    bool go_to_rotor(int grades, const String& requestId, const String& command);
+    // command arriving mid-lift cannot steal the first one's answer. With a finalPosition the
+    // rack ends there instead of back where it started.
+    bool go_to_rotor(int grades, const String& requestId, const String& command,
+                     int finalPosition = GrillConstants::NO_TARGET);
 
     // ------------------- RESETS ------------------ //
     void start_reset();
@@ -81,6 +83,7 @@ private:
     RotationGuardState guardState;
     int pendingRotationDegrees; // held target angle while GUARD_LIFTING
     int positionBeforeRotation; // where to come back to; NO_TARGET when no lift was needed
+    int positionAfterRotation;  // where set_pose wants to end; wins over positionBeforeRotation
 
     // Who is waiting for a rotation that had to lift first, and since when. EVERYONE means
     // nobody asked, so only a failure is worth broadcasting.

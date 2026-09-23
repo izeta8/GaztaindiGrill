@@ -63,9 +63,12 @@ function GrillControlContent() {
           pageDescription="Monitoreo de sensores y actuadores en tiempo real"
         /> */}
 
-        {/* Modelo 3D */}
-        <div className='mt-3'>
-          <GrillScene onGrillSelect={currentMode === undefined ? undefined : handleGrillSelect} />
+        {/* Modelo 3D. Se desmonta con la modal abierta: dos lienzos WebGL a la vez dejan uno
+            de los dos sin repintar, y el de la modal se quedaba con el estado de cuando se abrió. */}
+        <div className='mt-3 h-[290px]'>
+          {selectedGrill === null && (
+            <GrillScene onGrillSelect={currentMode === undefined ? undefined : handleGrillSelect} />
+          )}
         </div>
 
         {/* Esperar a que se fetcheé el modo */}

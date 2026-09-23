@@ -41,6 +41,7 @@ export default function GrillScene({
     <div className={className}>
     {/* <div className="w-full h-[250px] bg-white rounded-xl shadow-inner border border-gray-100 overflow-hidden relative"> */}
       <Canvas
+        frameloop="always"
         shadows
         camera={{ position: cameraPosition, fov: 23 }} 
         gl={{ antialias: true, alpha: true }}

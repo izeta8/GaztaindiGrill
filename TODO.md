@@ -34,29 +34,20 @@ sin tratarlo como grados calibrados.
    - Cuánto ruido tiene la lectura en reposo.
    - Qué valores da a varias alturas, con brasa nueva y con brasa vieja.
 
-   De aquí salen `TEMPERATURE_MARGIN` (hoy 2, seguramente corto) y el intervalo de lectura.
+   De aquí salen los valores de las constantes `TEMPERATURE_*` de `GrillConstants.h` y el
+   intervalo de lectura.
 
 4. **Gráfica de temperatura en tiempo real.** En brasa la curva dice más que el número: si sube o
    baja. Volátil, en el cliente, con lo que llega por MQTT desde que se abre la página. También
    ayuda a hacer el punto 3.
 
-5. **Pasos por temperatura.** Hoy un paso fija posición, y un 30% con brasa nueva y con brasa de
-   dos horas cocinan distinto: el programa que salió bien no se repite. Fijando temperatura, la
-   parrilla busca la altura según cómo esté el fuego.
+5. **Pasos por temperatura — HECHO, sin probar con fuego.** Un paso `temperature` lleva la
+   parrilla a esa lectura y la mantiene mientras la brasa se apaga, a pasos del 2 % con 10 s de
+   espera entre correcciones. Ver `ARCHITECTURE.md` §8 y `.claude/plans/temperature-steps.md`.
+   Falta flashear y probarlo en el caserío: está en la sección de arriba del `CLAUDE.md` raíz.
 
-   El formulario de programas y el `ProgramManager` ya aceptan pasos `temperature`, y
-   `MovementManager::go_to_temp()` existe, pero así no sirve:
-   - Es todo-o-nada: sube o baja sin parar hasta entrar en el margen. Con ~30 s de retraso del
-     sensor se pasará siempre de largo. Hace falta mover a pasos cortos y esperar entre
-     correcciones (cada 15-30 s); un control rápido oscilaría.
-   - Al llegar, el paso termina y nadie mantiene la temperatura. Decidir si se mantiene durante
-     los pasos de espera siguientes, que es lo útil.
-   - La parrilla 1 no tiene sensor: rechazar el programa con un código de error nuevo (tipo
-     `no_rotor`), en firmware y en `commandErrors.ts`.
-   - Un fallo del termopar a mitad de programa: parar el paso o el programa, no quedarse moviendo.
-
-   Después, el mismo control como comando manual: `handleSetTemperature` en
-   `useGrillCommands.tsx` hoy solo muestra "pendiente de implementación".
+   Queda pendiente el mismo control como **comando manual**: `handleSetTemperature` en
+   `useGrillCommands.tsx` sigue mostrando "pendiente de implementación".
 
 ## 2. Temperatura — después, dependen de lo anterior
 
@@ -84,8 +75,8 @@ sin tratarlo como grados calibrados.
 
   1. Velocidad del rotor en manual (el PWM lento de `action/movement/rotation`).
   2. Márgenes de "ya he llegado": `POSITION_MARGIN` está en 0 y exige clavar el valor exacto,
-     lo que con ruido de encoder puede hacer oscilar al actuador. También `ROTOR_MARGIN` y
-     `TEMPERATURE_MARGIN`.
+     lo que con ruido de encoder puede hacer oscilar al actuador. También `ROTOR_MARGIN` y las
+     `TEMPERATURE_*` del regulador (`BAND`, `STEP_PCT`, `SETTLE_MS`).
   3. `MOVEMENT_TIMEOUT`, que depende de lo rápido que sea el actuador.
   4. El intervalo de lectura de sensores, hoy en 1,5 s.
 

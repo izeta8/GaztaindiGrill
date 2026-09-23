@@ -2,6 +2,32 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Pendiente de probar en el caserío
+
+**El ESP32 lleva firmware sin flashear, y lo nuevo está sin probar con fuego.** La próxima vez que
+se vaya al caserío, antes de nada:
+
+```bash
+cd GaztaindiGrill-ESP32 && pio run -t upload
+```
+
+Sin flashear no funciona nada de esto, porque la parrilla sigue con el firmware viejo. Qué probar,
+con `mosquitto_sub -v -t 'grill/#'` mirando:
+
+1. **Pasos de temperatura en programas** (lo último, ver `.claude/plans/temperature-steps.md`):
+   un programa `[{temperature: T}, {time: 600}]` con T por encima de la lectura actual baja la
+   parrilla a pasos del 2 %, espera 10 s entre correcciones y termina el paso al entrar en T±5;
+   durante la espera sigue corrigiendo. En la parrilla derecha, el mismo programa se rechaza con
+   `no_sensor`. En la web sale la línea "Manteniendo T ±5°C" en el panel de ejecución.
+2. **Ajustar el regulador si oscila:** las cifras son constantes en `GrillConstants.h`
+   (`TEMPERATURE_*`). Orden de ajuste: subir `TEMPERATURE_SETTLE_MS`, bajar
+   `TEMPERATURE_STEP_PCT`, y solo al final ampliar `TEMPERATURE_BAND`.
+3. **Giro por el lado corto** (`a450bd7`): desde 0° pedir 200° debe ir por 359, 358, 357...
+4. **`set_pose` y el suelo de seguridad** (`213dba8`, `d92f514`): con la rejilla a 90°,
+   `set_position 0` para en el 60 %; `set_pose {40, 90}` desde el 20 % sube, gira y acaba en 60.
+
+Cuando todo esté probado, borrar esta sección.
+
 ## What this repository is
 
 **GaztaindiGrill** is a monorepo: a remotely-controlled grill (ESP32) driven over MQTT from a web app, with a FastAPI backend for persisting cooking programs. It holds every part of the ecosystem in one git history — firmware, web client, API, and the Home Assistant add-on that packages the API. Each project below has its own CLAUDE.md with project-specific commands.

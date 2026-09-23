@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useRef, useMemo, useEffect } from 'react'
-import { useGLTF, Text3D, Outlines } from '@react-three/drei'
+import { useGLTF, Text3D, Outlines, Billboard } from '@react-three/drei'
 import { useFrame, useGraph, useThree, ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { GLTF } from 'three-stdlib'
@@ -80,7 +80,7 @@ const ROTATION_DRAG_STEP = 15
 
 // Where the rotor angle sits: out past the rotor and over the top of the structure, clear of the
 // position labels, which ride up with their rack.
-const ROTOR_LABEL_OFFSET = { x: -0.45, y: 1.1 }
+const ROTOR_LABEL_OFFSET = { x: -0.55, y: 0.4 }
 
 // The heights a rack at the picked tilt may not stay at, shown under it.
 const FORBIDDEN_MATERIAL = new THREE.MeshBasicMaterial({ color: '#dc2626', transparent: true, opacity: 0.18, depthWrite: false })
@@ -426,9 +426,9 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
       )}
 
       {showLabels && rotorLabelPosition && (
-        <group position={rotorLabelPosition}>
-          <LabelText text={`${Math.round(grillState0.rotation)}°`} size={0.3} color="white" />
-        </group>
+        <Billboard position={rotorLabelPosition}>
+          <LabelText text={`${Math.round(grillState0.rotation)}°`} size={0.25} color="white" />
+        </Billboard>
       )}
 
       {showLabels && textLabels.map((label) => (

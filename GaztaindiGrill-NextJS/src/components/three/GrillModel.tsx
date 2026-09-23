@@ -54,6 +54,13 @@ const FADED_MATERIAL = new THREE.MeshStandardMaterial({ color: '#9ca3af', transp
 // Pointer travel in px above which a click is really the end of a drag.
 const CLICK_MAX_DELTA = 4
 
+// Pressed look of a grill, from pointer down until the modal opens.
+const PRESSED_SCALE = 0.96
+const PRESSED_COLOR = new THREE.Color('#3b82f6')
+const PRESSED_GLOW = 0.6
+// Holds the pressed look this long before opening, so a quick tap still shows it.
+const SELECT_DELAY_MS = 150
+
 const grillIndexOf = (object: THREE.Object3D | null): 0 | 1 | undefined => {
   for (let current = object; current; current = current.parent) {
     const index = (GRILL_NODE_NAMES as readonly string[]).indexOf(current.name)
@@ -211,11 +218,60 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
     return previous.distanceTo(camera.position) < 1e-3
   }
 
+  const canSelect = onGrillSelect !== undefined
+  const pressed = useRef<{ index: 0 | 1; x: number; y: number } | null>(null)
+  const pressAmount = useRef([0, 0])
+  const baseScales = useRef<THREE.Vector3[]>([])
+  const pressMaterials = useRef<THREE.MeshStandardMaterial[][]>([[], []])
+  const selectTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Own copies of the grills' materials, so the glow never reaches the cached .glb ones.
+  useEffect(() => {
+    if (!canSelect) return
+    const swapped: [THREE.Mesh, THREE.Material][] = []
+    pressMaterials.current = GRILL_NODE_NAMES.map((name) => {
+      const materials: THREE.MeshStandardMaterial[] = []
+      nodes[name]?.traverse((mesh) => {
+        if (!(mesh instanceof THREE.Mesh) || !(mesh.material instanceof THREE.MeshStandardMaterial)) return
+        const material = mesh.material.clone()
+        material.emissive.copy(PRESSED_COLOR)
+        material.emissiveIntensity = 0
+        swapped.push([mesh, mesh.material])
+        mesh.material = material
+        materials.push(material)
+      })
+      return materials
+    })
+    return () => {
+      swapped.forEach(([mesh, original]) => {
+        ;(mesh.material as THREE.Material).dispose()
+        mesh.material = original
+      })
+      pressMaterials.current = [[], []]
+    }
+  }, [nodes, canSelect])
+
+  useEffect(() => () => { if (selectTimer.current) clearTimeout(selectTimer.current) }, [])
+
+  const updatePress = () => {
+    ;[leftGrillRef, rightGrillRef].forEach((grillRef, index) => {
+      const grill = grillRef.current
+      if (!grill) return
+      baseScales.current[index] ??= grill.scale.clone()
+      const goal = pressed.current?.index === index ? 1 : 0
+      const amount = THREE.MathUtils.lerp(pressAmount.current[index], goal, 0.3)
+      pressAmount.current[index] = amount
+      grill.scale.copy(baseScales.current[index]).multiplyScalar(1 - (1 - PRESSED_SCALE) * amount)
+      pressMaterials.current[index].forEach((material) => { material.emissiveIntensity = amount * PRESSED_GLOW })
+    })
+  }
+
   useFrame(() => {
     const smoothing = hasSnapped.current ? 0.1 : 1
     updateGrill(leftGrillRef, leftTextRef, grillState0.position, smoothing)
     updateGrill(rightGrillRef, rightTextRef, grillState1.position, smoothing)
     updateRotor(grillState0.rotation, smoothing)
+    if (canSelect) updatePress()
     hasSnapped.current = true
 
     if (focusGrill !== undefined && !isFocused.current) {
@@ -223,18 +279,52 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
     }
   })
 
+  const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
+    const index = grillIndexAt(event.intersections)
+    if (index === undefined) return
+    pressed.current = { index, x: event.clientX, y: event.clientY }
+  }
+
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
     // R3F fires a click even after the model was turned, so a turn would open the grill.
     if (!onGrillSelect || event.delta > CLICK_MAX_DELTA) return
     const index = grillIndexAt(event.intersections)
     if (index === undefined) return
     event.stopPropagation()
-    onGrillSelect(index)
+    pressed.current = { index, x: event.clientX, y: event.clientY }
+    if (selectTimer.current) clearTimeout(selectTimer.current)
+    selectTimer.current = setTimeout(() => {
+      // Released afterwards: a locked grill does not open, and has to spring back.
+      selectTimer.current = null
+      pressed.current = null
+      onGrillSelect(index)
+    }, SELECT_DELAY_MS)
   }
 
   const handlePointerMove = (event: ThreeEvent<PointerEvent>) => {
     gl.domElement.style.cursor = grillIndexAt(event.intersections) === undefined ? 'auto' : 'pointer'
+    // Turning the model is not a press.
+    const press = pressed.current
+    if (press && Math.hypot(event.clientX - press.x, event.clientY - press.y) > CLICK_MAX_DELTA) pressed.current = null
   }
+
+  const handlePointerOut = () => {
+    gl.domElement.style.cursor = 'auto'
+    if (!selectTimer.current) pressed.current = null
+  }
+
+  // Released outside the grill: no click follows, so the press ends here.
+  useEffect(() => {
+    if (!canSelect) return
+    const canvas = gl.domElement
+    const release = () => { if (!selectTimer.current) pressed.current = null }
+    canvas.addEventListener('pointercancel', release)
+    window.addEventListener('pointerup', release)
+    return () => {
+      canvas.removeEventListener('pointercancel', release)
+      window.removeEventListener('pointerup', release)
+    }
+  }, [gl, canSelect])
 
   const hasTarget = focusGrill !== undefined && target !== undefined
   const targetRef = useRef(target)
@@ -413,8 +503,9 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
       <primitive
         object={clonedScene}
         onClick={onGrillSelect ? handleClick : undefined}
+        onPointerDown={onGrillSelect ? handlePointerDown : undefined}
         onPointerMove={onGrillSelect ? handlePointerMove : undefined}
-        onPointerOut={onGrillSelect ? () => { gl.domElement.style.cursor = 'auto' } : undefined}
+        onPointerOut={onGrillSelect ? handlePointerOut : undefined}
       />
 
       {targetObject && <primitive object={targetObject} />}

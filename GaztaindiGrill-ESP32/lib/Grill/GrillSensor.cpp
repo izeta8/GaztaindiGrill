@@ -119,6 +119,10 @@ bool GrillSensor::is_valid_temperature(int temperature)
     return (temperature != -1);
 }
 
+bool GrillSensor::has_thermocouple() {
+    return hardware->thermocouple != nullptr;
+}
+
 int GrillSensor::get_average_temperature() {
     if (temperatureSampleCount == 0) { return -1; }
 

@@ -73,6 +73,18 @@ void ProgramManager::execute_program(GrillRequest& request) {
         return;
     }
 
+    // Checked before a single step runs: a program refused halfway would leave the grill
+    // wherever its earlier steps had put it.
+    if (!sensor->has_thermocouple()) {
+        for (JsonObject v : stepsArray) {
+            if (!v[GrillConstants::JSON_TEMPERATURE].isNull()) {
+                mqtt->print("Error: temperature steps on a grill without a thermocouple.");
+                mqtt->reply_error(request, GrillConstants::ERROR_NO_SENSOR);
+                return;
+            }
+        }
+    }
+
     // Reset value for steps count (in the loop we will set the good value)
     currentProgram.stepsCount = 0;
     

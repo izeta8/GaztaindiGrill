@@ -156,6 +156,7 @@ public:
     static constexpr const char* ERROR_ENCODER_NOT_ANSWERING = "encoder_not_answering";
     static constexpr const char* ERROR_ROTATION_UNSAFE = "rotation_unsafe";
     static constexpr const char* ERROR_ROTOR_BUSY = "rotor_busy";
+    static constexpr const char* ERROR_NO_SENSOR = "no_sensor";
 };
 
 #endif

@@ -142,7 +142,7 @@ El payload de `execute` (`value`) es el objeto que arma `src/app/programs/list/p
 
 Cada paso hace **una sola cosa**. `time` a solas es un **paso de espera**, no un retardo pegado a un movimiento: los pasos que mueven la parrilla no llevan tiempo y avanzan en cuanto llegan a su destino. El firmware resuelve el tipo en el orden `action` → `temperature` → `position` → `rotation` → `time`, y se salta un paso que no traiga ninguno.
 
-Ojo: la API guarda los pasos como **string JSON** (`steps_json`); el cliente hace `JSON.parse` antes de mandarlo, así que por MQTT `steps` viaja como array de verdad. `referenceType` `relative` hace que el firmware ancle las posiciones a la posición actual al arrancar el programa; si el encoder no responde en ese momento, el programa **no arranca** y contesta `encoder_not_answering`.
+Ojo: la API guarda los pasos como **string JSON** (`steps_json`); el cliente hace `JSON.parse` antes de mandarlo, así que por MQTT `steps` viaja como array de verdad. `referenceType` `relative` hace que el firmware ancle las posiciones a la posición actual al arrancar el programa; si el encoder no responde en ese momento, el programa **no arranca** y contesta `encoder_not_answering`. Un programa con algún paso `temperature` enviado a la parrilla 1, que no tiene termopar, tampoco arranca: contesta `no_sensor` antes de ejecutar ningún paso.
 
 ### Por parrilla — `status/...` (ESP32 → Cliente)
 
@@ -259,6 +259,7 @@ El firmware envía **códigos**, nunca texto de interfaz: así reescribir un men
 | `rotation_unsafe` | Un giro con destino que no se puede asegurar: el encoder de posición no contesta, o la subida previa no llegó dentro de `MOVEMENT_TIMEOUT`. |
 | `rotor_busy` | `reset_rotation` o `set_pose` con un programa en marcha o un movimiento sin terminar. |
 | `encoder_not_answering` | Programa `relative` que no puede anclar su posición inicial. |
+| `no_sensor` | Programa con pasos `temperature` enviado a una parrilla sin termopar (la 1). |
 | `resetting` | Cualquier comando recibido durante una recalibración. |
 
 `resetting` es el único que **no** tiene una constante `ERROR_*` en `GrillConstants.h`: el firmware reutiliza `PAYLOAD_RESETTING` como código de error. Es correcto, pero es la clase de detalle que una comparación mecánica entre los dos ficheros marca como divergencia.

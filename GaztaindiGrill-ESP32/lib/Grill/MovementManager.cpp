@@ -172,18 +172,21 @@ void MovementManager::start_rotation_to(int degrees) {
     int currentRotorPosition = sensor->get_rotor_encoder_value();
     targetDegrees = degrees;
 
-    int differenceRight = (targetDegrees - currentRotorPosition + 360) % 360;
-    int differenceLeft = (currentRotorPosition - targetDegrees + 360) % 360;
+    // Degrees to cover each way round. The shorter one wins: from 0 to 200 the rack turns back
+    // through 359, not forward through 100.
+    int degreesUp = (targetDegrees - currentRotorPosition + 360) % 360;
+    int degreesDown = (currentRotorPosition - targetDegrees + 360) % 360;
 
     mqtt->print("New target: " + String(targetDegrees) + " (current: " + String(currentRotorPosition) + ")");
 
+    // Measured on the grill: rotate_clockwise() is the one that makes the encoder count up.
     // In the handle_rotor_stop() function that is called in loop, we handle when we have to stop
-    if (differenceRight < differenceLeft)
-    {
-        rotate_counter_clockwise(GrillConstants::ROTOR_PWM_FULL);
-    } else
+    if (degreesUp < degreesDown)
     {
         rotate_clockwise(GrillConstants::ROTOR_PWM_FULL);
+    } else
+    {
+        rotate_counter_clockwise(GrillConstants::ROTOR_PWM_FULL);
     }
 }
 

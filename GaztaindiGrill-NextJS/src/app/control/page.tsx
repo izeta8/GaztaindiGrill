@@ -51,9 +51,9 @@ function GrillControlContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-4 px-2 pb-20 font-sans">
+    <div className="min-h-screen bg-gray-50 px-2 pb-20 font-sans">
       <div className="max-w-4xl mx-auto">
-        
+
         {/* Dock */}
         <GlobalStatusDock />
 
@@ -63,58 +63,61 @@ function GrillControlContent() {
           pageDescription="Monitoreo de sensores y actuadores en tiempo real"
         /> */}
 
-        {/* Modelo 3D. Se desmonta con la modal abierta: dos lienzos WebGL a la vez dejan uno
-            de los dos sin repintar, y el de la modal se quedaba con el estado de cuando se abrió. */}
-        <div className='mt-3 h-[290px]'>
-          {selectedGrill === null && (
-            <GrillScene onGrillSelect={currentMode === undefined ? undefined : handleGrillSelect} />
-          )}
-        </div>
-
-        {/* Esperar a que se fetcheé el modo */}
-        {currentMode === undefined && (
-          <div className="flex flex-col items-center justify-center py-20 gap-4 animate-in fade-in duration-700">
-            <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
-            <p className="text-sm font-medium text-gray-400 animate-pulse uppercase tracking-widest">Sincronizando modo...</p>
+        {/* Viewport minus the navbar (~3.75rem); the bottom padding keeps the dock off the centre. */}
+        <section className="min-h-[calc(100dvh-3.75rem)] flex flex-col justify-center pt-4 pb-20">
+          {/* Modelo 3D. Se desmonta con la modal abierta: dos lienzos WebGL a la vez dejan uno
+              de los dos sin repintar, y el de la modal se quedaba con el estado de cuando se abrió. */}
+          <div className='h-[290px]'>
+            {selectedGrill === null && (
+              <GrillScene onGrillSelect={currentMode === undefined ? undefined : handleGrillSelect} />
+            )}
           </div>
-        )}
 
-        {currentMode !== undefined && (
-          <div className="flex justify-center items-start gap-8 sm:gap-16 mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
-            
-            {isDualMode ? (
-              <ControlColumn
-                label="Parrilla Dual"
-                isConnected={isConnected}
-                isRunning={isAnyProgramRunning()}
-                commands={commands0}
-                grillState={state0}
-                grillIndex={0}
-              />
-            ) : (
-              <>
+          {/* Esperar a que se fetcheé el modo */}
+          {currentMode === undefined && (
+            <div className="flex flex-col items-center justify-center py-20 gap-4 animate-in fade-in duration-700">
+              <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
+              <p className="text-sm font-medium text-gray-400 animate-pulse uppercase tracking-widest">Sincronizando modo...</p>
+            </div>
+          )}
+
+          {currentMode !== undefined && (
+            <div className="flex justify-center items-start gap-8 sm:gap-16 mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
+              
+              {isDualMode ? (
                 <ControlColumn
-                  label="Parrilla I"
+                  label="Parrilla Dual"
                   isConnected={isConnected}
-                  isRunning={!!runningPrograms[0]}
+                  isRunning={isAnyProgramRunning()}
                   commands={commands0}
                   grillState={state0}
                   grillIndex={0}
                 />
+              ) : (
+                <>
+                  <ControlColumn
+                    label="Parrilla I"
+                    isConnected={isConnected}
+                    isRunning={!!runningPrograms[0]}
+                    commands={commands0}
+                    grillState={state0}
+                    grillIndex={0}
+                  />
 
-                <ControlColumn
-                  label="Parrilla D"
-                  isConnected={isConnected}
-                  isRunning={!!runningPrograms[1]}
-                  commands={commands1}
-                  grillState={state1}
-                  grillIndex={1}
-                />
-              </>
-            )}
-            
-          </div>
-        )}
+                  <ControlColumn
+                    label="Parrilla D"
+                    isConnected={isConnected}
+                    isRunning={!!runningPrograms[1]}
+                    commands={commands1}
+                    grillState={state1}
+                    grillIndex={1}
+                  />
+                </>
+              )}
+
+            </div>
+          )}
+        </section>
 
         {/* Ejecucion de programas */}
         {isAnyProgramRunning() && (

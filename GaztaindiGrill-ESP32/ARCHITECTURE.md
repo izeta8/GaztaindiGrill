@@ -136,7 +136,7 @@ La altura que se exige no es la del ángulo destino sino la del **peor punto del
 
 **Saltar un paso no espera al guard.** `action/program/skip_step` llega a `ProgramManager::skip_current_step()`, que limpia los tres targets, llama a `reset_rotation_guard()` y para actuador y rotor donde estén, en cualquier fase: subiendo, girando o volviendo. Saltar a mitad de giro deja la rejilla inclinada, y el paso siguiente arranca desde ahí.
 
-> **Riesgo conocido, pendiente:** `go_to()` no mira la inclinación, así que un paso de posición puede bajar una rejilla inclinada hasta la brasa. No lo introduce el salto: tras un paso `rotation` que acaba inclinado (p. ej. 90°) el guard vuelve a `max(posición previa, suelo)`, y un `position` bajo justo después baja igualmente. El arreglo previsto es un suelo en `go_to()` con `min_safe_position()` del ángulo actual.
+**Suelo en `go_to()`.** Una rejilla que se queda inclinada —tras un paso `rotation`, o tras saltar un paso a mitad de giro— seguiría colgando por debajo de su eje, así que `go_to()` sube cualquier destino hasta `min_safe_position()` del ángulo actual y lo anota en el log. Cubre `set_position`, los pasos de posición de un programa y las propias llamadas del guard, que ya piden alturas por encima del suelo. Los movimientos manuales (`up`/`down`) siguen sin tope: los da alguien mirando la parrilla. En la parrilla 1 no se consulta, porque no lleva encoder de rotor.
 
 **Si no se puede asegurar**, el firmware responde `rotation_unsafe`: o el encoder de posición no contesta al recibir el comando, o la subida no llegó dentro de `MOVEMENT_TIMEOUT`. Como en el segundo caso la respuesta llega tarde, el handler llama a `defer()` y contesta después con `reply_to()`.
 

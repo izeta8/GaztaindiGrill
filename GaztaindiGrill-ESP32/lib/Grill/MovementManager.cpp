@@ -315,7 +315,18 @@ void MovementManager::go_to(int position) {
 
     if (position < 0) position = 0;
     if (position > 100) position = 100;
-    
+
+    // A tilted rack hangs below its axis, so the floor of the angle it sits at wins over a lower
+    // target. Grill 1 has no rotor encoder to ask, and its rack never tilts.
+    if (has_rotor()) {
+        int safetyFloor = min_safe_position(sensor->get_rotor_encoder_value());
+        if (position < safetyFloor) {
+            mqtt->print("Target " + String(position) + " raised to " + String(safetyFloor) +
+                        ": the rack is tilted");
+            position = safetyFloor;
+        }
+    }
+
     targetPosition = position;
     int currentPercentage = sensor->get_encoder_value();
 

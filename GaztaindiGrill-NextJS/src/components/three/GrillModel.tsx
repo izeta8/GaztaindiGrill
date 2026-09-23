@@ -20,11 +20,14 @@ export interface GrillModelProps {
   onGrillSelect?: (index: 0 | 1) => void
   // Points the camera at one grill, framing its whole travel.
   focusGrill?: 0 | 1
-  // The height being picked for the focused grill, drawn solid and dragged by the pointer, while
-  // the grill at its real height fades out.
+  // The pose being picked for the focused grill, drawn solid and dragged by the pointer, while
+  // the grill where it really is fades out. Dragging moves whichever of the two `mode` selects.
   target?: {
     position: number
-    onDrag: (position: number) => void
+    rotation: number
+    mode: 'height' | 'rotation'
+    onDragHeight: (position: number) => void
+    onDragRotation: (degrees: number) => void
   }
 }
 
@@ -69,6 +72,11 @@ const grillIndexAt = (intersections: THREE.Intersection[]) => {
 
 const CURRENT_POSITION_OPACITY = 0.2
 
+const ROTOR_NODE_NAME = 'rotor_cilindro+parrilla'
+
+// Degrees per step while dragging. Typing in the modal is exact.
+const ROTATION_DRAG_STEP = 15
+
 export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, target, ...props }: GrillModelProps) {
   const grillState0 = useGrillState(0)
   const grillState1 = useGrillState(1)
@@ -100,8 +108,8 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
     if (nodes[GRILL_NODE_NAMES[0]]) leftGrillRef.current = nodes[GRILL_NODE_NAMES[0]]
     if (nodes[GRILL_NODE_NAMES[1]]) rightGrillRef.current = nodes[GRILL_NODE_NAMES[1]]
     // The node already carries a small X tilt that levels it inside its parent; the rotor angle adds to it.
-    if (nodes['rotor_cilindro+parrilla']) {
-      rotorRef.current = nodes['rotor_cilindro+parrilla']
+    if (nodes[ROTOR_NODE_NAME]) {
+      rotorRef.current = nodes[ROTOR_NODE_NAME]
       rotorBaseX.current = rotorRef.current.rotation.x
     }
   }, [nodes])
@@ -233,8 +241,8 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
   useFrame(() => {
     if (!targetObject || !targetRef.current) return
     targetObject.position.y = heightForPosition(targetRef.current.position)
-    const targetRotor = targetObject.getObjectByName('rotor_cilindro+parrilla')
-    if (targetRotor && rotorRef.current) targetRotor.rotation.x = rotorRef.current.rotation.x
+    const targetRotor = targetObject.getObjectByName(ROTOR_NODE_NAME)
+    if (targetRotor) targetRotor.rotation.x = rotorBaseX.current + THREE.MathUtils.degToRad(targetRef.current.rotation)
   })
 
   useEffect(() => {
@@ -262,7 +270,7 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
     const pointer = new THREE.Vector2()
     const plane = new THREE.Plane()
     const hit = new THREE.Vector3()
-    let drag: { startY: number; startPosition: number } | null = null
+    let drag: { startY: number; startAngle: number; startValue: number } | null = null
 
     const heightUnder = (event: PointerEvent) => {
       const rect = canvas.getBoundingClientRect()
@@ -273,18 +281,45 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
       return raycaster.ray.intersectPlane(plane, hit) ? hit.y : null
     }
 
+    // Angle of the pointer around the rotor axis on screen, so turning reads like a knob.
+    const angleAround = (event: PointerEvent) => {
+      const rotor = targetObject?.getObjectByName(ROTOR_NODE_NAME)
+      if (!rotor) return null
+      const rect = canvas.getBoundingClientRect()
+      const pivot = rotor.getWorldPosition(new THREE.Vector3()).project(camera)
+      const pivotX = rect.left + ((pivot.x + 1) / 2) * rect.width
+      const pivotY = rect.top + ((1 - pivot.y) / 2) * rect.height
+      return Math.atan2(event.clientY - pivotY, event.clientX - pivotX)
+    }
+
     const handleDown = (event: PointerEvent) => {
+      if (!targetRef.current) return
       const y = heightUnder(event)
-      if (y === null || !targetRef.current) return
+      const angle = angleAround(event)
+      if (y === null || angle === null) return
       canvas.setPointerCapture(event.pointerId)
-      drag = { startY: y, startPosition: targetRef.current.position }
+      drag = {
+        startY: y,
+        startAngle: angle,
+        startValue: targetRef.current.mode === 'height' ? targetRef.current.position : targetRef.current.rotation,
+      }
     }
 
     const handleMove = (event: PointerEvent) => {
-      if (!drag) return
-      const y = heightUnder(event)
-      if (y === null) return
-      targetRef.current?.onDrag(positionForHeight(heightForPosition(drag.startPosition) + y - drag.startY))
+      if (!drag || !targetRef.current) return
+
+      if (targetRef.current.mode === 'height') {
+        const y = heightUnder(event)
+        if (y === null) return
+        targetRef.current.onDragHeight(positionForHeight(heightForPosition(drag.startValue) + y - drag.startY))
+        return
+      }
+
+      const angle = angleAround(event)
+      if (angle === null) return
+      const turned = THREE.MathUtils.radToDeg(angle - drag.startAngle)
+      const degrees = drag.startValue + Math.round(turned / ROTATION_DRAG_STEP) * ROTATION_DRAG_STEP
+      targetRef.current.onDragRotation(((degrees % 360) + 360) % 360)
     }
 
     const handleUp = (event: PointerEvent) => {
@@ -302,7 +337,7 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
       canvas.removeEventListener('pointerup', handleUp)
       canvas.removeEventListener('pointercancel', handleUp)
     }
-  }, [hasTarget, focusGrill, nodes, gl, camera])
+  }, [hasTarget, focusGrill, nodes, gl, camera, targetObject])
 
   // Swaps materials on this clone's meshes only; the cached .glb materials stay untouched.
   useEffect(() => {

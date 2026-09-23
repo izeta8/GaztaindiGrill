@@ -12,6 +12,8 @@ const POSITION_STEP = 5
 const snapPosition = (position: number) =>
   Math.min(100, Math.max(0, Math.round(position / POSITION_STEP) * POSITION_STEP))
 
+type DragMode = 'height' | 'rotation'
+
 interface GrillPositionModalProps {
   grillIndex: 0 | 1 | null
   isLocked: boolean
@@ -23,7 +25,7 @@ export function GrillPositionModal({ grillIndex, isLocked, onClose, onMove }: Gr
   return (
     <Modal isOpen={grillIndex !== null} onClose={onClose}>
       {grillIndex !== null && (
-        // Keyed so the target starts again from the real height every time the modal opens.
+        // Keyed so the target starts again from the real pose every time the modal opens.
         <GrillPositionView
           key={grillIndex}
           grillIndex={grillIndex}
@@ -45,21 +47,39 @@ interface GrillPositionViewProps {
 
 function GrillPositionView({ grillIndex, isLocked, onClose, onMove }: GrillPositionViewProps) {
   const grillState = useGrillState(grillIndex)
-  const [target, setTarget] = useState(() => snapPosition(grillState.position))
-  // Kept apart from target so a half-typed or out-of-range value does not move the grill.
-  const [draft, setDraft] = useState(() => String(target))
+  // Only the left grill has a rotor, so only it can be tilted.
+  const hasRotor = grillIndex === 0
 
-  const handleDrag = (position: number) => {
+  const [mode, setMode] = useState<DragMode>('height')
+  const [target, setTarget] = useState(() => snapPosition(grillState.position))
+  const [rotation, setRotation] = useState(() => grillState.rotation)
+  // Kept apart from the targets so a half-typed or out-of-range value does not move the grill.
+  const [positionDraft, setPositionDraft] = useState(() => String(target))
+  const [rotationDraft, setRotationDraft] = useState(() => String(rotation))
+
+  const handleDragHeight = (position: number) => {
     const snapped = snapPosition(position)
     setTarget(snapped)
-    setDraft(String(snapped))
+    setPositionDraft(String(snapped))
   }
 
-  const handleDraftChange = (value: string) => {
+  const handleDragRotation = (degrees: number) => {
+    setRotation(degrees)
+    setRotationDraft(String(degrees))
+  }
+
+  const handlePositionDraft = (value: string) => {
     if (!/^\d{0,3}$/.test(value)) return
-    setDraft(value)
+    setPositionDraft(value)
     const position = Number(value)
     if (value !== '' && position <= 100) setTarget(position)
+  }
+
+  const handleRotationDraft = (value: string) => {
+    if (!/^\d{0,3}$/.test(value)) return
+    setRotationDraft(value)
+    const degrees = Number(value)
+    if (value !== '' && degrees < 360) setRotation(degrees)
   }
 
   const handleMove = () => {
@@ -70,9 +90,25 @@ function GrillPositionView({ grillIndex, isLocked, onClose, onMove }: GrillPosit
   return (
     <div className="p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-1">
-        {grillIndex === 0 ? 'Parrilla izquierda' : 'Parrilla derecha'}
+        {hasRotor ? 'Parrilla izquierda' : 'Parrilla derecha'}
       </h3>
-      <p className="text-sm text-gray-500 mb-4">Posición actual: {grillState.position}%</p>
+      <p className="text-sm text-gray-500 mb-4">
+        Posición actual: {grillState.position}%{hasRotor && ` · ${grillState.rotation}°`}
+      </p>
+
+      {hasRotor && (
+        <div className="flex gap-1 p-1 mb-3 bg-gray-100 rounded-xl">
+          {([['height', 'Altura'], ['rotation', 'Giro']] as const).map(([value, label]) => (
+            <button
+              key={value}
+              onClick={() => setMode(value)}
+              className={`flex-1 h-9 rounded-lg text-sm font-semibold transition-colors ${mode === value ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="relative">
         <GrillScene
@@ -80,21 +116,34 @@ function GrillPositionView({ grillIndex, isLocked, onClose, onMove }: GrillPosit
           controls={false}
           showLabels={false}
           focusGrill={grillIndex}
-          target={{ position: target, onDrag: handleDrag }}
+          target={{
+            position: target,
+            rotation,
+            mode: hasRotor ? mode : 'height',
+            onDragHeight: handleDragHeight,
+            onDragRotation: handleDragRotation,
+          }}
         />
 
-        <label className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-xl bg-white/90 border border-gray-200 shadow-sm px-3 h-10">
-          <input
-            type="text"
-            inputMode="numeric"
-            aria-label="Posición objetivo"
-            value={draft}
-            onChange={(e) => handleDraftChange(e.target.value)}
-            onBlur={() => setDraft(String(target))}
-            className="w-10 bg-transparent text-center text-base font-semibold text-gray-900 focus:outline-none"
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
+          <ValueField
+            label="Posición objetivo"
+            value={positionDraft}
+            unit="%"
+            onChange={handlePositionDraft}
+            onBlur={() => setPositionDraft(String(target))}
           />
-          <span className="text-sm font-semibold text-gray-500">%</span>
-        </label>
+
+          {hasRotor && (
+            <ValueField
+              label="Inclinación objetivo"
+              value={rotationDraft}
+              unit="°"
+              onChange={handleRotationDraft}
+              onBlur={() => setRotationDraft(String(rotation))}
+            />
+          )}
+        </div>
       </div>
 
       <div className="flex gap-3 mt-6">
@@ -106,5 +155,30 @@ function GrillPositionView({ grillIndex, isLocked, onClose, onMove }: GrillPosit
         </Button>
       </div>
     </div>
+  )
+}
+
+interface ValueFieldProps {
+  label: string
+  value: string
+  unit: string
+  onChange: (value: string) => void
+  onBlur: () => void
+}
+
+function ValueField({ label, value, unit, onChange, onBlur }: ValueFieldProps) {
+  return (
+    <label className="flex items-center gap-1 rounded-xl bg-white/90 border border-gray-200 shadow-sm px-3 h-10">
+      <input
+        type="text"
+        inputMode="numeric"
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
+        className="w-10 bg-transparent text-center text-base font-semibold text-gray-900 focus:outline-none"
+      />
+      <span className="text-sm font-semibold text-gray-500">{unit}</span>
+    </label>
   )
 }

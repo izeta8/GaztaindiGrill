@@ -1,9 +1,11 @@
 // Sends a demo program to the fake grill, for when no API is running to list real ones.
-// `npm run fake-program` runs it on the left grill, `npm run fake-program -- 1` on the right one.
+// `npm run fake-program -- <0|1> [cancel]`: 0 is the left grill (the default), 1 the right one.
 import mqtt from 'mqtt'
 
 const URL = process.env.MQTT_URL || 'mqtt://localhost:1883'
-const grillId = process.argv[2] === '1' ? 1 : 0
+const args = process.argv.slice(2)
+const grillId = args.includes('1') ? 1 : 0
+const cancel = args.includes('cancel')
 
 const steps = [
   { position: 40 },
@@ -27,9 +29,10 @@ const program = {
 const client = mqtt.connect(URL)
 
 client.on('connect', () => {
-  const topic = `grill/${grillId}/action/program/execute`
-  client.publish(topic, JSON.stringify({ value: program, requestId: 'EVERYONE' }), { qos: 1 }, () => {
-    console.log(`[fake-program] sent "${program.name}" to ${topic}`)
+  const topic = `grill/${grillId}/action/program/${cancel ? 'cancel' : 'execute'}`
+  const value = cancel ? '' : program
+  client.publish(topic, JSON.stringify({ value, requestId: 'EVERYONE' }), { qos: 1 }, () => {
+    console.log(`[fake-program] ${cancel ? 'cancel' : `"${program.name}"`} -> ${topic}`)
     client.end()
   })
 })

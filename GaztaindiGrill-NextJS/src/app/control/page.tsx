@@ -40,7 +40,12 @@ function GrillControlContent() {
     setSelectedGrill(target)
   }
 
-  const handleMoveGrill = (index: 0 | 1, position: number) => {
+  const handleMoveGrill = (index: 0 | 1, position: number, rotation?: number) => {
+    // Only the left grill can tilt, and then both values travel as one manoeuvre.
+    if (index === 0 && rotation !== undefined) {
+      commands0.handleSetPose(position, rotation)
+      return
+    }
     const commands = index === 0 ? commands0 : commands1
     commands.handleSetPosition(String(position))
   }

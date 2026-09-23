@@ -5,6 +5,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import GrillScene from '@/components/three/GrillScene'
 import { useGrillState } from '@/app/control/hooks/useGrillState'
+import { minSafePosition } from '@/utils/rotation'
 
 // Same step as the old slider: a finger cannot land on an exact number.
 const POSITION_STEP = 5
@@ -18,7 +19,7 @@ interface GrillPositionModalProps {
   grillIndex: 0 | 1 | null
   isLocked: boolean
   onClose: () => void
-  onMove: (grillIndex: 0 | 1, position: number) => void
+  onMove: (grillIndex: 0 | 1, position: number, rotation?: number) => void
 }
 
 export function GrillPositionModal({ grillIndex, isLocked, onClose, onMove }: GrillPositionModalProps) {
@@ -42,7 +43,7 @@ interface GrillPositionViewProps {
   grillIndex: 0 | 1
   isLocked: boolean
   onClose: () => void
-  onMove: (grillIndex: 0 | 1, position: number) => void
+  onMove: (grillIndex: 0 | 1, position: number, rotation?: number) => void
 }
 
 function GrillPositionView({ grillIndex, isLocked, onClose, onMove }: GrillPositionViewProps) {
@@ -51,39 +52,48 @@ function GrillPositionView({ grillIndex, isLocked, onClose, onMove }: GrillPosit
   const hasRotor = grillIndex === 0
 
   const [mode, setMode] = useState<DragMode>('height')
-  const [target, setTarget] = useState(() => snapPosition(grillState.position))
+  // A grill left tilted below its floor opens with the target already raised out of the red band.
+  const [target, setTarget] = useState(() =>
+    Math.max(snapPosition(grillState.position), minSafePosition(grillState.rotation)))
   const [rotation, setRotation] = useState(() => grillState.rotation)
   // Kept apart from the targets so a half-typed or out-of-range value does not move the grill.
   const [positionDraft, setPositionDraft] = useState(() => String(target))
   const [rotationDraft, setRotationDraft] = useState(() => String(rotation))
 
-  const handleDragHeight = (position: number) => {
-    const snapped = snapPosition(position)
-    setTarget(snapped)
-    setPositionDraft(String(snapped))
+  // A tilted rack hangs below its axis, so the grill refuses to stay under this height.
+  const applyPosition = (position: number, degrees: number) => {
+    const floor = Math.max(position, minSafePosition(degrees))
+    setTarget(floor)
+    setPositionDraft(String(floor))
   }
+
+  const handleDragHeight = (position: number) => applyPosition(snapPosition(position), rotation)
 
   const handleDragRotation = (degrees: number) => {
     setRotation(degrees)
     setRotationDraft(String(degrees))
+    // Turning into a steeper angle pushes the rack up out of the forbidden band.
+    applyPosition(target, degrees)
   }
 
   const handlePositionDraft = (value: string) => {
     if (!/^\d{0,3}$/.test(value)) return
     setPositionDraft(value)
     const position = Number(value)
-    if (value !== '' && position <= 100) setTarget(position)
+    if (value !== '' && position <= 100) setTarget(Math.max(position, minSafePosition(rotation)))
   }
 
   const handleRotationDraft = (value: string) => {
     if (!/^\d{0,3}$/.test(value)) return
     setRotationDraft(value)
     const degrees = Number(value)
-    if (value !== '' && degrees < 360) setRotation(degrees)
+    if (value === '' || degrees >= 360) return
+    setRotation(degrees)
+    applyPosition(target, degrees)
   }
 
   const handleMove = () => {
-    onMove(grillIndex, target)
+    onMove(grillIndex, target, hasRotor ? rotation : undefined)
     onClose()
   }
 

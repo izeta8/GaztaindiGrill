@@ -24,7 +24,7 @@ export function useGrillCommands(grillIndex: number) {
   const isLeftGrill = grillIndex === 0;
   const grillName = isLeftGrill ? 'Izquierda' : 'Derecha';
 
-  const sendCommand = useCallback(async (topic: string, payload: string) => {
+  const sendCommand = useCallback(async (topic: string, payload: unknown) => {
     if (!isConnected) {
       toast.error('MQTT no conectado');
       return false;
@@ -74,6 +74,20 @@ export function useGrillCommands(grillIndex: number) {
       return;
     }
     sendCommand(TOPICS.ACTION.MOVEMENT.SET_ROTATION, value);
+  }, [isLeftGrill, sendCommand]);
+
+  // Height and tilt together, so the firmware sequences the manoeuvre instead of the client.
+  const handleSetPose = useCallback((position: number, rotation: number) => {
+    if (!isLeftGrill) return;
+    if (position < 0 || position > LIMITS.POSITION_MAX) {
+      toast.error(`Posición debe estar entre 0 y ${LIMITS.POSITION_MAX}`);
+      return;
+    }
+    if (rotation < 0 || rotation >= LIMITS.ROTATION_MAX) {
+      toast.error(`Rotación debe estar entre 0 y ${LIMITS.ROTATION_MAX - 1}°`);
+      return;
+    }
+    sendCommand(TOPICS.ACTION.MOVEMENT.SET_POSE, { position, rotation });
   }, [isLeftGrill, sendCommand]);
 
   // Confirmed because it moves the reference every rotation is measured from.
@@ -137,6 +151,7 @@ export function useGrillCommands(grillIndex: number) {
     handleSetPosition,
     handleSetTemperature,
     handleSetRotation,
+    handleSetPose,
     handleResetRotation,
     handleCancelProgram,
     handleSkipStep

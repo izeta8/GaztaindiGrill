@@ -6,6 +6,7 @@ import { useFrame, useGraph, useThree, ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { GLTF } from 'three-stdlib'
 import { useGrillState } from '@/app/control/hooks/useGrillState'
+import { minSafePosition } from '@/utils/rotation'
 
 type GLTFResult = GLTF & {
   nodes: { [key: string]: THREE.Object3D }
@@ -76,6 +77,9 @@ const ROTOR_NODE_NAME = 'rotor_cilindro+parrilla'
 
 // Degrees per step while dragging. Typing in the modal is exact.
 const ROTATION_DRAG_STEP = 15
+
+// The heights a rack at the picked tilt may not stay at, shown under it.
+const FORBIDDEN_MATERIAL = new THREE.MeshBasicMaterial({ color: '#dc2626', transparent: true, opacity: 0.18, depthWrite: false })
 
 export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, target, ...props }: GrillModelProps) {
   const grillState0 = useGrillState(0)
@@ -232,6 +236,23 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
   const targetRef = useRef(target)
   targetRef.current = target
 
+  const forbiddenRef = useRef<THREE.Mesh | null>(null)
+
+  // Footprint of the rack and how far it hangs below its node, measured once: the forbidden
+  // slab is drawn where the rack itself would be, not where its parent node sits.
+  const rackBounds = useMemo(() => {
+    if (focusGrill === undefined) return null
+    const grill = nodes[GRILL_NODE_NAMES[focusGrill]]
+    let rack: THREE.Object3D = grill
+    grill.traverse((child) => { if (child.name.startsWith('padre_rejilla')) rack = child })
+
+    grill.updateWorldMatrix(true, true)
+    const box = new THREE.Box3().setFromObject(rack)
+    const size = box.getSize(new THREE.Vector3())
+    const center = box.getCenter(new THREE.Vector3())
+    return { x: center.x, z: center.z, width: size.x, depth: size.z, bottomOffset: box.min.y - grill.position.y }
+  }, [nodes, focusGrill])
+
   // Cloned before the effect below fades the real grill, so the copy keeps the .glb materials.
   const targetObject = useMemo(() => {
     if (focusGrill === undefined || !hasTarget) return null
@@ -243,6 +264,17 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
     targetObject.position.y = heightForPosition(targetRef.current.position)
     const targetRotor = targetObject.getObjectByName(ROTOR_NODE_NAME)
     if (targetRotor) targetRotor.rotation.x = rotorBaseX.current + THREE.MathUtils.degToRad(targetRef.current.rotation)
+
+    const slab = forbiddenRef.current
+    if (!slab || !rackBounds) return
+    const floor = minSafePosition(targetRef.current.rotation)
+    slab.visible = floor > 0
+    if (!slab.visible) return
+
+    const bottom = heightForPosition(0) + rackBounds.bottomOffset
+    const height = heightForPosition(floor) - heightForPosition(0)
+    slab.scale.set(rackBounds.width, height, rackBounds.depth)
+    slab.position.set(rackBounds.x, bottom + height / 2, rackBounds.z)
   })
 
   useEffect(() => {
@@ -370,6 +402,12 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
       />
 
       {targetObject && <primitive object={targetObject} />}
+
+      {targetObject && rackBounds && (
+        <mesh ref={forbiddenRef} material={FORBIDDEN_MATERIAL} visible={false}>
+          <boxGeometry args={[1, 1, 1]} />
+        </mesh>
+      )}
 
       {showLabels && textLabels.map((label) => (
         <group ref={label.ref} key={label.id}>

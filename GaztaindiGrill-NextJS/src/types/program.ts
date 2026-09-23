@@ -49,6 +49,21 @@ export interface RunningProgramStep extends ProgramStep {
   stepStartUnix?: number;
 }
 
+// How the firmware is doing at holding a temperature step, while it holds one.
+export type TemperatureHoldStatus =
+  | 'reaching'
+  | 'holding'
+  | 'fire_too_weak'
+  | 'fire_too_strong'
+  | 'not_reached'
+  | 'sensor_failed';
+
+export interface TemperatureHold {
+  temperature: number;
+  band: number;
+  status: TemperatureHoldStatus;
+}
+
 // Type for the data that a grill has when executing a program
 export interface RunningProgram {
   isRunning: boolean;
@@ -61,6 +76,7 @@ export interface RunningProgram {
   elapsedTime: number;
   steps: RunningProgramStep[];
   referenceType?: ReferenceType;
+  hold?: TemperatureHold;
 }
 
 // Final state consumed in RunningProgramsContext 

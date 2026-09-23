@@ -109,6 +109,18 @@ public:
     static constexpr const char* JSON_ACTION = "action";
     static constexpr const char* JSON_REFERENCE_TYPE = "referenceType";
 
+    // Temperature hold, inside status/program/current while a program holds one:
+    // "hold": { "temperature": 180, "band": 5, "status": "holding" }
+    static constexpr const char* JSON_HOLD = "hold";
+    static constexpr const char* JSON_HOLD_BAND = "band";
+    static constexpr const char* JSON_HOLD_STATUS = "status";
+    static constexpr const char* PAYLOAD_HOLD_REACHING = "reaching";
+    static constexpr const char* PAYLOAD_HOLD_HOLDING = "holding";
+    static constexpr const char* PAYLOAD_HOLD_FIRE_TOO_WEAK = "fire_too_weak";
+    static constexpr const char* PAYLOAD_HOLD_FIRE_TOO_STRONG = "fire_too_strong";
+    static constexpr const char* PAYLOAD_HOLD_NOT_REACHED = "not_reached";
+    static constexpr const char* PAYLOAD_HOLD_SENSOR_FAILED = "sensor_failed";
+
     // Request/response envelope. Every command arrives as { "value": ..., "requestId": ... }
     // and every answer goes out as { requestId, command, ok, error? }.
     static constexpr const char* JSON_REQUEST_ID = "requestId";

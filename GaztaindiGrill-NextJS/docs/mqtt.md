@@ -175,6 +175,7 @@ Ojo: la API guarda los pasos como **string JSON** (`steps_json`); el cliente hac
 
 - Los campos vacíos de un paso se **omiten** (el firmware solo escribe los que tienen valor).
 - `stepStartUnix` se inyecta **solo en el paso actual**: es el timestamp UTC en que empezó, y es lo que permite al cliente pintar una cuenta atrás correcta aunque se conecte a mitad.
+- `hold` aparece **solo mientras un paso `temperature` mantiene una temperatura**, y sobrevive a ese paso: la regulación sigue durante los pasos de espera siguientes. Es `{ "temperature": 180, "band": 5, "status": "..." }`, con `status` en `reaching` (buscándola), `holding` (dentro del margen), `fire_too_weak` (parrilla en su altura mínima y aún por debajo), `fire_too_strong` (al 100 % y aún por encima), `not_reached` (el paso agotó su plazo y el programa siguió) o `sensor_failed` (sin lectura del termopar; la parrilla no se mueve). Se republica cuando cambia el estado, nunca en cada corrección. El cliente lo enseña como una línea fija en el panel de ejecución, sin toasts.
 - Cuando no hay programa corriendo el payload es simplemente `{ "isRunning": false }`.
 - El firmware lo reescribe al arrancar, en cada reconexión al broker y al rechazar un `cancel` o `skip_step` con `no_program_running`. Así un retenido de antes de un reinicio no deja un programa fantasma en la UI.
 

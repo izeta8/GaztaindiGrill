@@ -59,6 +59,7 @@ Publicado por `ProgramManager::publish_program_status()` en el firmware:
 ```
 
 - Los campos sin valor de cada paso se **omiten**, no se envían a `null`.
+- `hold` aparece **solo mientras un paso `temperature` mantiene una temperatura**, y sobrevive a ese paso: la regulación sigue durante los pasos de espera siguientes. Es `{ "temperature": 180, "band": 5, "status": "..." }`, con `status` en `reaching` (buscándola), `holding` (dentro del margen), `fire_too_weak` (parrilla en su altura mínima y aún por debajo), `fire_too_strong` (al 100 % y aún por encima), `not_reached` (el paso agotó su plazo y el programa siguió) o `sensor_failed` (sin lectura del termopar; la parrilla no se mueve). Se republica cuando cambia el estado, nunca en cada corrección. El cliente lo enseña como una línea fija en el panel de ejecución, sin toasts.
 - `stepStartUnix` (timestamp UTC de inicio) aparece **solo en el paso actual**. Es lo que permite calcular el tiempo restante correctamente aunque el cliente acabe de conectarse: sin él habría que asumir que el paso empezó al recibir el mensaje.
 
 ## Limpieza

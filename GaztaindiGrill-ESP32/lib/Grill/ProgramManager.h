@@ -66,7 +66,7 @@ private:
         STEP_COMPLETED
     } stepState = STEP_STARTING;
 
-    // How the temperature hold is going. Changes are logged; only one change at a time matters.
+    // How the temperature hold is going. Every change is republished, never every correction.
     enum HoldStatus {
         HOLD_REACHING,
         HOLD_HOLDING,
@@ -77,7 +77,9 @@ private:
     } holdStatus = HOLD_REACHING;
 
     void start_temperature_hold(int temperature);
-    void stop_temperature_hold();
+    // Returns whether a hold was running, so the caller knows the status needs republishing.
+    bool stop_temperature_hold();
+    const char* hold_status_payload();
     void update_temperature_hold();
     void check_temperature_reached();
     void set_hold_status(HoldStatus status);

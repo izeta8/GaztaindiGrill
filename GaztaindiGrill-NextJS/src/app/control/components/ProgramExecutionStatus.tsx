@@ -7,6 +7,7 @@ import { useRunningPrograms } from "@/contexts/RunningProgramsContext";
 import { ExecutionTabs } from "./execution/ExecutionTabs";
 import { ExecutionDetails } from "./execution/ExecutionDetails";
 import { ExecutionSteps } from "./execution/ExecutionSteps";
+import { TemperatureHoldLine } from "./execution/TemperatureHoldLine";
 
 type ProgramExecutionStatusProps = {
   handleCancelPrograms: [(() => void), (() => void)];
@@ -73,6 +74,9 @@ export function ProgramExecutionStatus({ handleCancelPrograms, handleSkipSteps, 
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
                 Paso {currentStepIndex + 1} de {runningProgram.steps.length}
               </p>
+              {runningProgram.hold && (
+                <TemperatureHoldLine hold={runningProgram.hold} grillIndex={activeTab} />
+              )}
             </div>
 
             <ExecutionDetails runningProgram={runningProgram} />

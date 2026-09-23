@@ -216,7 +216,7 @@ void ProgramManager::start_current_step() {
         stepState = STEP_REACHING_TEMPERATURE;
     } else if (step.position != GrillConstants::NO_TARGET) {
         // An explicit height replaces whatever temperature was being held.
-        stop_temperature_hold();
+        if (stop_temperature_hold()) { publish_program_status(); }
         // Movimiento por posición (absoluta o relativa al punto de inicio del programa)
         int resolvedTarget = resolve_target_position(step.position);
         mqtt->print("Position step: raw=" + String(step.position) +
@@ -307,12 +307,14 @@ void ProgramManager::start_temperature_hold(int temperature) {
     lastCorrectionAt = millis() - GrillConstants::TEMPERATURE_SETTLE_MS;
     holdStatus = HOLD_REACHING;
     mqtt->print("Holding " + String(temperature) + " +-" + String(GrillConstants::TEMPERATURE_BAND));
+    publish_program_status();
 }
 
-void ProgramManager::stop_temperature_hold() {
-    if (holdTemperature == GrillConstants::NO_TARGET) { return; }
+bool ProgramManager::stop_temperature_hold() {
+    if (holdTemperature == GrillConstants::NO_TARGET) { return false; }
     holdTemperature = GrillConstants::NO_TARGET;
     mqtt->print("Temperature hold stopped");
+    return true;
 }
 
 void ProgramManager::check_temperature_reached() {
@@ -383,11 +385,19 @@ void ProgramManager::update_temperature_hold() {
 void ProgramManager::set_hold_status(HoldStatus status) {
     if (status == holdStatus) { return; }
     holdStatus = status;
+    mqtt->print("Temperature hold: " + String(hold_status_payload()));
+    publish_program_status();
+}
 
-    static const char* const names[] = {
-        "reaching", "holding", "fire_too_weak", "fire_too_strong", "not_reached", "sensor_failed"
-    };
-    mqtt->print("Temperature hold: " + String(names[status]));
+const char* ProgramManager::hold_status_payload() {
+    switch (holdStatus) {
+        case HOLD_HOLDING:         return GrillConstants::PAYLOAD_HOLD_HOLDING;
+        case HOLD_FIRE_TOO_WEAK:   return GrillConstants::PAYLOAD_HOLD_FIRE_TOO_WEAK;
+        case HOLD_FIRE_TOO_STRONG: return GrillConstants::PAYLOAD_HOLD_FIRE_TOO_STRONG;
+        case HOLD_NOT_REACHED:     return GrillConstants::PAYLOAD_HOLD_NOT_REACHED;
+        case HOLD_SENSOR_FAILED:   return GrillConstants::PAYLOAD_HOLD_SENSOR_FAILED;
+        default:                   return GrillConstants::PAYLOAD_HOLD_REACHING;
+    }
 }
 
 int ProgramManager::resolve_target_position(int stepPosition) {
@@ -420,6 +430,15 @@ void ProgramManager::publish_program_status() {
         doc["programId"] = currentProgram.id;
         doc["currentStepIndex"] = programCurrentStep;
         doc["referenceType"] = currentProgram.referenceType;
+
+        // Runtime state like stepStartUnix: the client cannot work it out from the steps, since
+        // skipping the temperature step drops the hold while that step is still in the list.
+        if (holdTemperature != GrillConstants::NO_TARGET) {
+            JsonObject hold = doc[GrillConstants::JSON_HOLD].to<JsonObject>();
+            hold[GrillConstants::JSON_TEMPERATURE] = holdTemperature;
+            hold[GrillConstants::JSON_HOLD_BAND] = GrillConstants::TEMPERATURE_BAND;
+            hold[GrillConstants::JSON_HOLD_STATUS] = hold_status_payload();
+        }
 
         // We manually build the steps array to inject runtime data
         JsonArray stepsArr = doc["steps"].to<JsonArray>();

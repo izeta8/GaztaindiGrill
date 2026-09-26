@@ -11,9 +11,12 @@ function StepTimer({ step }: { step: RunningProgramStep }) {
   const elapsed = useSecondsSince(step.stepStartUnix);
   if (elapsed === null) return null;
 
+  // Same precedence as the firmware: time only makes a wait step when nothing else is set.
+  const isWait = step.time != null && step.action == null && step.temperature == null && step.position == null && step.rotation == null;
+
   return (
     <span className="flex-shrink-0 text-[11px] font-bold tabular-nums text-blue-600">
-      {formatDuration(elapsed)}
+      {isWait ? `quedan ${formatDuration(Math.max(0, step.time! - elapsed))}` : formatDuration(elapsed)}
     </span>
   );
 }

@@ -3,7 +3,8 @@
 
 GrillSensor::GrillSensor(int index, GrillMQTT* mqtt, HardwareManager* hardware, ModeManager* modeManager):
     grillIndex(index), mqtt(mqtt), hardware(hardware), modeManager(modeManager),
-    lastEncoderValue(GrillConstants::ENCODER_ERROR), lastRotorEncoderValue(0), temperatureError(false),
+    lastEncoderValue(GrillConstants::ENCODER_ERROR), lastRotorEncoderValue(0),
+    lastPublishedRotorValue(GrillConstants::NO_TARGET), lastRotorChangeAt(0), temperatureError(false),
     temperatureSampleCount(0), temperatureSampleNext(0) {}
 
 
@@ -56,23 +57,30 @@ int GrillSensor::get_rotor_encoder_value()
 void GrillSensor::update_rotor_encoder() { 
 
     int rotorEncoderValue = get_rotor_encoder_value();
-    
-    if (rotorEncoderValue == lastRotorEncoderValue) { return; }
-    lastRotorEncoderValue = rotorEncoderValue;
 
-    // Only prints every 5th value.
-    if (rotorEncoderValue % 5 == 0)
-    {
-        Serial.println("Rotor Encoder = " + String(rotorEncoderValue));
-        String topic = mqtt->parse_topic(GrillConstants::TOPIC_STATE_SENSOR_ROTATION);
-        mqtt->publish_message(topic, String(rotorEncoderValue), true);
+    if (rotorEncoderValue != lastRotorEncoderValue) {
+        lastRotorEncoderValue = rotorEncoderValue;
+        lastRotorChangeAt = millis();
     }
+
+    if (rotorEncoderValue == lastPublishedRotorValue) { return; }
+
+    // Nothing published yet also counts: the retained value may be from before a reboot.
+    bool settled = millis() - lastRotorChangeAt >= GrillConstants::ROTOR_SETTLE_MS;
+    bool bigStep = abs(rotorEncoderValue - lastPublishedRotorValue) >= GrillConstants::ROTOR_PUBLISH_STEP;
+    if (!settled && !bigStep) { return; }
+
+    lastPublishedRotorValue = rotorEncoderValue;
+    Serial.println("Rotor Encoder = " + String(rotorEncoderValue));
+    String topic = mqtt->parse_topic(GrillConstants::TOPIC_STATE_SENSOR_ROTATION);
+    mqtt->publish_message(topic, String(rotorEncoderValue), true);
 }
 
 void GrillSensor::reset_rotor_encoder() {
 
     hardware->reset_rotor_encoder();
     lastRotorEncoderValue = 0;
+    lastPublishedRotorValue = 0;
 
     Serial.println("Rotor Encoder zeroed");
     String topic = mqtt->parse_topic(GrillConstants::TOPIC_STATE_SENSOR_ROTATION);

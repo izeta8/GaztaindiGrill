@@ -40,6 +40,8 @@ private:
     // Last values
     long lastEncoderValue;
     int lastRotorEncoderValue;
+    int lastPublishedRotorValue;
+    unsigned long lastRotorChangeAt;
     bool temperatureError;
 
     // Ring buffer of the last good readings, filled by update_temperature().

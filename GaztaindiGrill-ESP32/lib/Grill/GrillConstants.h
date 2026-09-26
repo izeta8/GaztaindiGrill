@@ -22,6 +22,10 @@ public:
     static constexpr int ROTOR_MARGIN = 3;
     static constexpr int SYNC_MARGIN = 0; // Margin for dual mode synchronization
 
+    // Rotation telemetry: a reading every few degrees while turning, and the exact one once still.
+    static constexpr int ROTOR_PUBLISH_STEP = 5;
+    static constexpr unsigned long ROTOR_SETTLE_MS = 300;
+
     // Temperature steps. The thermocouple rides with the rack, so these are what the meat gets,
     // not the embers. The sensor lags about 30 s, so a narrow band wants small steps.
     static constexpr int TEMPERATURE_BAND = 5;                             // degrees either side

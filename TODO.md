@@ -24,9 +24,8 @@ sin tratarlo como grados calibrados.
 
    Verificación: con el termopar suelto, el valor no debe publicarse ni colgar nada.
 
-2. **Mostrar la temperatura en la web.** `GrillStateContext` ya se suscribe al topic y guarda
-   `temperature`, pero ningún componente de `/control` la enseña. Mostrarla solo en la parrilla
-   izquierda, y un "sin lectura" cuando el termopar falla en vez de un 0.
+2. **Mostrar la temperatura en la web — HECHO.** Se ve sobre la parrilla izquierda en el
+   modelo 3D de `/control`.
 
 3. **Caracterizar el sensor con la parrilla encendida.** Sin código, pero sin estos datos los
    pasos siguientes se ajustan a ciegas:

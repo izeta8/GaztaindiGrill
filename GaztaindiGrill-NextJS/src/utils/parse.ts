@@ -13,6 +13,15 @@ export const formatSeconds = (seconds?: number): string => {
   return `${seconds}s`
 }
 
+// Clock style (m:ss, or h:mm:ss past an hour) for a counter that ticks every second.
+export const formatDuration = (seconds: number): string => {
+  const pad = (n: number) => String(n).padStart(2, "0")
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = seconds % 60
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`
+}
+
 export const parseGrillIndex = (topic: string): (undefined | 0 | 1) => {
 
   const grillIndexMatch = topic.match(/grill\/(\d+)\//);

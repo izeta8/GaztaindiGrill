@@ -1,9 +1,21 @@
-import { getStepIcon, getStepDescription } from "@/utils";
-import { ProgramStep } from "@/types";
+import { getStepIcon, getStepDescription, formatDuration } from "@/utils";
+import { RunningProgramStep } from "@/types";
+import { useSecondsSince } from "@/app/control/hooks/useSecondsSince";
 
 interface ExecutionStepsProps {
-  steps: ProgramStep[];
+  steps: RunningProgramStep[];
   currentStepIndex: number;
+}
+
+function StepTimer({ step }: { step: RunningProgramStep }) {
+  const elapsed = useSecondsSince(step.stepStartUnix);
+  if (elapsed === null) return null;
+
+  return (
+    <span className="flex-shrink-0 text-[11px] font-bold tabular-nums text-blue-600">
+      {formatDuration(elapsed)}
+    </span>
+  );
 }
 
 export function ExecutionSteps({ steps, currentStepIndex }: ExecutionStepsProps) {
@@ -42,10 +54,7 @@ export function ExecutionSteps({ steps, currentStepIndex }: ExecutionStepsProps)
                 {getStepDescription(step)}
               </span>
 
-              {/* {isCurrent && (
-                <p>ESTE SITIO ES PARA PONER EL TIEMPO DE EJECUCION DEL PASO</p>
-              )} */}
-           
+              {isCurrent && <StepTimer step={step} />}
             </div>
           );
         })}

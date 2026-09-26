@@ -1,9 +1,25 @@
-import { getStepIcon, getStepDescription } from "@/utils";
-import { ProgramStep } from "@/types";
+import { getStepIcon, getStepDescription, formatDuration } from "@/utils";
+import { RunningProgramStep } from "@/types";
+import { useSecondsSince } from "@/app/control/hooks/useSecondsSince";
 
 interface ExecutionStepsProps {
-  steps: ProgramStep[];
+  steps: RunningProgramStep[];
   currentStepIndex: number;
+}
+
+// Same precedence as the firmware: time only makes a wait step when nothing else is set.
+const isWaitStep = (step: RunningProgramStep) =>
+  step.time != null && step.action == null && step.temperature == null && step.position == null && step.rotation == null;
+
+function WaitCountdown({ step }: { step: RunningProgramStep }) {
+  const elapsed = useSecondsSince(step.stepStartUnix);
+  if (elapsed === null) return null;
+
+  return (
+    <span className="flex-shrink-0 text-[11px] font-bold tabular-nums text-blue-600">
+      quedan {formatDuration(Math.max(0, step.time! - elapsed))}
+    </span>
+  );
 }
 
 export function ExecutionSteps({ steps, currentStepIndex }: ExecutionStepsProps) {
@@ -42,10 +58,7 @@ export function ExecutionSteps({ steps, currentStepIndex }: ExecutionStepsProps)
                 {getStepDescription(step)}
               </span>
 
-              {/* {isCurrent && (
-                <p>ESTE SITIO ES PARA PONER EL TIEMPO DE EJECUCION DEL PASO</p>
-              )} */}
-           
+              {isCurrent && isWaitStep(step) && <WaitCountdown step={step} />}
             </div>
           );
         })}

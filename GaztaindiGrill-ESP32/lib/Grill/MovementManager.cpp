@@ -405,6 +405,21 @@ void MovementManager::emergency_stop()
     mqtt->print("EMERGENCY STOP EXECUTED");
 }
 
+// A manual stop in the middle of a go_to or a set_pose. Stopping only the motor would leave the
+// target set, and every later rotation would be refused with rotor_busy.
+void MovementManager::cancel_move()
+{
+    if (!has_any_active_target()) { return; }
+
+    // Both motors: a guarded turn moves one axis after the other, and the idle one may be next.
+    stop_lineal_actuator();
+    stop_rotor();
+    targetDegrees = GrillConstants::NO_TARGET;
+    targetPosition = GrillConstants::NO_TARGET;
+    reset_rotation_guard();
+    mqtt->print("Move cancelled by a manual stop");
+}
+
 bool MovementManager::is_resetting()
 {
     return isLinearResetting;

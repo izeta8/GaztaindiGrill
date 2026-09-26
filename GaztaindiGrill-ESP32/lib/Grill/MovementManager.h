@@ -41,6 +41,7 @@ public:
     void start_reset();
     bool check_reset_status();
     void emergency_stop();
+    void cancel_move();
     bool is_resetting();
 
     // ---- HANDLE STOPS (GO_TO / PROGRAM) ---- //

@@ -197,6 +197,7 @@ void Grill::handle_mqtt_message(const char* pAction, GrillRequest& request) {
         } else if (payload == GrillConstants::PAYLOAD_DOWN) {
             movement->go_down();
         } else if (payload == GrillConstants::PAYLOAD_STOP) {
+            if (!programManager->is_program_running()) { movement->cancel_move(); }
             movement->stop_lineal_actuator();
         }
     }
@@ -215,6 +216,8 @@ void Grill::handle_mqtt_message(const char* pAction, GrillRequest& request) {
         } else if (payload == GrillConstants::PAYLOAD_COUNTER_CLOCKWISE) {
             movement->rotate_counter_clockwise(GrillConstants::ROTOR_PWM_MANUAL);
         } else if (payload == GrillConstants::PAYLOAD_STOP) {
+            // A program's own target is left alone: clearing it would count as the step reached.
+            if (!programManager->is_program_running()) { movement->cancel_move(); }
             movement->stop_rotor();
         }
     }

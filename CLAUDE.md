@@ -25,6 +25,8 @@ con `mosquitto_sub -v -t 'grill/#'` mirando:
 3. **Giro por el lado corto** (`a450bd7`): desde 0° pedir 200° debe ir por 359, 358, 357...
 4. **`set_pose` y el suelo de seguridad** (`213dba8`, `d92f514`): con la rejilla a 90°,
    `set_position 0` para en el 60 %; `set_pose {40, 90}` desde el 20 % sube, gira y acaba en 60.
+5. **Parar a mano un `set_pose`:** lanzarlo desde el modal, pararlo con el botón central de los
+   controles a mitad de giro, y darle al punto 0 (botón azul). Antes daba `rotor_busy` para siempre.
 
 Cuando todo esté probado, borrar esta sección.
 

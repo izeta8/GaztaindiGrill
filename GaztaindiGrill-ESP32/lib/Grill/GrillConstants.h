@@ -88,6 +88,7 @@ public:
     static constexpr const char* TOPIC_CMD_PROG_EXECUTE = "action/program/execute";
     static constexpr const char* TOPIC_CMD_PROG_CANCEL = "action/program/cancel";
     static constexpr const char* TOPIC_CMD_PROG_SKIP_STEP = "action/program/skip_step";
+    static constexpr const char* TOPIC_CMD_PROG_EDIT_STEP = "action/program/edit_step";
     static constexpr const char* TOPIC_CMD_REQ_PROG_STATUS = "action/request/program_status";   
     
     // -- State Topics (ESP32 -> Client) --
@@ -112,6 +113,10 @@ public:
     static constexpr const char* JSON_ROTATION = "rotation";
     static constexpr const char* JSON_ACTION = "action";
     static constexpr const char* JSON_REFERENCE_TYPE = "referenceType";
+
+    // Editing a running program's step: { "index": 2, "step": { "time": 300 } }
+    static constexpr const char* JSON_INDEX = "index";
+    static constexpr const char* JSON_STEP = "step";
 
     // Temperature hold, inside status/program/current while a program holds one:
     // "hold": { "temperature": 180, "band": 5, "status": "holding" }

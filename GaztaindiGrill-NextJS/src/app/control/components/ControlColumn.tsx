@@ -3,7 +3,7 @@
 import { GrillState } from '@/types'
 import { useGrillCommands } from '@/app/control/hooks/useGrillCommands'
 import { Button } from '@/components/ui/Button'
-import { ChevronUp, ChevronDown, CircleStop, RotateCw, RotateCcw, Crosshair, Lock } from 'lucide-react'
+import { ChevronUp, ChevronDown, CircleStop, RotateCw, RotateCcw, Crosshair } from 'lucide-react'
 import { PAYLOAD_UP, PAYLOAD_DOWN, PAYLOAD_STOP, PAYLOAD_CLOCKWISE, PAYLOAD_COUNTER_CLOCKWISE } from '@/constants/mqtt'
 import { ControlPad } from './ControlPad'
 
@@ -23,25 +23,14 @@ export function ControlColumn({ label, isConnected, isRunning, commands, grillSt
 
       <div className="relative">
         
-        {/* --- OVERLAY --- */}
-        {isRunning && (
-          <div className="absolute inset-x-0 inset-y-[-10px] z-40 flex flex-col items-center justify-center bg-gray-50/60 backdrop-blur-[2px] transition-all duration-700 animate-in fade-in">
-            <div className="flex flex-col items-center gap-2 opacity-60">
-              <Lock className="h-4 w-4 text-gray-400" strokeWidth={2.5} />
-              <span className="text-[9px] font-black text-gray-500 uppercase tracking-[0.3em] [writing-mode:vertical-lr] mt-2">
-                Ejecutando programa
-              </span>
-            </div>
-          </div>
-        )}
-
-        <div className={`flex flex-col items-center gap-8 transition-all duration-700 ${isRunning ? 'opacity-20 blur-[1px] grayscale pointer-events-none' : ''}`}>
+        <div className="flex flex-col items-center gap-8">
           
           {/* --- PADS DE CONTROL --- */}
           {/* The zero button is out of flow: in flow it widens the row and the pads stop sitting under the 3D model. */}
           <div className="relative flex items-center justify-center gap-3">
             {grillIndex === 0 && (
               <>
+                {/* The firmware refuses to move the zero while a program runs (rotor_busy). */}
                 <Button
                   onClick={commands.handleResetRotation}
                   disabled={!isConnected || isRunning}

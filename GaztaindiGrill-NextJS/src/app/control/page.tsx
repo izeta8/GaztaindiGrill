@@ -30,19 +30,17 @@ function GrillControlContent() {
 
   const [selectedGrill, setSelectedGrill] = useState<0 | 1 | null>(null)
 
-  const isGrillLocked = (index: 0 | 1) =>
-    !isConnected || (isDualMode ? isAnyProgramRunning() : !!runningPrograms[index])
-
   const handleGrillSelect = (index: 0 | 1) => {
     // In dual mode both grills move together through grill 0.
     const target = isDualMode ? 0 : index
-    if (isGrillLocked(target)) return
+    if (!isConnected) return
     setSelectedGrill(target)
   }
 
   const handleMoveGrill = (index: 0 | 1, position: number, rotation?: number) => {
-    // Only the left grill can tilt, and then both values travel as one manoeuvre.
-    if (index === 0 && rotation !== undefined) {
+    // Only the left grill can tilt, and then both values travel as one manoeuvre. A height alone
+    // goes as set_position, which the firmware also takes while a program runs; set_pose it refuses.
+    if (index === 0 && rotation !== undefined && rotation !== state0.rotation) {
       commands0.handleSetPose(position, rotation)
       return
     }
@@ -126,7 +124,7 @@ function GrillControlContent() {
 
       <GrillPositionModal
         grillIndex={selectedGrill}
-        isLocked={selectedGrill !== null && isGrillLocked(selectedGrill)}
+        isLocked={!isConnected}
         onClose={() => setSelectedGrill(null)}
         onMove={handleMoveGrill}
       />

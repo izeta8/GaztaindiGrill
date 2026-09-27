@@ -30,8 +30,13 @@ type StepModalProps = {
   setStepForm: Dispatch<SetStateAction<StepFormState>>
   onSubmit: () => void
   editingStep: number | null
-  previousSteps: ProgramStep[]
-  simulationStart: GrillPose
+  // Without both, no 3D preview: e.g. editing a step of a program already running.
+  previousSteps?: ProgramStep[]
+  simulationStart?: GrillPose
+  // The step keeps its type: only its value may change.
+  lockedType?: boolean
+  // Shown under the fields, e.g. that a wait already under way counts from now.
+  note?: string
 }
 
 // The step being typed, once it is a number the preview can place.
@@ -51,9 +56,11 @@ export function StepModal({
   onSubmit,
   editingStep,
   previousSteps,
-  simulationStart
+  simulationStart,
+  lockedType = false,
+  note
 }: StepModalProps) {
-  const showsPreview = stepForm.type === 'position' || stepForm.type === 'rotation'
+  const showsPreview = (stepForm.type === 'position' || stepForm.type === 'rotation') && previousSteps && simulationStart
 
   const totalSeconds = Number(stepForm.time)
   const hasTime = !Number.isNaN(totalSeconds) && stepForm.time !== ''
@@ -87,6 +94,7 @@ export function StepModal({
             label="Tipo de Paso"
             value={stepForm.type}
             onChange={(value) => setStepForm(prev => ({ ...prev, type: value as StepType }))}
+            disabled={lockedType}
             options={[
               { value: 'temperature', label: 'Temperatura' },
               { value: 'position', label: 'Posición' },
@@ -182,6 +190,8 @@ export function StepModal({
               />
             </div>
           )}
+
+          {note && <p className="text-xs text-gray-500">{note}</p>}
 
           {showsPreview && (
             <StepPreview

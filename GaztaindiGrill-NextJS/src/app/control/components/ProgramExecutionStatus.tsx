@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Pause, LayoutGrid, SkipForward } from "lucide-react";
 import { useRunningPrograms } from "@/contexts/RunningProgramsContext";
@@ -8,16 +9,29 @@ import { ExecutionTabs } from "./execution/ExecutionTabs";
 import { ExecutionDetails } from "./execution/ExecutionDetails";
 import { ExecutionSteps } from "./execution/ExecutionSteps";
 import { TemperatureHoldLine } from "./execution/TemperatureHoldLine";
+import { StepModal, type StepFormState } from "@/app/programs/components/StepModal";
+import { EMPTY_STEP_FORM, formToStep, stepToForm } from "@/app/programs/utils/stepForm";
+import type { ProgramStep } from "@/types";
+import { secondsSince } from "@/app/control/hooks/useSecondsSince";
+
+type EditStep = (index: number, step: ProgramStep) => void;
 
 type ProgramExecutionStatusProps = {
   handleCancelPrograms: [(() => void), (() => void)];
   handleSkipSteps: [(() => void), (() => void)];
+  handleEditSteps: [EditStep, EditStep];
   isConnected: boolean;
 }
 
-export function ProgramExecutionStatus({ handleCancelPrograms, handleSkipSteps, isConnected }: ProgramExecutionStatusProps) {
+export function ProgramExecutionStatus({ handleCancelPrograms, handleSkipSteps, handleEditSteps, isConnected }: ProgramExecutionStatusProps) {
   const { runningPrograms } = useRunningPrograms();
   const [activeTab, setActiveTab] = useState<0 | 1>(0);
+
+  // The step being edited for this run, and its form.
+  const [editingStep, setEditingStep] = useState<number | null>(null);
+  const [stepForm, setStepForm] = useState<StepFormState>(EMPTY_STEP_FORM);
+  // The wait under way opens with the time it has left; the firmware starts it again on save.
+  const [editsWaitUnderWay, setEditsWaitUnderWay] = useState(false);
 
   const hasProgram0 = !!runningPrograms[0];
   const hasProgram1 = !!runningPrograms[1];
@@ -42,6 +56,29 @@ export function ProgramExecutionStatus({ handleCancelPrograms, handleSkipSteps, 
   const runningProgram = runningPrograms[activeTab];
   const currentStepIndex = runningProgram?.currentStepIndex ?? -1;
   const programName = runningProgram?.name || (runningProgram?.programId ? `Programa #${runningProgram.programId}` : 'Desconocido');
+
+  const referenceType = runningProgram?.referenceType ?? 'absolute';
+
+  const openEditStep = (index: number) => {
+    if (!runningProgram) return;
+    const step = runningProgram.steps[index];
+    const elapsed = index === currentStepIndex && step.time != null ? secondsSince(step.stepStartUnix) : null;
+    setEditsWaitUnderWay(elapsed !== null);
+    setStepForm(stepToForm(elapsed === null ? step : { time: Math.max(0, step.time! - elapsed) }));
+    setEditingStep(index);
+  };
+
+  const handleEditSubmit = () => {
+    if (editingStep === null) return;
+    const result = formToStep(stepForm, referenceType);
+    if (!result) return;
+    if ('error' in result) {
+      toast.error(result.error);
+      return;
+    }
+    handleEditSteps[activeTab](editingStep, result.step);
+    setEditingStep(null);
+  };
 
   const handleTabChange = (index: 0 | 1) => {
     if ((index === 0 && hasProgram0) || (index === 1 && hasProgram1)) {
@@ -84,6 +121,7 @@ export function ProgramExecutionStatus({ handleCancelPrograms, handleSkipSteps, 
             <ExecutionSteps 
               steps={runningProgram.steps} 
               currentStepIndex={currentStepIndex} 
+              onEdit={isConnected && runningProgram.isRunning ? openEditStep : undefined}
             />
 
             <Button
@@ -110,6 +148,18 @@ export function ProgramExecutionStatus({ handleCancelPrograms, handleSkipSteps, 
           </>
         )}
       </div>
+
+      <StepModal
+        referenceType={referenceType}
+        isOpen={editingStep !== null}
+        onClose={() => setEditingStep(null)}
+        stepForm={stepForm}
+        setStepForm={setStepForm}
+        onSubmit={handleEditSubmit}
+        editingStep={editingStep}
+        lockedType
+        note={editsWaitUnderWay ? 'Esta espera ya está en marcha: empezará de nuevo con el tiempo que pongas.' : undefined}
+      />
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { useRunningPrograms } from '@/contexts/RunningProgramsContext';
 import { TOPICS } from '@/constants';
 import { resolveHost } from '@/utils';
 import { ConnectionStatus as ConnectionStatusEnum } from '@/types';
-import type { GrillDirection, GrillRotation } from '@/types';
+import type { GrillDirection, GrillRotation, ProgramStep } from '@/types';
 
 // Centralizamos los límites para validaciones
 const LIMITS = {
@@ -145,6 +145,31 @@ export function useGrillCommands(grillIndex: number) {
     }
   }, [sendCommand, runningPrograms, publish, grillIndex]);
 
+  // Only for this run: the saved program in the API is left as it was.
+  const handleEditStep = useCallback(async (index: number, step: ProgramStep) => {
+    sendCommand(TOPICS.ACTION.PROGRAM.EDIT_STEP, { index, step });
+
+    // On localhost there is no ESP32 to republish the program, so do it as the firmware would.
+    const program = runningPrograms[grillIndex as 0 | 1];
+    if (resolveHost() !== 'localhost' || !program) return;
+
+    const payload = {
+      ...program,
+      steps: program.steps.map((s, i) => {
+        if (i !== index) return s;
+        // The wait under way starts again, as the firmware does.
+        const restarts = i === program.currentStepIndex && step.time != null;
+        return { ...step, stepStartUnix: restarts ? Math.floor(Date.now() / 1000) : s.stepStartUnix };
+      })
+    };
+
+    try {
+      await publish(`grill/${grillIndex}/${TOPICS.STATUS.PROGRAM.CURRENT}`, JSON.stringify(payload), { qos: 1, retain: true });
+    } catch (error) {
+      console.error("Error updating local state in broker (simulation):", error);
+    }
+  }, [sendCommand, runningPrograms, publish, grillIndex]);
+
   return {
     handleDirectionCommand,
     handleRotationCommand,
@@ -154,6 +179,7 @@ export function useGrillCommands(grillIndex: number) {
     handleSetPose,
     handleResetRotation,
     handleCancelProgram,
-    handleSkipStep
+    handleSkipStep,
+    handleEditStep
   };
 }

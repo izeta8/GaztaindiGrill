@@ -13,6 +13,7 @@ export interface SelectProps {
   onChange: (value: string) => void;
   options: SelectOption[];
   required?: boolean;
+  disabled?: boolean;
 }
 
 export const Select: React.FC<SelectProps> = ({
@@ -21,6 +22,7 @@ export const Select: React.FC<SelectProps> = ({
   onChange,
   options,
   required,
+  disabled,
 }) => (
   <div className="space-y-2">
     <label className="block text-sm font-medium text-gray-700">
@@ -30,7 +32,10 @@ export const Select: React.FC<SelectProps> = ({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       required={required}
-      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+      disabled={disabled}
+      className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base ${
+        disabled ? 'bg-gray-100 text-gray-500 cursor-not-allowed opacity-70' : ''
+      }`}
     >
       <option value="">Seleccionar...</option>
       {options.map((option) => (

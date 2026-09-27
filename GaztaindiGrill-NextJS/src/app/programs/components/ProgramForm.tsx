@@ -15,6 +15,7 @@ import { CategoryModal } from './CategoryModal'
 import { UserModal } from './UserModal'
 import { ReferenceTypeInfoModal } from './ReferenceTypeInfoModal'
 import { ProgramSimulator } from './ProgramSimulator'
+import { useSimulationStart } from '@/app/programs/hooks/useSimulationStart'
 import { useCurrentUser } from '@/contexts/CurrentUserContext'
 
 export type Category = { id: number; name: string }
@@ -80,6 +81,7 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
   // Categories
   const [referenceType, setReferenceType] = useState<ReferenceType>(initialValues?.referenceType || 'absolute')
   const [isReferenceInfoOpen, setIsReferenceInfoOpen] = useState(false)
+  const simulationStart = useSimulationStart(referenceType)
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     initialValues?.categoryId ?? null
@@ -500,7 +502,7 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
 
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Simulación</h2>
-            <ProgramSimulator steps={steps} referenceType={referenceType} />
+            <ProgramSimulator steps={steps} referenceType={referenceType} simulationStart={simulationStart} />
           </div>
 
           {/* Submit Section */}

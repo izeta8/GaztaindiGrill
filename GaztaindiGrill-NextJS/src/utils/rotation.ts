@@ -28,12 +28,14 @@ export const rotorTurn = (from: number, to: number): number => {
 }
 
 // The rack keeps tilting as it turns, so the whole arc has to clear the embers, not just the end.
+// 0 when no point of the arc hangs lower than the rack does now: a turn towards flat needs nothing.
 export const minSafePositionForTurn = (from: number, to: number): number => {
   const forward = wrap(to - from)
   const span = forward <= 180 ? forward : 360 - forward
   const start = forward <= 180 ? from : to
   const covers = (angle: number) => wrap(angle - start) <= span
 
-  if (covers(90) || covers(270)) return SAFE_ROTATION_POSITION_PCT
-  return Math.max(minSafePosition(from), minSafePosition(to))
+  const fromFloor = minSafePosition(from)
+  const worst = covers(90) || covers(270) ? SAFE_ROTATION_POSITION_PCT : Math.max(fromFloor, minSafePosition(to))
+  return worst > fromFloor ? worst : 0
 }

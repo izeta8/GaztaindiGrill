@@ -1,0 +1,4 @@
+# Binary 3D assets. The small .hdr has no NUL bytes up front, so git took it for text and
+# autocrlf would put CRs into it on checkout.
+*.hdr binary
+*.glb binary

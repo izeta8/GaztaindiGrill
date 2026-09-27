@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ProgramStep, ReferenceType } from '@/types'
 import { planSimulation, poseAt, stepDuration, type GrillPose } from '@/utils'
 
-export const SIMULATION_SPEEDS = [1, 2, 5, 10] as const
+export const SIMULATION_SPEEDS = [1, 5, 10, 20] as const
 export type SimulationSpeed = typeof SIMULATION_SPEEDS[number]
 
 export type SimulationStatus = 'idle' | 'running' | 'paused' | 'finished'

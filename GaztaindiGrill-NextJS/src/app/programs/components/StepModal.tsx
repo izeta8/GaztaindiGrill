@@ -7,7 +7,10 @@ import { Select } from '@/components/ui/Select'
 import type { Dispatch, SetStateAction } from 'react'
 import { ReferenceType } from '@/types'
 
-export type StepType = 'temperature' | 'position' | 'rotation' | 'wait' | ''
+// Close enough to a full turn to be flat again. The firmware refuses 360 and above.
+export const ROTATION_WRAPS_AT = 356
+
+export type StepType ='temperature' | 'position' | 'rotation' | 'wait' | ''
 
 export type StepFormState = {
   type: StepType
@@ -130,12 +133,12 @@ export function StepModal({
                     setStepForm(prev => ({ ...prev, rotation: '' }))
                     return
                   }
-                  const clamped = Math.max(0, Math.min(360, Math.floor(n)))
-                  setStepForm(prev => ({ ...prev, rotation: String(clamped) }))
+                  const degrees = Math.max(0, Math.floor(n))
+                  setStepForm(prev => ({ ...prev, rotation: String(degrees >= ROTATION_WRAPS_AT ? 0 : degrees) }))
                 }}
                 placeholder="45"
                 min={0}
-                max={360}
+                max={ROTATION_WRAPS_AT - 1}
                 required
               />
             </>

@@ -10,7 +10,7 @@ import { Select } from '@/components/ui/Select'
 import type { ProgramStep, ReferenceType } from '@/types'
 import { apiBaseUrl, toDateInputValue, fromDateInputValue } from '@/utils'
 import { StepsList } from './StepsList'
-import { StepModal, type StepFormState } from './StepModal'
+import { StepModal, ROTATION_WRAPS_AT, type StepFormState } from './StepModal'
 import { CategoryModal } from './CategoryModal'
 import { UserModal } from './UserModal'
 import { ReferenceTypeInfoModal } from './ReferenceTypeInfoModal'
@@ -239,8 +239,8 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
     } else if (stepForm.type === 'rotation') {
       if (!stepForm.rotation) return
       const inc = parseInt(stepForm.rotation)
-      if (isNaN(inc) || inc < 0 || inc > 360) {
-        toast.error('La rotación debe estar entre 0 y 360')
+      if (isNaN(inc) || inc < 0 || inc >= ROTATION_WRAPS_AT) {
+        toast.error(`La rotación debe estar entre 0 y ${ROTATION_WRAPS_AT - 1}`)
         return
       }
       newStep.rotation = inc

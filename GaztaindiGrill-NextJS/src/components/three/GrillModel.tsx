@@ -115,6 +115,10 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
   const hasSnapped = useRef(false)
   const isFocused = useRef(false)
   const { camera, gl } = useThree()
+  const size = useThree((state) => state.size)
+
+  // The shared canvas is sized after it moves into the modal, so the first framing may be stale.
+  useEffect(() => { isFocused.current = false }, [size.width, size.height])
 
   const box3 = useMemo(() => new THREE.Box3(), [])
   const vector3 = useMemo(() => new THREE.Vector3(), [])

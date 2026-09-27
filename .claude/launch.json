@@ -6,6 +6,15 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "GaztaindiGrill-NextJS", "run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "nextjs-dev-fake-grill",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "-e",
+        "require('child_process').spawn('npm', ['--prefix', 'GaztaindiGrill-NextJS', 'run', 'dev'], { stdio: 'inherit', shell: true, env: { ...process.env, NEXT_PUBLIC_DEV_HOST: 'localhost' } }).on('exit', (code) => process.exit(code))"
+      ],
+      "port": 3000
     }
   ]
 }

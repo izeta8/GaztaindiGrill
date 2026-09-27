@@ -17,8 +17,8 @@ export function ReferenceTypeInfoModal({ isOpen, onClose }: ReferenceTypeInfoMod
         <div>
           <p className="font-medium text-gray-900">Absoluto</p>
           <p>
-            Cada paso de altura lleva la parrilla a un valor fijo, esté donde esté al empezar.
-            Un paso de 20 % la deja siempre al 20 %.
+            Cada paso de altura lleva la parrilla a un valor fijo, teniendo en cuenta que 100% es arriba del todo y 0% es en las brasas.
+            Un paso de 20% la deja siempre al 20%.
           </p>
         </div>
 
@@ -28,9 +28,6 @@ export function ReferenceTypeInfoModal({ isOpen, onClose }: ReferenceTypeInfoMod
             Cada paso de altura se suma a la altura que tiene la parrilla al pulsar Ejecutar.
             Con la parrilla al 40 %, un paso de +20 la sube al 60 % y uno de -20 la baja al 20 %.
             Si la suma pasa de 0 o de 100, se queda en el límite.
-          </p>
-          <p className="mt-1 text-gray-500">
-            Sirve para colocar la parrilla a mano antes de empezar y que el programa trabaje desde ahí.
           </p>
         </div>
 
@@ -43,7 +40,7 @@ export function ReferenceTypeInfoModal({ isOpen, onClose }: ReferenceTypeInfoMod
             </li>
             <li>
               <span className="font-medium">Giro (rotor):</span> siempre absoluto. 0° es la
-              rejilla plana y 180° dada la vuelta. Solo la parrilla izquierda tiene rotor.
+              rejilla plana y 180° dada la vuelta.
             </li>
             <li>
               <span className="font-medium">Temperatura y esperas:</span> igual en los dos modos.

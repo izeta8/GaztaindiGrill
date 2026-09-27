@@ -10,12 +10,13 @@ import { Select } from '@/components/ui/Select'
 import type { ProgramStep, ReferenceType } from '@/types'
 import { apiBaseUrl, toDateInputValue, fromDateInputValue } from '@/utils'
 import { StepsList } from './StepsList'
-import { StepModal, ROTATION_WRAPS_AT, type StepFormState } from './StepModal'
+import { StepModal, type StepFormState } from './StepModal'
 import { CategoryModal } from './CategoryModal'
 import { UserModal } from './UserModal'
 import { ReferenceTypeInfoModal } from './ReferenceTypeInfoModal'
 import { ProgramSimulator } from './ProgramSimulator'
 import { useSimulationStart } from '@/app/programs/hooks/useSimulationStart'
+import { EMPTY_STEP_FORM, formToStep, stepToForm } from '@/app/programs/utils/stepForm'
 import { useCurrentUser } from '@/contexts/CurrentUserContext'
 
 export type Category = { id: number; name: string }
@@ -135,13 +136,7 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
   // Steps modal
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingStep, setEditingStep] = useState<number | null>(null)
-  const [stepForm, setStepForm] = useState<StepFormState>({
-    type: '',
-    time: '',
-    temperature: '',
-    position: '',
-    rotation: ''
-  })
+  const [stepForm, setStepForm] = useState<StepFormState>(EMPTY_STEP_FORM)
 
   // Load categories on mount
   useEffect(() => {
@@ -185,7 +180,7 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
 
   // Step helpers
   const resetStepForm = () => {
-    setStepForm({ type: '', time: '', temperature: '', position: '', rotation: '' })
+    setStepForm(EMPTY_STEP_FORM)
   }
   const openAddStepModal = () => {
     resetStepForm()
@@ -193,65 +188,24 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
     setIsModalOpen(true)
   }
   const openEditStepModal = (index: number) => {
-    const step = steps[index]
-    setStepForm({
-      type: step.temperature != null ? 'temperature'
-          : step.rotation != null ? 'rotation'
-          : step.position != null ? 'position'
-          : 'wait',
-      time: step.time?.toString() || '',
-      temperature: step.temperature?.toString() || '',
-      position: step.position?.toString() || '',
-      rotation: step.rotation?.toString() || ''
-    })
+    setStepForm(stepToForm(steps[index]))
     setEditingStep(index)
     setIsModalOpen(true)
   }
   const handleStepSubmit = () => {
-    if (!stepForm.type) return
-
-    const newStep: ProgramStep = {}
-
-    if (stepForm.type === 'wait') {
-      if (!stepForm.time) return
-      const secs = parseInt(stepForm.time)
-      // The firmware skips a step with time 0.
-      if (isNaN(secs) || secs <= 0) {
-        toast.error('La espera tiene que ser mayor que cero')
-        return
-      }
-      newStep.time = secs
-    } else if (stepForm.type === 'temperature') {
-      if (!stepForm.temperature) return
-      newStep.temperature = parseInt(stepForm.temperature)
-    } else if (stepForm.type === 'position') {
-      if (!stepForm.position) return
-      const pos = parseInt(stepForm.position)
-      if (isNaN(pos) || (referenceType === "absolute" && (pos < 0 || pos > 100))) {
-        toast.error(
-          referenceType === "absolute"
-            ? 'La posición debe estar entre 0 y 100'
-            : 'La posición debe ser un número válido'
-        )
-        return
-      }
-      newStep.position = pos
-    } else if (stepForm.type === 'rotation') {
-      if (!stepForm.rotation) return
-      const inc = parseInt(stepForm.rotation)
-      if (isNaN(inc) || inc < 0 || inc >= ROTATION_WRAPS_AT) {
-        toast.error(`La rotación debe estar entre 0 y ${ROTATION_WRAPS_AT - 1}`)
-        return
-      }
-      newStep.rotation = inc
+    const result = formToStep(stepForm, referenceType)
+    if (!result) return
+    if ('error' in result) {
+      toast.error(result.error)
+      return
     }
-    
+
     if (editingStep !== null) {
       const updatedSteps = [...steps]
-      updatedSteps[editingStep] = newStep
+      updatedSteps[editingStep] = result.step
       setSteps(updatedSteps)
     } else {
-      setSteps([...steps, newStep])
+      setSteps([...steps, result.step])
     }
     setIsModalOpen(false)
     resetStepForm()

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Info, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -13,6 +13,7 @@ import { StepsList } from './StepsList'
 import { StepModal, type StepFormState } from './StepModal'
 import { CategoryModal } from './CategoryModal'
 import { UserModal } from './UserModal'
+import { ReferenceTypeInfoModal } from './ReferenceTypeInfoModal'
 import { useCurrentUser } from '@/contexts/CurrentUserContext'
 
 export type Category = { id: number; name: string }
@@ -77,6 +78,7 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
 
   // Categories
   const [referenceType, setReferenceType] = useState<ReferenceType>(initialValues?.referenceType || 'absolute')
+  const [isReferenceInfoOpen, setIsReferenceInfoOpen] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     initialValues?.categoryId ?? null
@@ -365,15 +367,28 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
                 required
               />
 
-              <Select
-                label="Modo de Ejecución"
-                value={referenceType}
-                onChange={(val) => setReferenceType(val as ReferenceType)}
-                options={[
-                  { value: 'absolute', label: 'Absoluto (Valores Fijos)' },
-                  { value: 'relative', label: 'Relativo (Desde posición inicial)' }
-                ]}
-              />
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Select
+                    label="Modo de Ejecución"
+                    value={referenceType}
+                    onChange={(val) => setReferenceType(val as ReferenceType)}
+                    options={[
+                      { value: 'absolute', label: 'Absoluto (Valores Fijos)' },
+                      { value: 'relative', label: 'Relativo (Desde posición inicial)' }
+                    ]}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setIsReferenceInfoOpen(true)}
+                  ariaLabel="Qué significa el modo de ejecución"
+                  className="h-10"
+                >
+                  <Info className="h-4 w-4" />
+                </Button>
+              </div>
 
               <div>
                 <div className="flex items-end gap-2">
@@ -514,6 +529,11 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
           setNewCategoryName={setNewCategoryName}
           onCreate={handleCreateCategory}
           isCreating={isCreatingCategory}
+        />
+
+        <ReferenceTypeInfoModal
+          isOpen={isReferenceInfoOpen}
+          onClose={() => setIsReferenceInfoOpen(false)}
         />
 
         {/* Create User Modal */}

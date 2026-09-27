@@ -131,7 +131,7 @@ export function SharedGrillCanvasProvider({ children }: { children: React.ReactN
           <Suspense fallback={<Loader />}>
             <Stage
               // Served locally: the "city" preset fetches this file from a CDN at runtime, and without it the model never loads.
-              environment={{ files: '/hdri/potsdamer_platz_1k.hdr' }}
+              environment={{ files: '/hdri/potsdamer_platz_256.hdr' }}
               intensity={0.5}
               adjustCamera={false}
             >

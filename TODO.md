@@ -1,21 +1,5 @@
 # TODO
 
-## 0. Prioritario
-
-- **Antes de girar, subir solo lo necesario.** Hoy `MovementManager::min_safe_position_for_turn()`
-  pide la altura del peor ángulo del giro *contando el ángulo de salida*. Parada a 20° y al 16 %,
-  para ir a 0° sube al 28 % y vuelve a bajar, aunque aplanar la rejilla solo la aleja de las
-  brasas.
-  - Subir solo si el giro va a dejar el borde más bajo de lo que está ahora, y solo hasta la
-    altura que pide ese tramo. Un giro que solo aplana no sube nada.
-  - Un giro que pasa por 90° o 270° sigue necesitando el 60 %: a mitad de giro el borde cuelga
-    15 cm, y sin subir la rejilla tocaría las brasas.
-  - Mismo cambio, en el mismo commit, en la copia de la web: `minSafePositionForTurn()` en
-    `GaztaindiGrill-NextJS/src/utils/rotation.ts`, que usan el simulador y la vista 3D de la
-    modal de pasos.
-  - Probar en el caserío: de 20° a 0° desde el 16 % la altura no se mueve; de 0° a 90° desde
-    el 20 % sigue subiendo al 60 %.
-
 ## 1. Temperatura — en orden, ya desbloqueado por el termopar
 
 Cada punto depende del anterior. Todo es solo para la parrilla 0: es la única con termopar.

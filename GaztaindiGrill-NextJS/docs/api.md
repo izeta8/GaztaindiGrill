@@ -44,8 +44,8 @@ Un `ProgramStep` representa un único paso dentro de un `Program`, y hace **una 
 interface ProgramStep {
   action?: string;        // por ahora solo "flip"
   temperature?: number;   // en grados Celsius
-  position?: number;      // 0-100
-  rotation?: number;      // 0-360
+  position?: number;      // 0-100; en relativo, desplazamiento de -100 a 100
+  rotation?: number;      // 0-359: el firmware ignora 360 o más; el formulario guarda 356 o más como 0
   time?: number;          // en segundos
 }
 ```

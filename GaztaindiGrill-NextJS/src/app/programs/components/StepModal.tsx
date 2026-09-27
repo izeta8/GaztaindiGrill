@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import type { Dispatch, SetStateAction } from 'react'
-import { ReferenceType } from '@/types'
+import { ReferenceType, type ProgramStep } from '@/types'
+import type { GrillPose } from '@/utils'
+import { StepPreview } from './StepPreview'
 
 // Close enough to a full turn to be flat again. The firmware refuses 360 and above.
 export const ROTATION_WRAPS_AT = 356
 
-export type StepType ='temperature' | 'position' | 'rotation' | 'wait' | ''
+export type StepType = 'temperature' | 'position' | 'rotation' | 'wait' | ''
 
 export type StepFormState = {
   type: StepType
@@ -28,6 +30,16 @@ type StepModalProps = {
   setStepForm: Dispatch<SetStateAction<StepFormState>>
   onSubmit: () => void
   editingStep: number | null
+  previousSteps: ProgramStep[]
+  simulationStart: GrillPose
+}
+
+// The step being typed, once it is a number the preview can place.
+const draftStep = (stepForm: StepFormState): ProgramStep | null => {
+  const typed = stepForm.type === 'position' ? stepForm.position : stepForm.rotation
+  const value = Number(typed)
+  if (typed === '' || typed === '-' || Number.isNaN(value)) return null
+  return stepForm.type === 'position' ? { position: value } : { rotation: value }
 }
 
 export function StepModal({
@@ -37,9 +49,12 @@ export function StepModal({
   stepForm,
   setStepForm,
   onSubmit,
-  editingStep
+  editingStep,
+  previousSteps,
+  simulationStart
 }: StepModalProps) {
-  
+  const showsPreview = stepForm.type === 'position' || stepForm.type === 'rotation'
+
   const totalSeconds = Number(stepForm.time)
   const hasTime = !Number.isNaN(totalSeconds) && stepForm.time !== ''
   const minutesStr = hasTime ? String(Math.floor(totalSeconds / 60)) : ''
@@ -166,6 +181,15 @@ export function StepModal({
                 required
               />
             </div>
+          )}
+
+          {showsPreview && (
+            <StepPreview
+              previousSteps={previousSteps}
+              step={draftStep(stepForm)}
+              referenceType={referenceType}
+              start={simulationStart}
+            />
           )}
         </div>
 

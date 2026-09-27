@@ -259,6 +259,8 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
   const deleteStep = (index: number) => setSteps(steps.filter((_, i) => i !== index))
 
   const chainedSteps = useMemo(() => backToBackPairs(steps), [steps])
+  // What runs before the step in the modal: all of them when adding, those above it when editing.
+  const previousSteps = useMemo(() => steps.slice(0, editingStep ?? steps.length), [steps, editingStep])
   const moveStep = (index: number, direction: 'up' | 'down') => {
     if ((direction === 'up' && index === 0) || (direction === 'down' && index === steps.length - 1)) return
     const swapped = [...steps]
@@ -527,6 +529,8 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
           setStepForm={setStepForm}
           onSubmit={handleStepSubmit}
           editingStep={editingStep}
+          previousSteps={previousSteps}
+          simulationStart={simulationStart.start}
         />
 
         {/* Create Category Modal */}

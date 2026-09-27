@@ -7,7 +7,7 @@ import SimulatorScene from '@/components/three/SimulatorScene'
 import { SIMULATION_SPEEDS, useProgramSimulation } from '@/app/programs/hooks/useProgramSimulation'
 import type { SimulationStart } from '@/app/programs/hooks/useSimulationStart'
 import type { ProgramStep, ReferenceType } from '@/types'
-import { formatSeconds, getStepDescription, getStepIcon, type SimulatedStep } from '@/utils'
+import { formatSeconds, getStepDescription, getStepIcon, stepNotice } from '@/utils'
 
 // TEMPERATURE_BAND in GrillConstants.h. The simulator has no fire, so it only names the band.
 const TEMPERATURE_BAND = 5
@@ -16,12 +16,6 @@ type ProgramSimulatorProps = {
   steps: ProgramStep[]
   referenceType: ReferenceType
   simulationStart: SimulationStart
-}
-
-const stepNotice = (step: SimulatedStep) => {
-  if (step.clamped) return `Se sale del recorrido: ${step.clamped.requested}% se queda en ${step.clamped.applied}%`
-  if (step.raised) return `Con esa inclinación no puede bajar de ${step.raised.applied}%`
-  return null
 }
 
 export function ProgramSimulator({ steps, referenceType, simulationStart }: ProgramSimulatorProps) {

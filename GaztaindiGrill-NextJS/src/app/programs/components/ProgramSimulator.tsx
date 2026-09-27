@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from 'react'
-import { Pause, Play, RotateCcw, SkipForward, Thermometer } from 'lucide-react'
+import { LocateFixed, Pause, Play, RotateCcw, SkipForward, Thermometer } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import SimulatorScene from '@/components/three/SimulatorScene'
@@ -105,14 +105,28 @@ export function ProgramSimulator({ steps, referenceType }: ProgramSimulatorProps
       </div>
 
       {referenceType === 'relative' && (
-        <Input
-          label="Punto de partida (%)"
-          type="number"
-          value={startDraft ?? String(grillState.position)}
-          onChange={setStartDraft}
-          min={0}
-          max={100}
-        />
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+            <Input
+              label="Punto de partida (%)"
+              type="number"
+              value={startDraft ?? String(grillState.position)}
+              onChange={setStartDraft}
+              min={0}
+              max={100}
+            />
+          </div>
+          <Button
+            onClick={() => setStartDraft(null)}
+            variant="secondary"
+            disabled={startDraft === null}
+            ariaLabel="Usar la altura actual de la parrilla"
+            className="h-10"
+          >
+            <LocateFixed className="h-4 w-4 sm:mr-2" />
+            <span className="max-sm:hidden">Altura actual</span>
+          </Button>
+        </div>
       )}
 
       {plan.length === 0 && (

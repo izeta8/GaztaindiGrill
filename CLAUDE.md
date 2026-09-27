@@ -4,15 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Pendiente de probar en el caserío
 
-**El ESP32 lleva firmware sin flashear, y lo nuevo está sin probar con fuego.** La próxima vez que
-se vaya al caserío, antes de nada:
-
-```bash
-cd GaztaindiGrill-ESP32 && pio run -t upload
-```
-
-Sin flashear no funciona nada de esto, porque la parrilla sigue con el firmware viejo. Qué probar,
-con `mosquitto_sub -v -t 'grill/#'` mirando:
+**El ESP32 está flasheado desde el 27/09/2026, pero lo nuevo está sin probar en la parrilla.**
+Qué probar, con `mosquitto_sub -v -t 'grill/#'` mirando:
 
 1. **Pasos de temperatura en programas** (lo último, ver `.claude/plans/temperature-steps.md`):
    un programa `[{temperature: T}, {time: 600}]` con T por encima de la lectura actual baja la

@@ -14,6 +14,7 @@ import { StepModal, type StepFormState } from './StepModal'
 import { CategoryModal } from './CategoryModal'
 import { UserModal } from './UserModal'
 import { ReferenceTypeInfoModal } from './ReferenceTypeInfoModal'
+import { ProgramSimulator } from './ProgramSimulator'
 import { useCurrentUser } from '@/contexts/CurrentUserContext'
 
 export type Category = { id: number; name: string }
@@ -496,6 +497,13 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
               </p>
             )}
           </div>
+
+          {steps.length > 0 && (
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Simulación</h2>
+              <ProgramSimulator steps={steps} referenceType={referenceType} />
+            </div>
+          )}
 
           {/* Submit Section */}
           <div className="bg-white rounded-lg shadow-sm p-6">

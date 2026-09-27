@@ -4,14 +4,19 @@ import React, { useRef, useMemo, useEffect } from 'react'
 import { useGLTF, Text3D, Outlines, Billboard } from '@react-three/drei'
 import { useFrame, useGraph, useThree, ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
-import { GLTF } from 'three-stdlib'
 import { useGrillState } from '@/app/control/hooks/useGrillState'
 import { minSafePosition } from '@/utils/rotation'
-
-type GLTFResult = GLTF & {
-  nodes: { [key: string]: THREE.Object3D }
-  materials: { [key: string]: THREE.Material }
-}
+import {
+  MODEL_URL,
+  GRILL_NODE_NAMES,
+  ROTOR_NODE_NAME,
+  heightForPosition,
+  positionForHeight,
+  findRack,
+  focusCamera,
+  fadeAllButGrill,
+  type GLTFResult,
+} from './grillRig'
 
 export interface GrillModelProps {
   position?: [number, number, number]
@@ -31,25 +36,6 @@ export interface GrillModelProps {
     onDragRotation: (degrees: number) => void
   }
 }
-
-const MIN_HEIGHT = 1  // Altura cuando la parrilla está al 0%
-const MAX_HEIGHT = 1.8  // Altura cuando la parrilla está al 100%
-
-export const GRILL_NODE_NAMES = ['padre_parrilla_ezkerra', 'padre_parrilla_eskubi'] as const
-
-export const heightForPosition = (percent: number) => MIN_HEIGHT + (percent / 100) * (MAX_HEIGHT - MIN_HEIGHT)
-
-export const positionForHeight = (height: number) => ((height - MIN_HEIGHT) / (MAX_HEIGHT - MIN_HEIGHT)) * 100
-
-// Left grill from a corner so the rotor tilt shows, right grill straight on.
-const FOCUS_DIRECTIONS = [new THREE.Vector3(1.2, 0.9, 1), new THREE.Vector3(0, 0.4, 1)]
-
-// How far towards the canvas edge the corners of the rack's travel box may land, per camera. Higher
-// for the corner view: from there the box corners stick out well beyond the rack itself.
-const FOCUS_FILL = [0.8, 0.6]
-
-// Everything but the focused grill, kept for context and greyed out so it reads as not draggable.
-const FADED_MATERIAL = new THREE.MeshStandardMaterial({ color: '#9ca3af', transparent: true, opacity: 0.25, depthWrite: false })
 
 // Pointer travel in px above which a click is really the end of a drag.
 const CLICK_MAX_DELTA = 4
@@ -80,8 +66,6 @@ const grillIndexAt = (intersections: THREE.Intersection[]) => {
 
 const CURRENT_POSITION_OPACITY = 0.2
 
-const ROTOR_NODE_NAME = 'rotor_cilindro+parrilla'
-
 // Degrees per step while dragging. Typing in the modal is exact.
 const ROTATION_DRAG_STEP = 5
 
@@ -97,7 +81,7 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
   const grillState1 = useGrillState(1)
   
   // Solo obtenemos la escena base del caché
-  const { scene } = useGLTF('/models/parrilla_model_v5.glb')
+  const { scene } = useGLTF(MODEL_URL)
   
   // Clonamos la escena para tener una instancia única por componente
   const clonedScene = useMemo(() => scene.clone(), [scene])
@@ -181,47 +165,6 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
     rotorRef.current.rotation.x += delta * smoothing
   }
 
-  // Returns true once the framing stops changing: <Center> moves the model after the first frames.
-  const focusCamera = (index: 0 | 1) => {
-    const grill = index === 0 ? leftGrillRef.current : rightGrillRef.current
-    if (!grill) return false
-
-    // The rack, not the whole node: the columns above it would shrink the part that moves.
-    let rack: THREE.Object3D = grill
-    grill.traverse((child) => { if (child.name.startsWith('padre_rejilla')) rack = child })
-
-    grill.updateWorldMatrix(true, true)
-    const box = new THREE.Box3().setFromObject(rack)
-    box.min.y -= Math.max(0, grill.position.y - MIN_HEIGHT)
-    box.max.y += Math.max(0, MAX_HEIGHT - grill.position.y)
-
-    const center = box.getCenter(new THREE.Vector3())
-    const direction = FOCUS_DIRECTIONS[index].clone().normalize()
-    const place = (distance: number) => {
-      camera.position.copy(center).addScaledVector(direction, distance)
-      camera.lookAt(center)
-      camera.updateMatrixWorld()
-    }
-
-    // Place at a guess, then scale the distance by how much of the screen the box takes: a
-    // bounding sphere leaves the travel too small to drag with any precision.
-    const previous = camera.position.clone()
-    const guess = box.getSize(new THREE.Vector3()).length() * 2
-    place(guess)
-    let extent = 0
-    for (const x of [box.min.x, box.max.x]) {
-      for (const y of [box.min.y, box.max.y]) {
-        for (const z of [box.min.z, box.max.z]) {
-          const corner = new THREE.Vector3(x, y, z).project(camera)
-          extent = Math.max(extent, Math.abs(corner.x), Math.abs(corner.y))
-        }
-      }
-    }
-    place((guess * extent) / FOCUS_FILL[index])
-
-    return previous.distanceTo(camera.position) < 1e-3
-  }
-
   const canSelect = onGrillSelect !== undefined
   const pressed = useRef<{ index: 0 | 1; x: number; y: number } | null>(null)
   const pressAmount = useRef([0, 0])
@@ -279,7 +222,8 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
     hasSnapped.current = true
 
     if (focusGrill !== undefined && !isFocused.current) {
-      isFocused.current = focusCamera(focusGrill)
+      const grill = (focusGrill === 0 ? leftGrillRef : rightGrillRef).current
+      if (grill) isFocused.current = focusCamera(camera, grill, focusGrill)
     }
   })
 
@@ -353,11 +297,8 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
   const rackBounds = useMemo(() => {
     if (focusGrill === undefined) return null
     const grill = nodes[GRILL_NODE_NAMES[focusGrill]]
-    let rack: THREE.Object3D = grill
-    grill.traverse((child) => { if (child.name.startsWith('padre_rejilla')) rack = child })
-
     grill.updateWorldMatrix(true, true)
-    const box = new THREE.Box3().setFromObject(rack)
+    const box = new THREE.Box3().setFromObject(findRack(grill))
     const size = box.getSize(new THREE.Vector3())
     const center = box.getCenter(new THREE.Vector3())
     return { x: center.x, z: center.z, width: size.x, depth: size.z, bottomOffset: box.min.y - grill.position.y }
@@ -483,13 +424,8 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
     }
   }, [hasTarget, focusGrill, nodes, gl, camera, targetObject])
 
-  // Swaps materials on this clone's meshes only; the cached .glb materials stay untouched.
   useEffect(() => {
-    if (focusGrill === undefined) return
-    clonedScene.children.forEach((child) => {
-      if (child.name === GRILL_NODE_NAMES[focusGrill]) return
-      child.traverse((mesh) => { if (mesh instanceof THREE.Mesh) mesh.material = FADED_MATERIAL })
-    })
+    if (focusGrill !== undefined) fadeAllButGrill(clonedScene, focusGrill)
   }, [clonedScene, focusGrill])
 
   useEffect(() => {

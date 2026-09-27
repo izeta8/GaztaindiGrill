@@ -128,7 +128,7 @@ El guard avanza en cada iteración del `loop()` desde `GrillSystem::handle_rotor
 
 **Cuánto sube.** `min_safe_position(θ) = 50·|sin θ| + CLEARANCE_PCT`, con una excepción: a menos de `ROTOR_MARGIN` de la horizontal (0° o 180°) devuelve 0, porque no hay borde colgando y la parrilla puede bajar del todo.
 
-La altura que se exige no es la del ángulo destino sino la del **peor punto del arco recorrido**, que calcula `min_safe_position_for_turn()`. Un volteo de 180° cruza los 90° aunque empiece y acabe en horizontal, así que pide el máximo (`SAFE_ROTATION_POSITION_PCT`, 60 %); un giro de 10° no cruza nada y desde el 20 % no sube.
+La altura que se exige no es la del ángulo destino sino la del **peor punto del arco recorrido**, que calcula `min_safe_position_for_turn()`. Un volteo de 180° cruza los 90° aunque empiece y acabe en horizontal, así que pide el máximo (`SAFE_ROTATION_POSITION_PCT`, 60 %); un giro de 10° no cruza nada y desde el 20 % no sube. Solo cuenta lo que el giro empeora: si ningún punto del arco cuelga más que la rejilla ahora, no sube nada. Un giro hacia plano (de 20° a 0°, de 90° a 0°) nunca sube, aunque la parrilla esté por debajo del suelo del ángulo del que sale.
 
 **Qué cubre y qué no.** Cubre los cuatro caminos que pasan por `go_to_rotor()`: `action/movement/set_rotation`, `action/movement/set_pose`, los pasos de rotación de un programa y la acción `flip` (vía `turn_around()`). **No** cubre los giros manuales (`rotate_clockwise()` / `rotate_counter_clockwise()`): esos los da alguien mirando la parrilla, y frenarlos con una subida automática estorbaba más de lo que protegía. Tampoco pone tope a los movimientos verticales normales.
 

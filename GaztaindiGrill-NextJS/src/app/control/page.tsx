@@ -65,13 +65,8 @@ function GrillControlContent() {
 
         {/* Viewport minus the navbar (~3.75rem); the bottom padding keeps the dock off the centre. */}
         <section className="min-h-[calc(100dvh-3.75rem)] flex flex-col justify-center pt-4 pb-20">
-          {/* Modelo 3D. Se desmonta con la modal abierta: dos lienzos WebGL a la vez dejan uno
-              de los dos sin repintar, y el de la modal se quedaba con el estado de cuando se abrió. */}
-          <div className='h-[290px]'>
-            {selectedGrill === null && (
-              <GrillScene onGrillSelect={currentMode === undefined ? undefined : handleGrillSelect} />
-            )}
-          </div>
+          {/* Modelo 3D */}
+          <GrillScene onGrillSelect={currentMode === undefined ? undefined : handleGrillSelect} />
 
           {/* Esperar a que se fetcheé el modo */}
           {currentMode === undefined && (

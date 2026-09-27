@@ -144,6 +144,16 @@ try {
         } catch {
             Write-Host "  ${SiteUrl}control is not resolving to control.html - mod_rewrite is off or the .htaccess rewrite is being ignored." -ForegroundColor Yellow
         }
+
+        # Invoke-WebRequest in 5.1 asks for no compression, so the header has to be asked for.
+        try {
+            $model = Invoke-WebRequest -Uri "${SiteUrl}models/parrilla_model_v5.glb" -Method Head -Headers @{ 'Accept-Encoding' = 'gzip' } -UseBasicParsing -TimeoutSec 10
+            if ($model.Headers['Content-Encoding'] -ne 'gzip') {
+                Write-Host "  The 3D model is served uncompressed: mod_deflate is off or the .htaccess filter is being ignored." -ForegroundColor Yellow
+            }
+        } catch {
+            Write-Host "  Could not check compression on the 3D model. $($_.Exception.Message)" -ForegroundColor Yellow
+        }
     }
 } catch {
     Write-Host "Files are in place, but $SiteUrl did not answer - check the Apache2 add-on is started. $($_.Exception.Message)" -ForegroundColor Yellow

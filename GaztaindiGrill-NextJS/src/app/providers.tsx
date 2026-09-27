@@ -8,6 +8,7 @@ import { CurrentModeProvider } from '@/contexts/CurrentModeContext';
 import { GrillStateProvider } from '@/contexts/GrillStateContext';
 import { CurrentUserProvider } from '@/contexts/CurrentUserContext';
 import { UserSelectionModal } from '@/components/shared/UserSelectionModal';
+import { SharedGrillCanvasProvider } from '@/components/three/SharedGrillCanvas';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -17,7 +18,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <RunningProgramsProvider>
           <CurrentModeProvider>
             <CurrentUserProvider>
+            <SharedGrillCanvasProvider>
             {children}
+            </SharedGrillCanvasProvider>
             <UserSelectionModal />
             <Toaster position="top-center" richColors closeButton />
             </CurrentUserProvider>

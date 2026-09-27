@@ -83,7 +83,7 @@ const CURRENT_POSITION_OPACITY = 0.2
 const ROTOR_NODE_NAME = 'rotor_cilindro+parrilla'
 
 // Degrees per step while dragging. Typing in the modal is exact.
-const ROTATION_DRAG_STEP = 15
+const ROTATION_DRAG_STEP = 5
 
 // Where the rotor angle sits: out past the rotor and over the top of the structure, clear of the
 // position labels, which ride up with their rack.
@@ -115,6 +115,10 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
   const hasSnapped = useRef(false)
   const isFocused = useRef(false)
   const { camera, gl } = useThree()
+  const size = useThree((state) => state.size)
+
+  // The shared canvas is sized after it moves into the modal, so the first framing may be stale.
+  useEffect(() => { isFocused.current = false }, [size.width, size.height])
 
   const box3 = useMemo(() => new THREE.Box3(), [])
   const vector3 = useMemo(() => new THREE.Vector3(), [])
@@ -433,7 +437,8 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
     const handleDown = (event: PointerEvent) => {
       if (!targetRef.current) return
       const y = heightUnder(event)
-      const angle = angleAround(event)
+      // The right grill has no rotor, so it has no angle to read.
+      const angle = targetRef.current.mode === 'rotation' ? angleAround(event) : 0
       if (y === null || angle === null) return
       canvas.setPointerCapture(event.pointerId)
       drag = {
@@ -456,7 +461,8 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
       const angle = angleAround(event)
       if (angle === null) return
       const turned = THREE.MathUtils.radToDeg(angle - drag.startAngle)
-      const degrees = drag.startValue + Math.round(turned / ROTATION_DRAG_STEP) * ROTATION_DRAG_STEP
+      // Onto multiples of the step, so a grill resting at 87° drags to 85 or 90, not 92.
+      const degrees = Math.round((drag.startValue + turned) / ROTATION_DRAG_STEP) * ROTATION_DRAG_STEP
       targetRef.current.onDragRotation(((degrees % 360) + 360) % 360)
     }
 

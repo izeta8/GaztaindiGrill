@@ -1,21 +1,8 @@
 "use client"
 
-import React, { Suspense } from 'react'
-import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Stage, Center, ContactShadows, Html } from '@react-three/drei'
-import { GrillModel, type GrillModelProps } from './GrillModel'
-
-function Loader() {
-  return (
-    <Html center>
-      <div className="flex flex-col items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-2"></div>
-        <p className="text-blue-600 font-medium whitespace-nowrap">Cargando parrilla...</p>
-      </div>
-    </Html>
-  )
-}
-
+import React, { useId, useLayoutEffect, useRef } from 'react'
+import { type GrillModelProps } from './GrillModel'
+import { useGrillCanvasSlots } from './SharedGrillCanvas'
 
 interface GrillSceneProps {
   className?: string
@@ -27,71 +14,30 @@ interface GrillSceneProps {
   target?: GrillModelProps['target']
 }
 
+const DEFAULT_CAMERA: [number, number, number] = [0, 6.2, 9]
+
+// A place for the shared canvas (SharedGrillCanvas). The last scene mounted holds it.
 export default function GrillScene({
   className = 'w-full h-[290px]',
-  cameraPosition = [0, 6.2, 9],
+  cameraPosition = DEFAULT_CAMERA,
   controls = true,
   showLabels = true,
   onGrillSelect,
   focusGrill,
   target,
 }: GrillSceneProps) {
-  return (
-    
-    <div className={className}>
-    {/* <div className="w-full h-[250px] bg-white rounded-xl shadow-inner border border-gray-100 overflow-hidden relative"> */}
-      <Canvas
-        frameloop="always"
-        shadows
-        camera={{ position: cameraPosition, fov: 23 }} 
-        gl={{ antialias: true, alpha: true }}
-      >
-        <Suspense fallback={<Loader />}>
-        
-          <Stage 
-            // Served locally: the "city" preset fetches this file from a CDN at runtime, and without it the model never loads.
-            environment={{ files: '/hdri/potsdamer_platz_1k.hdr' }}
-            intensity={0.5} 
-            adjustCamera={false}
-          >
-            <Center top>
-              <GrillModel 
-                scale={1} 
-                showLabels={showLabels}
-                onGrillSelect={onGrillSelect}
-                focusGrill={focusGrill}
-                target={target}
-              />
-            </Center>
-          </Stage>
-          
-          {controls && (
-            <OrbitControls 
-              enablePan={false} 
-              minPolarAngle={Math.PI / 2.2} 
-              maxPolarAngle={Math.PI / 2}
-              minAzimuthAngle={-Math.PI / 12}
-              maxAzimuthAngle={Math.PI / 6}
-              enableZoom={true}
-              autoRotate={false}
-              target={[0, 0.1, 0]}
-            />
-          )}
-          
-          <ContactShadows
-            position={[0, -1.5, 0]}
-            opacity={0.4}
-            scale={10}
-            blur={2}
-            far={4.5}
-          />
+  const id = useId()
+  const ref = useRef<HTMLDivElement>(null)
+  const { upsert, remove } = useGrillCanvasSlots()
 
-        </Suspense>
-      </Canvas>
-      
-      {/* <div className="absolute bottom-4 right-4 bg-white/80 backdrop-blur-xs px-3 py-1 rounded-full text-[10px] text-gray-500 pointer-events-none">
-        Manten click para rotar · Scroll para zoom
-      </div> */}
-    </div>
-  )
+  // Every render: the target carries the drag handlers and the values being picked.
+  useLayoutEffect(() => {
+    if (!ref.current) return
+    upsert({ id, element: ref.current, props: { cameraPosition, controls, showLabels, onGrillSelect, focusGrill, target } })
+  })
+
+  // Layout too, so the canvas is back in the page before the closed modal is painted away.
+  useLayoutEffect(() => () => remove(id), [id, remove])
+
+  return <div ref={ref} className={className} />
 }

@@ -18,7 +18,20 @@
     RewriteRule ^(.+)$ $1.html [L]
 </IfModule>
 
+# The add-on compresses nothing by default. The 3D model is 1.1 MB raw and 130 KB
+# gzipped, and the JS shrinks about as much. The .hdr barely compresses, so it is
+# left out.
+<IfModule mod_deflate.c>
+    <FilesMatch "\.(html|txt|js|css|json|svg|glb)$">
+        SetOutputFilter DEFLATE
+    </FilesMatch>
+</IfModule>
+
 <IfModule mod_headers.c>
+
+    # mod_deflate adds -gzip to the ETag and then no longer recognises it when the
+    # browser sends it back, so every revalidation would be a full 200.
+    RequestHeader edit "If-None-Match" "^\"(.*)-gzip\"$" "\"$1\""
 
     # Default for everything, HTML above all: the entry point's name never
     # changes, so it has to be revalidated. ETag turns that into a cheap 304.
@@ -28,6 +41,9 @@
     # its name, so a change is a new URL and the old one can be kept forever.
     <IfModule mod_setenvif.c>
         SetEnvIf Request_URI "^/_next/static/" IMMUTABLE_ASSET
+        # The 3D assets get no hash from the build, so the rule is by hand: changing
+        # one of these files means giving it a new name (parrilla_model_v5 -> v6).
+        SetEnvIf Request_URI "^/(models|hdri|fonts)/" IMMUTABLE_ASSET
         Header set Cache-Control "public, max-age=31536000, immutable" env=IMMUTABLE_ASSET
     </IfModule>
 

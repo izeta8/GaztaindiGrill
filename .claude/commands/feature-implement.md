@@ -18,15 +18,17 @@ Execute a plan from `/feature-plan` one atomic step at a time, staging each step
 
 1. **Find the plan.** Use the one in this conversation if present; otherwise read the most recent file in `.claude/plans/`. If neither exists and `$ARGUMENTS` doesn't describe a single well-scoped task, stop and ask the user to run `/feature-plan` first.
 
-2. **Take the specified task** (or the next unfinished one). State in one line which task you're on, so a mistyped number is visible immediately.
+2. **Be on the plan's branch.** Check `git branch --show-current` against the branch named in the plan. If they differ, switch to it (`git switch <branch>`, or `git switch -c <branch>` if it does not exist yet) before touching any file. Staged and uncommitted work carries over; say so if there was any.
 
-3. **Before writing code, read the docs for that task's domain** if they aren't already loaded — the context-routing table in `/feature-plan` step 2. For anything MQTT, `GrillConstants.h` wins over every doc.
+3. **Take the specified task** (or the next unfinished one). State in one line which task and branch you're on, so a mistyped number is visible immediately.
 
-4. **Implement only that task's scope.** No refactoring unrelated files, no pulling work forward from a later task, no drive-by cleanups. If you spot something worth fixing outside the scope, note it in the report rather than doing it.
+4. **Before writing code, read the docs for that task's domain** if they aren't already loaded — the context-routing table in `/feature-plan` step 2. For anything MQTT, `GrillConstants.h` wins over every doc.
 
-5. **Follow house style**, which means matching the surrounding code rather than importing conventions from elsewhere: the `{ time?, temperature?, position?, rotation? }` step schema is shared across all three projects; API request bodies are camelCase while responses and the DB are snake_case (intentional — don't "fix" one side alone); firmware error codes are machine codes, with the display wording owned by the client.
+5. **Implement only that task's scope.** No refactoring unrelated files, no pulling work forward from a later task, no drive-by cleanups. If you spot something worth fixing outside the scope, note it in the report rather than doing it.
 
-6. **Verify before staging. Never stage red.**
+6. **Follow house style**, which means matching the surrounding code rather than importing conventions from elsewhere: the `{ time?, temperature?, position?, rotation? }` step schema is shared across all three projects; API request bodies are camelCase while responses and the DB are snake_case (intentional — don't "fix" one side alone); firmware error codes are machine codes, with the display wording owned by the client.
+
+7. **Verify before staging. Never stage red.**
 
    | Project touched | Run |
    |---|---|
@@ -38,9 +40,9 @@ Execute a plan from `/feature-plan` one atomic step at a time, staging each step
 
    These are compile/lint gates, not tests — there are no test suites in any of these projects. **Never claim a change is "tested."** Say what you actually ran, and name the manual verification the user still needs to do (flash and watch `mosquitto_sub -v -t 'grill/#'`, exercise the page in a browser, hit the endpoint directly).
 
-7. **Stage only the files this task touched.** `git add -- <exact paths>`. Never `git add -A`, `git add .`, or `-a` on commit — these projects are full of build and venv noise. Verify with `git status --porcelain` when the task spans several paths.
+8. **Stage only the files this task touched.** `git add -- <exact paths>`. Never `git add -A`, `git add .`, or `-a` on commit — these projects are full of build and venv noise. Verify with `git status --porcelain` when the task spans several paths.
 
-8. **Print the exact command pair**, so the user can review the staged diff and then commit in one click. **The user is on Windows PowerShell 5.1, where `&&` is a parser error** — chain with `; if ($?) { ... }` and tag the fence `powershell`:
+9. **Print the exact command pair**, so the user can review the staged diff and then commit in one click. **The user is on Windows PowerShell 5.1, where `&&` is a parser error** — chain with `; if ($?) { ... }` and tag the fence `powershell`:
 
    ```powershell
    git add -- GaztaindiGrill-ESP32/lib/Grill/ProgramManager.cpp; if ($?) { git commit -m "feat: let programs run positions relative to the starting point" }
@@ -48,9 +50,9 @@ Execute a plan from `/feature-plan` one atomic step at a time, staging each step
 
    If the task turned out to need more than one commit, split it: stage and report each part separately, in order, each with its own `git add` + `git commit` pair — the user runs them in sequence. Never lump two concerns into one staging step because it's faster.
 
-9. **Update the plan file** — mark the task done — then report in one or two sentences and **stop**. Do not chain into the next task unreviewed.
+10. **Update the plan file** — mark the task done — then report in one or two sentences and **stop**. Do not chain into the next task unreviewed.
 
-10. **End every report with a Next step line:**
+11. **End every report with a Next step line:**
     - Tasks remain: `**Next step:** run `/feature-implement <next number>`.`
     - That was the last task: `**Next step:** the feature is implemented — run `/docs-sync`.`
 
@@ -64,8 +66,8 @@ Execute a plan from `/feature-plan` one atomic step at a time, staging each step
 
 ## Guardrails
 
-- Never run `git commit`, `git push`, `git checkout` or `git stash`. Staging is the full extent of this command's git mutation.
-- Never switch branches — that's the user's call.
+- Never run `git commit`, `git push`, `git checkout` or `git stash`. Staging, plus switching to the plan's own branch (step 2), is the full extent of this command's git mutation.
+- Never switch to any branch other than the plan's.
 - One task → one staged batch → one proposed message.
 - If a requirement turns out ambiguous mid-task, stop and ask. Don't guess and keep going.
 - If the working tree already had unrelated changes when you started, leave them alone and say they're there — don't sweep them into the staging.

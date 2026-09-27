@@ -151,7 +151,7 @@ The normal path for anything bigger than a one-liner is four commands, in order.
 
 | Step | Command | What it does |
 |---|---|---|
-| 1 | `/feature-plan <what you want>` | Reads the affected projects and docs, then writes a numbered plan of atomic, independently-committable tasks to `.claude/plans/<slug>.md`. Plans only — never writes code. Edit the file directly to correct the plan. |
+| 1 | `/feature-plan <what you want>` | Reads the affected projects and docs, then writes a numbered plan of atomic, independently-committable tasks to `.claude/plans/<slug>.md`, then creates and switches to the feature branch it names. Plans only — never writes code. Edit the file directly to correct the plan. |
 | 2 | `/feature-implement [n]` | Implements **one** task, verifies it (`pio run` / `npm run lint` / `compileall` — there are no test suites), stages exactly that task's files and proposes its commit message as a runnable command. Stages; never commits. Repeat per task. |
 | 3 | `/docs-sync` | Diffs the branch, maps changed paths to the docs that describe them, updates those docs against the real diff, stages them with `docs:` messages. |
 | 4 | `/commit` | Lands everything. |
@@ -170,5 +170,5 @@ Steps 2 and 3 deliberately stop after each unit of work instead of batching: the
 
 - **Never commit without being asked.** Staging and committing happen when the user runs `/commit` or says so explicitly — not as the tail end of a task.
 - **Uncommitted work never blocks new work.** If the user changes direction with a dirty tree, follow them. Don't insist on committing, stashing, or "cleaning up" first, and don't refuse to start something new. Just keep track of what's pending.
-- **Don't switch branches on your own.** Branch changes are the user's call.
+- **Features get their own branch, switched to by the agent.** `/feature-plan` creates `<type>/<slug>` from `develop` and switches to it, and `/feature-implement` makes sure it is still on it; a feature never lands on `develop` or `main` directly. Any other branch change is the user's call.
 - **Shell commands you hand the user must be PowerShell 5.1.** That's what they run. `&&` is a parser error there — chain with `; if ($?) { ... }`, and tag the fence `powershell`. Same for `head`/`tail`/`which`/`touch`, which don't exist as such.

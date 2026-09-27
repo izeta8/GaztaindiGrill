@@ -50,7 +50,7 @@ This command only plans. It hands off to `/feature-implement` once the plan is a
 
 5. **Flag ambiguity instead of silently deciding.** If two readings of the request lead to materially different work, say so and ask — that is cheaper here than after implementation.
 
-6. **Suggest a branch name** in `<type>/<kebab-slug>` form (e.g. `feat/skip-program-step`). **Never switch branches yourself** — branch changes are the user's call (root `CLAUDE.md`). If the current branch already looks dedicated to this work, say so and skip the suggestion.
+6. **Name the feature branch** in `<type>/<kebab-slug>` form (e.g. `feat/skip-program-step`) and write it at the top of the plan file. If the current branch already looks dedicated to this work, say so and use it. Otherwise **create and switch to it yourself** with `git switch -c <branch>` once the plan is written, branching from the current branch (normally `develop`); uncommitted changes carry over, so say if there were any. If the branch already exists, `git switch <branch>` instead. This is the one branch change the agent makes on its own: a feature never lands on `develop` or `main` directly.
 
 7. **Write the plan to `.claude/plans/<slug>.md`** (create the directory if needed, slug from the branch name), then print it in the reply. The file is what `/feature-implement` reads, and the user can edit it directly to correct the plan.
 
@@ -59,7 +59,7 @@ This command only plans. It hands off to `/feature-implement` once the plan is a
 ## Output
 
 - A numbered task list: description, files, commit type, verification.
-- The suggested branch name, if any.
+- The feature branch, and confirmation that you are now on it.
 - Open questions called out explicitly, not buried.
 - The path of the written plan file.
 - End the reply with this exact line: `**Next step:** once you approve this plan, run `/feature-implement 1`.`

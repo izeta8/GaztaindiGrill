@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useId, useLayoutEffect, useRef } from 'react'
-import { type GrillModelProps } from './GrillModel'
+import { GrillModel, type GrillModelProps } from './GrillModel'
 import { useGrillCanvasSlots } from './SharedGrillCanvas'
 
 interface GrillSceneProps {
@@ -33,7 +33,23 @@ export default function GrillScene({
   // Every render: the target carries the drag handlers and the values being picked.
   useLayoutEffect(() => {
     if (!ref.current) return
-    upsert({ id, element: ref.current, props: { cameraPosition, controls, showLabels, onGrillSelect, focusGrill, target } })
+    upsert({
+      id,
+      element: ref.current,
+      props: {
+        cameraPosition,
+        controls,
+        content: (
+          <GrillModel
+            scale={1}
+            showLabels={showLabels}
+            onGrillSelect={onGrillSelect}
+            focusGrill={focusGrill}
+            target={target}
+          />
+        ),
+      },
+    })
   })
 
   // Layout too, so the canvas is back in the page before the closed modal is painted away.

@@ -4,16 +4,12 @@ import React, { createContext, Suspense, useContext, useLayoutEffect, useMemo, u
 import { createPortal } from 'react-dom'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, Stage, Center, ContactShadows, Html } from '@react-three/drei'
-import { GrillModel, type GrillModelProps } from './GrillModel'
 
-// What a GrillScene asks the shared canvas to show while it holds it.
+// What a scene asks the shared canvas to show while it holds it.
 export interface GrillSlotProps {
   cameraPosition: [number, number, number]
   controls: boolean
-  showLabels: boolean
-  onGrillSelect?: (index: 0 | 1) => void
-  focusGrill?: 0 | 1
-  target?: GrillModelProps['target']
+  content: React.ReactNode
 }
 
 interface Slot {
@@ -141,13 +137,7 @@ export function SharedGrillCanvasProvider({ children }: { children: React.ReactN
                   <CameraReset position={active.props.cameraPosition} />
                   <RevealWhenReady host={host} slot={active.element} />
                   <Center top>
-                    <GrillModel
-                      scale={1}
-                      showLabels={active.props.showLabels}
-                      onGrillSelect={active.props.onGrillSelect}
-                      focusGrill={active.props.focusGrill}
-                      target={active.props.target}
-                    />
+                    {active.props.content}
                   </Center>
                 </React.Fragment>
               )}

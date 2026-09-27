@@ -437,7 +437,8 @@ export function GrillModel({ showLabels = true, onGrillSelect, focusGrill, targe
     const handleDown = (event: PointerEvent) => {
       if (!targetRef.current) return
       const y = heightUnder(event)
-      const angle = angleAround(event)
+      // The right grill has no rotor, so it has no angle to read.
+      const angle = targetRef.current.mode === 'rotation' ? angleAround(event) : 0
       if (y === null || angle === null) return
       canvas.setPointerCapture(event.pointerId)
       drag = {

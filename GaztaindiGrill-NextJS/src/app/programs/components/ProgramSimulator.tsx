@@ -138,7 +138,7 @@ export function ProgramSimulator({ steps, referenceType, simulationStart }: Prog
                   </span>
                 )}
               </div>
-              {notice && <p className="mt-1 text-xs text-amber-700">{notice}</p>}
+              {notice && <p className={`mt-1 text-xs ${notice.warning ? 'text-amber-700' : 'text-gray-500'}`}>{notice.text}</p>}
             </div>
           )
         })}

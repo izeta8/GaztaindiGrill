@@ -107,15 +107,23 @@ export const planSimulation = (steps: ProgramStep[], referenceType: ReferenceTyp
   })
 }
 
-// What the user should know about how a step will really run, in their words.
-export const stepNotice = (step: SimulatedStep) => {
-  if (step.clamped) return `Se sale del recorrido: ${step.clamped.requested}% se queda en ${step.clamped.applied}%`
-  if (step.raised) return `Con esa inclinación no puede bajar de ${step.raised.applied}%`
+// How a step will really run, in the user's words. `warning` when the step will not do exactly
+// what was written; otherwise it only tells what the grill does on its own.
+export const stepNotice = (step: SimulatedStep): { text: string; warning: boolean } | null => {
+  if (step.clamped) {
+    return { text: `Se sale del recorrido: ${step.clamped.requested}% se quedará en ${step.clamped.applied}%`, warning: true }
+  }
+  if (step.raised) {
+    return { text: `Con esa inclinación no puede bajar de ${step.raised.applied}%: se quedará ahí`, warning: true }
+  }
   const lift = step.phases.find((current) => current.kind === 'lift')
   if (lift) {
     const comesDown = step.end.position < lift.to.position
-    const safely = `Antes de girar sube al ${lift.to.position}% para no tocar las brasas`
-    return comesDown ? `${safely}, y al acabar baja al ${step.end.position}%` : safely
+    const text = `La parrilla subirá sola al ${lift.to.position}% antes de girar, para no tocar las brasas`
+    const after = comesDown
+      ? `, y luego bajará al ${step.end.position}%`
+      : ', y se quedará ahí: con esa inclinación no es seguro bajar más'
+    return { text: text + after, warning: false }
   }
   return null
 }

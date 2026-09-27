@@ -36,7 +36,7 @@ export function StepPreview({ previousSteps, step, referenceType, start }: StepP
           {Math.round(pose.position)}% · {Math.round(pose.rotation) % 360}°
         </div>
       </div>
-      {notice && <p className="text-xs text-amber-700">{notice}</p>}
+      {notice && <p className={`text-xs ${notice.warning ? 'text-amber-700' : 'text-gray-500'}`}>{notice.text}</p>}
     </div>
   )
 }

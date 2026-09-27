@@ -42,8 +42,8 @@ public:
     // Air left under the tilted edge: 3 cm over a 30 cm travel.
     static constexpr int CLEARANCE_PCT = 10;
 
-    // Height every rotation demands before the rotor may start. It is min_safe_position(90),
-    // the worst case, because a turn sweeps through 90 degrees whatever its target angle is.
+    // Height a turn through 90 or 270 degrees demands before the rotor may start. It is
+    // min_safe_position(90), the worst case.
     static constexpr int SAFE_ROTATION_POSITION_PCT = 60;
 
     // Rotor PWM duty. Manual turns run slower so the tilt can be set by eye; anything with a

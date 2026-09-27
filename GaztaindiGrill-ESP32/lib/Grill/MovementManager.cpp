@@ -221,6 +221,7 @@ static bool arc_covers(int start, int span, int angle) {
 
 // The rack keeps tilting as it turns, so the whole arc has to clear the embers, not just the
 // destination. Only the two ends and a crossing of 90 or 270 can be the worst point of it.
+// 0 when no point of the arc hangs lower than the rack does now, as in any turn towards flat.
 int MovementManager::min_safe_position_for_turn(int fromAngle, int toAngle) {
 
     // start_rotation_to() always takes the shorter way round.
@@ -228,13 +229,17 @@ int MovementManager::min_safe_position_for_turn(int fromAngle, int toAngle) {
     int span = (forward <= 180) ? forward : 360 - forward;
     int start = (forward <= 180) ? fromAngle : toAngle;
 
+    int fromFloor = min_safe_position(fromAngle);
+    int worst;
+
     if (arc_covers(start, span, 90) || arc_covers(start, span, 270)) {
-        return GrillConstants::SAFE_ROTATION_POSITION_PCT;
+        worst = GrillConstants::SAFE_ROTATION_POSITION_PCT;
+    } else {
+        int toFloor = min_safe_position(toAngle);
+        worst = (fromFloor > toFloor) ? fromFloor : toFloor;
     }
 
-    int fromFloor = min_safe_position(fromAngle);
-    int toFloor = min_safe_position(toAngle);
-    return (fromFloor > toFloor) ? fromFloor : toFloor;
+    return (worst > fromFloor) ? worst : 0;
 }
 
 // Advances the guard. Called every loop from GrillSystem::handle_rotor_operations(), right

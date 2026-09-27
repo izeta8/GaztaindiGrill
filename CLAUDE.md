@@ -4,15 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Pendiente de probar en el caserío
 
-**El ESP32 lleva firmware sin flashear, y lo nuevo está sin probar con fuego.** La próxima vez que
-se vaya al caserío, antes de nada:
-
-```bash
-cd GaztaindiGrill-ESP32 && pio run -t upload
-```
-
-Sin flashear no funciona nada de esto, porque la parrilla sigue con el firmware viejo. Qué probar,
-con `mosquitto_sub -v -t 'grill/#'` mirando:
+**El ESP32 está flasheado desde el 27/09/2026, pero lo nuevo está sin probar en la parrilla.**
+Qué probar, con `mosquitto_sub -v -t 'grill/#'` mirando:
 
 1. **Pasos de temperatura en programas** (lo último, ver `.claude/plans/temperature-steps.md`):
    un programa `[{temperature: T}, {time: 600}]` con T por encima de la lectura actual baja la
@@ -27,6 +20,8 @@ con `mosquitto_sub -v -t 'grill/#'` mirando:
    `set_position 0` para en el 60 %; `set_pose {40, 90}` desde el 20 % sube, gira y acaba en 60.
 5. **Parar a mano un `set_pose`:** lanzarlo desde el modal, pararlo con el botón central de los
    controles a mitad de giro, y darle al punto 0 (botón azul). Antes daba `rotor_busy` para siempre.
+6. **Girar hacia plano no sube:** con la rejilla a 20° y al 16 %, `set_rotation 0` gira sin mover
+   la altura; de 0° a 90° desde el 20 % sigue subiendo al 60 %, y de 20° a 60° sube al 54 %.
 
 Cuando todo esté probado, borrar esta sección.
 

@@ -107,6 +107,19 @@ export const planSimulation = (steps: ProgramStep[], referenceType: ReferenceTyp
   })
 }
 
+// What the user should know about how a step will really run, in their words.
+export const stepNotice = (step: SimulatedStep) => {
+  if (step.clamped) return `Se sale del recorrido: ${step.clamped.requested}% se queda en ${step.clamped.applied}%`
+  if (step.raised) return `Con esa inclinación no puede bajar de ${step.raised.applied}%`
+  const lift = step.phases.find((current) => current.kind === 'lift')
+  if (lift) {
+    const comesDown = step.end.position < lift.to.position
+    const safely = `Antes de girar sube al ${lift.to.position}% para no tocar las brasas`
+    return comesDown ? `${safely}, y al acabar baja al ${step.end.position}%` : safely
+  }
+  return null
+}
+
 export const stepDuration = (step: SimulatedStep) =>
   step.phases.reduce((total, current) => total + current.duration, 0)
 

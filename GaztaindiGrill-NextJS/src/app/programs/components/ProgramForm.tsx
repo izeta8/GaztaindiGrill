@@ -10,11 +10,12 @@ import { Select } from '@/components/ui/Select'
 import type { ProgramStep, ReferenceType } from '@/types'
 import { apiBaseUrl, toDateInputValue, fromDateInputValue } from '@/utils'
 import { StepsList } from './StepsList'
-import { StepModal, type StepFormState } from './StepModal'
+import { StepModal, ROTATION_WRAPS_AT, type StepFormState } from './StepModal'
 import { CategoryModal } from './CategoryModal'
 import { UserModal } from './UserModal'
 import { ReferenceTypeInfoModal } from './ReferenceTypeInfoModal'
 import { ProgramSimulator } from './ProgramSimulator'
+import { useSimulationStart } from '@/app/programs/hooks/useSimulationStart'
 import { useCurrentUser } from '@/contexts/CurrentUserContext'
 
 export type Category = { id: number; name: string }
@@ -80,6 +81,7 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
   // Categories
   const [referenceType, setReferenceType] = useState<ReferenceType>(initialValues?.referenceType || 'absolute')
   const [isReferenceInfoOpen, setIsReferenceInfoOpen] = useState(false)
+  const simulationStart = useSimulationStart(referenceType)
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     initialValues?.categoryId ?? null
@@ -237,8 +239,8 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
     } else if (stepForm.type === 'rotation') {
       if (!stepForm.rotation) return
       const inc = parseInt(stepForm.rotation)
-      if (isNaN(inc) || inc < 0 || inc > 360) {
-        toast.error('La rotación debe estar entre 0 y 360')
+      if (isNaN(inc) || inc < 0 || inc >= ROTATION_WRAPS_AT) {
+        toast.error(`La rotación debe estar entre 0 y ${ROTATION_WRAPS_AT - 1}`)
         return
       }
       newStep.rotation = inc
@@ -257,6 +259,8 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
   const deleteStep = (index: number) => setSteps(steps.filter((_, i) => i !== index))
 
   const chainedSteps = useMemo(() => backToBackPairs(steps), [steps])
+  // What runs before the step in the modal: all of them when adding, those above it when editing.
+  const previousSteps = useMemo(() => steps.slice(0, editingStep ?? steps.length), [steps, editingStep])
   const moveStep = (index: number, direction: 'up' | 'down') => {
     if ((direction === 'up' && index === 0) || (direction === 'down' && index === steps.length - 1)) return
     const swapped = [...steps]
@@ -500,7 +504,7 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
 
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Simulación</h2>
-            <ProgramSimulator steps={steps} referenceType={referenceType} />
+            <ProgramSimulator steps={steps} referenceType={referenceType} simulationStart={simulationStart} />
           </div>
 
           {/* Submit Section */}
@@ -525,6 +529,8 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
           setStepForm={setStepForm}
           onSubmit={handleStepSubmit}
           editingStep={editingStep}
+          previousSteps={previousSteps}
+          simulationStart={simulationStart.start}
         />
 
         {/* Create Category Modal */}

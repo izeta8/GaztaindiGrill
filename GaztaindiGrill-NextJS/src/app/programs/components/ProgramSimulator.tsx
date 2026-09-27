@@ -1,14 +1,13 @@
 "use client"
 
-import { useMemo, useState } from 'react'
 import { LocateFixed, Pause, Play, RotateCcw, SkipForward, Thermometer } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import SimulatorScene from '@/components/three/SimulatorScene'
-import { useGrillState } from '@/app/control/hooks/useGrillState'
 import { SIMULATION_SPEEDS, useProgramSimulation } from '@/app/programs/hooks/useProgramSimulation'
+import type { SimulationStart } from '@/app/programs/hooks/useSimulationStart'
 import type { ProgramStep, ReferenceType } from '@/types'
-import { formatSeconds, getStepDescription, getStepIcon, type SimulatedStep } from '@/utils'
+import { formatSeconds, getStepDescription, getStepIcon, stepNotice } from '@/utils'
 
 // TEMPERATURE_BAND in GrillConstants.h. The simulator has no fire, so it only names the band.
 const TEMPERATURE_BAND = 5
@@ -16,27 +15,11 @@ const TEMPERATURE_BAND = 5
 type ProgramSimulatorProps = {
   steps: ProgramStep[]
   referenceType: ReferenceType
+  simulationStart: SimulationStart
 }
 
-const stepNotice = (step: SimulatedStep) => {
-  if (step.clamped) return `Se sale del recorrido: ${step.clamped.requested}% se queda en ${step.clamped.applied}%`
-  if (step.raised) return `Con esa inclinación no puede bajar de ${step.raised.applied}%`
-  return null
-}
-
-export function ProgramSimulator({ steps, referenceType }: ProgramSimulatorProps) {
-  const grillState = useGrillState(0)
-
-  // Null follows the real grill; typing fixes the starting height.
-  const [startDraft, setStartDraft] = useState<string | null>(null)
-  const typedStart = Number(startDraft)
-  const hasTypedStart = startDraft !== null && startDraft !== '' && typedStart >= 0 && typedStart <= 100
-  const startPosition = referenceType === 'relative' && hasTypedStart ? typedStart : grillState.position
-
-  const start = useMemo(
-    () => ({ position: startPosition, rotation: grillState.rotation }),
-    [startPosition, grillState.rotation]
-  )
+export function ProgramSimulator({ steps, referenceType, simulationStart }: ProgramSimulatorProps) {
+  const { start } = simulationStart
 
   const { plan, status, stepIndex, speed, readout, getPose, play, pause, skip, reset, setSpeed } =
     useProgramSimulation(steps, referenceType, start)
@@ -110,16 +93,16 @@ export function ProgramSimulator({ steps, referenceType }: ProgramSimulatorProps
             <Input
               label="Punto de partida (%)"
               type="number"
-              value={startDraft ?? String(grillState.position)}
-              onChange={setStartDraft}
+              value={simulationStart.input}
+              onChange={simulationStart.setInput}
               min={0}
               max={100}
             />
           </div>
           <Button
-            onClick={() => setStartDraft(null)}
+            onClick={simulationStart.followRealGrill}
             variant="secondary"
-            disabled={startDraft === null}
+            disabled={simulationStart.followsRealGrill}
             ariaLabel="Usar la altura actual de la parrilla"
             className="h-10"
           >

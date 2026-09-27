@@ -71,7 +71,7 @@ export function ProgramSimulator({ steps, referenceType }: ProgramSimulatorProps
             Pausar
           </Button>
         ) : (
-          <Button onClick={play} className="flex-1" ariaLabel="Iniciar simulación">
+          <Button onClick={play} className="flex-1" disabled={plan.length === 0} ariaLabel="Iniciar simulación">
             <Play className="h-4 w-4 mr-2" />
             {status === 'paused' ? 'Reanudar' : 'Iniciar'}
           </Button>
@@ -113,6 +113,10 @@ export function ProgramSimulator({ steps, referenceType }: ProgramSimulatorProps
           min={0}
           max={100}
         />
+      )}
+
+      {plan.length === 0 && (
+        <p className="text-sm text-gray-500 text-center">Añade pasos para simular el programa</p>
       )}
 
       <div className="space-y-2">

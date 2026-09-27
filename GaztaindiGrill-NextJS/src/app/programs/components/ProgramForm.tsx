@@ -498,12 +498,10 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
             )}
           </div>
 
-          {steps.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Simulación</h2>
-              <ProgramSimulator steps={steps} referenceType={referenceType} />
-            </div>
-          )}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Simulación</h2>
+            <ProgramSimulator steps={steps} referenceType={referenceType} />
+          </div>
 
           {/* Submit Section */}
           <div className="bg-white rounded-lg shadow-sm p-6">

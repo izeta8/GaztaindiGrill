@@ -13,6 +13,7 @@ import { StepModal, type StepFormState } from "@/app/programs/components/StepMod
 import { EMPTY_STEP_FORM, formToStep, stepToForm } from "@/app/programs/utils/stepForm";
 import type { ProgramStep } from "@/types";
 import { secondsSince } from "@/app/control/hooks/useSecondsSince";
+import { useRunningStepNotices } from "@/app/control/hooks/useRunningStepNotices";
 
 type EditStep = (index: number, step: ProgramStep) => void;
 
@@ -32,6 +33,8 @@ export function ProgramExecutionStatus({ handleCancelPrograms, handleSkipSteps, 
   const [stepForm, setStepForm] = useState<StepFormState>(EMPTY_STEP_FORM);
   // The wait under way opens with the time it has left; the firmware starts it again on save.
   const [editsWaitUnderWay, setEditsWaitUnderWay] = useState(false);
+
+  const { notices } = useRunningStepNotices(activeTab, runningPrograms[activeTab]);
 
   const hasProgram0 = !!runningPrograms[0];
   const hasProgram1 = !!runningPrograms[1];
@@ -121,6 +124,7 @@ export function ProgramExecutionStatus({ handleCancelPrograms, handleSkipSteps, 
             <ExecutionSteps 
               steps={runningProgram.steps} 
               currentStepIndex={currentStepIndex} 
+              notices={notices}
               onEdit={isConnected && runningProgram.isRunning ? openEditStep : undefined}
             />
 

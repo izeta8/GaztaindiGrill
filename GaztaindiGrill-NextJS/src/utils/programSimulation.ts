@@ -68,17 +68,28 @@ const turnPhases = (from: GrillPose, degrees: number): SimulationPhase[] => {
   return phases
 }
 
+export interface SimulationOptions {
+  // The right grill has no rotor: the firmware ignores its turns and flips, and it never tilts.
+  hasRotor?: boolean
+  // Where a relative program started, when it is not where the simulation starts.
+  anchor?: number
+}
+
 // Resolved in the firmware's order: action, temperature, position, rotation, time.
-export const planSimulation = (steps: ProgramStep[], referenceType: ReferenceType, start: GrillPose): SimulatedStep[] => {
-  const anchor = start.position
-  let pose = start
+export const planSimulation = (
+  steps: ProgramStep[],
+  referenceType: ReferenceType,
+  start: GrillPose,
+  { hasRotor = true, anchor = start.position }: SimulationOptions = {},
+): SimulatedStep[] => {
+  let pose = hasRotor ? start : { ...start, rotation: 0 }
   let holding: number | null = null
 
   return steps.map((step) => {
     const simulated: SimulatedStep = { phases: [], start: pose, end: pose, holding }
 
     if (step.action) {
-      if (step.action === 'flip') simulated.phases = turnPhases(pose, (pose.rotation + 180) % 360)
+      if (step.action === 'flip' && hasRotor) simulated.phases = turnPhases(pose, (pose.rotation + 180) % 360)
     } else if (step.temperature != null) {
       holding = step.temperature
       simulated.holding = holding
@@ -96,7 +107,7 @@ export const planSimulation = (steps: ProgramStep[], referenceType: ReferenceTyp
 
       simulated.phases = [moveTo('move', pose, applied)]
     } else if (step.rotation != null) {
-      if (step.rotation >= 0 && step.rotation < 360) simulated.phases = turnPhases(pose, step.rotation)
+      if (hasRotor && step.rotation >= 0 && step.rotation < 360) simulated.phases = turnPhases(pose, step.rotation)
     } else if (step.time != null && step.time > 0) {
       simulated.phases = [phase('wait', pose, pose, step.time)]
     }

@@ -13,6 +13,7 @@ import { StepModal, type StepFormState } from "@/app/programs/components/StepMod
 import { EMPTY_STEP_FORM, formToStep, stepToForm } from "@/app/programs/utils/stepForm";
 import type { ProgramStep } from "@/types";
 import { secondsSince } from "@/app/control/hooks/useSecondsSince";
+import { useRunningStepNotices } from "@/app/control/hooks/useRunningStepNotices";
 
 type EditStep = (index: number, step: ProgramStep) => void;
 
@@ -32,6 +33,8 @@ export function ProgramExecutionStatus({ handleCancelPrograms, handleSkipSteps, 
   const [stepForm, setStepForm] = useState<StepFormState>(EMPTY_STEP_FORM);
   // The wait under way opens with the time it has left; the firmware starts it again on save.
   const [editsWaitUnderWay, setEditsWaitUnderWay] = useState(false);
+
+  const { notices, noticesFor } = useRunningStepNotices(activeTab, runningPrograms[activeTab]);
 
   const hasProgram0 = !!runningPrograms[0];
   const hasProgram1 = !!runningPrograms[1];
@@ -67,6 +70,12 @@ export function ProgramExecutionStatus({ handleCancelPrograms, handleSkipSteps, 
     setStepForm(stepToForm(elapsed === null ? step : { time: Math.max(0, step.time! - elapsed) }));
     setEditingStep(index);
   };
+
+  // The program with the value being typed in place, so the notice follows each keystroke.
+  const edited = editingStep !== null ? formToStep(stepForm, referenceType) : null;
+  const editNotice = runningProgram && editingStep !== null && edited && 'step' in edited
+    ? noticesFor(runningProgram.steps.map((step, index) => index === editingStep ? edited.step : step))[editingStep]
+    : null;
 
   const handleEditSubmit = () => {
     if (editingStep === null) return;
@@ -121,6 +130,7 @@ export function ProgramExecutionStatus({ handleCancelPrograms, handleSkipSteps, 
             <ExecutionSteps 
               steps={runningProgram.steps} 
               currentStepIndex={currentStepIndex} 
+              notices={notices}
               onEdit={isConnected && runningProgram.isRunning ? openEditStep : undefined}
             />
 
@@ -159,6 +169,7 @@ export function ProgramExecutionStatus({ handleCancelPrograms, handleSkipSteps, 
         editingStep={editingStep}
         lockedType
         note={editsWaitUnderWay ? 'Esta espera ya está en marcha: empezará de nuevo con el tiempo que pongas.' : undefined}
+        notice={editNotice}
       />
     </div>
   );

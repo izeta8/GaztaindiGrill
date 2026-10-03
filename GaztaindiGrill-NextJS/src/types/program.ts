@@ -76,6 +76,8 @@ export interface RunningProgram {
   elapsedTime: number;
   steps: RunningProgramStep[];
   referenceType?: ReferenceType;
+  // Only on relative programs: the height their steps are added to.
+  positionAnchor?: number;
   hold?: TemperatureHold;
 }
 

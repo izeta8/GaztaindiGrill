@@ -189,6 +189,7 @@ function publishProgram(g) {
         isRunning: true,
         currentStepIndex: g.stepIndex,
         elapsedTime: 0,
+        ...(g.program.referenceType === 'relative' && { positionAnchor: g.anchor }),
         steps: g.program.steps.map((s, i) => (i === g.stepIndex ? { ...s, stepStartUnix: g.stepStartUnix } : s)),
       }
     : { isRunning: false }

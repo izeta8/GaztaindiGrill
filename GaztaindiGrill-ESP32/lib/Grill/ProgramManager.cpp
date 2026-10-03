@@ -461,6 +461,9 @@ void ProgramManager::publish_program_status() {
         doc["programId"] = currentProgram.id;
         doc["currentStepIndex"] = programCurrentStep;
         doc["referenceType"] = currentProgram.referenceType;
+        if (currentProgram.referenceType == GrillConstants::PAYLOAD_REFERENCE_TYPE_RELATIVE) {
+            doc[GrillConstants::JSON_POSITION_ANCHOR] = positionAnchor;
+        }
 
         // Runtime state like stepStartUnix: the client cannot work it out from the steps, since
         // skipping the temperature step drops the hold while that step is still in the list.

@@ -113,6 +113,8 @@ public:
     static constexpr const char* JSON_ROTATION = "rotation";
     static constexpr const char* JSON_ACTION = "action";
     static constexpr const char* JSON_REFERENCE_TYPE = "referenceType";
+    // Inside status/program/current, only for relative programs: the height they add their steps to.
+    static constexpr const char* JSON_POSITION_ANCHOR = "positionAnchor";
 
     // Editing a running program's step: { "index": 2, "step": { "time": 300 } }
     static constexpr const char* JSON_INDEX = "index";

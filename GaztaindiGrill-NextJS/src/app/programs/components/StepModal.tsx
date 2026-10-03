@@ -37,6 +37,8 @@ type StepModalProps = {
   lockedType?: boolean
   // Shown under the fields, e.g. that a wait already under way counts from now.
   note?: string
+  // How the value typed will really run, when there is no preview to show it.
+  notice?: { text: string; warning: boolean } | null
 }
 
 // The step being typed, once it is a number the preview can place.
@@ -58,7 +60,8 @@ export function StepModal({
   previousSteps,
   simulationStart,
   lockedType = false,
-  note
+  note,
+  notice
 }: StepModalProps) {
   const showsPreview = (stepForm.type === 'position' || stepForm.type === 'rotation') && previousSteps && simulationStart
 
@@ -192,6 +195,7 @@ export function StepModal({
           )}
 
           {note && <p className="text-xs text-gray-500">{note}</p>}
+          {notice && <p className={`text-xs ${notice.warning ? 'text-amber-700' : 'text-gray-500'}`}>{notice.text}</p>}
 
           {showsPreview && (
             <StepPreview

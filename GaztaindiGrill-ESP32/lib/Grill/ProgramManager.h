@@ -37,6 +37,7 @@ public:
     void publish_program_status();
     void finish_program(bool forcedCancelation);
     void skip_current_step();
+    void edit_step(GrillRequest& request);
     bool is_program_running();
 
 private:
@@ -90,6 +91,7 @@ private:
     void execute_current_action();
     void advance_to_next_step();
     int resolve_target_position(int stepPosition);
+    void read_step(JsonObject source, Step& step);
 
     Program currentProgram;
 

@@ -69,6 +69,7 @@ Publicado por `ProgramManager::publish_program_status()` en el firmware:
 - El retenido sobrevive a un reinicio del ESP32. Para que no quede un programa fantasma, el firmware lo reescribe al arrancar, al reconectar con el broker y al rechazar un `cancel` o `skip_step` con `no_program_running`.
 - El estado vive en RAM del navegador: recargar la página lo borra, y la suscripción lo repuebla sola con el mensaje retenido.
 - No hay nada que invalidar. Si un programa se **edita** en la API mientras se está ejecutando, el cambio no afecta a la ejecución en curso: el ESP32 corre la copia que recibió por MQTT y tiene en su RAM, que es justamente la versión que se está cocinando.
+- Al revés también: editar un paso desde `/control` con `action/program/edit_step` cambia solo esa copia en RAM, y el ESP32 republica el retenido con el paso nuevo. El programa guardado en la API no se entera.
 
 ## Nota histórica
 

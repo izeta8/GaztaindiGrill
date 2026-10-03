@@ -26,6 +26,7 @@ export const TOPICS = {
       EXECUTE: 'action/program/execute',
       CANCEL: 'action/program/cancel',
       SKIP_STEP: 'action/program/skip_step',
+      EDIT_STEP: 'action/program/edit_step',
     },
     REQUEST: {
       PROGRAM_STATUS: 'action/request/program_status'

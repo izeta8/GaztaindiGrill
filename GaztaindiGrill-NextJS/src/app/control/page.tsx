@@ -117,6 +117,7 @@ function GrillControlContent() {
           <ProgramExecutionStatus
             handleCancelPrograms={[commands0.handleCancelProgram, commands1.handleCancelProgram]}
             handleSkipSteps={[commands0.handleSkipStep, commands1.handleSkipStep]}
+            handleEditSteps={[commands0.handleEditStep, commands1.handleEditStep]}
             isConnected={isConnected}
           />
         )}

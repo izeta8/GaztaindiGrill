@@ -119,6 +119,7 @@ sequenceDiagram
 | `grill/{id}/action/program/execute` | objeto programa (ver abajo) | Ejecuta un programa completo. |
 | `grill/{id}/action/program/cancel` | `""` | Cancela el programa en curso. Si no hay ninguno → `no_program_running`. |
 | `grill/{id}/action/program/skip_step` | `""` | Abandona el paso en curso y arranca el siguiente, en cualquier fase del paso: para actuador y rotor donde estén y anula el seguro de giro. Si era el último, el programa termina. Si no hay programa → `no_program_running`. |
+| `grill/{id}/action/program/edit_step` | `{ "index": 1, "step": { "time": 300 } }` | Reemplaza el paso `index` del programa en curso **solo para esta ejecución**: el programa guardado en la API no cambia. Republica `status/program/current`. Una espera en curso **vuelve a empezar** con el tiempo nuevo (se reinicia su reloj y su `stepStartUnix`); cualquier otro paso ya arrancado sigue como empezó. Qué pasos se pueden editar lo decide el cliente. Si no hay programa → `no_program_running`; `index` fuera de rango o sin `step` → `invalid_json`. |
 | `grill/{id}/action/request/program_status` | — | Fuerza una publicación de `status/program/current`. **El cliente no lo usa hoy**; existe en firmware y constantes como herramienta de depuración manual. |
 
 El payload de `execute` (`value`) es el objeto que arma `src/app/programs/list/page.tsx`:
@@ -206,6 +207,7 @@ sequenceDiagram
 3. Con cada avance publica `status/program/current` retenido.
 4. Todos los clientes suscritos actualizan su UI. `RunningProgramsContext` se suscribe con comodín a `grill/+/status/program/current`, así que cubre las dos parrillas con una sola suscripción.
 5. **Saltar paso**: el botón de `ProgramExecutionStatus` publica `action/program/skip_step`, sin confirmación. El ESP32 avanza y republica `status/program/current` con el nuevo `currentStepIndex`, o `{ "isRunning": false }` si era el último. En `localhost` no hay ESP32, así que `useGrillCommands` publica ese estado él mismo, igual que hace con el cancel.
+6. **Editar un paso en marcha**: el lápiz de un paso en la lista "Secuencia" abre la misma modal de pasos de crear programas, con el tipo bloqueado y sin vista 3D, y publica `action/program/edit_step`. Solo lo llevan los pasos futuros y la espera en curso, nunca una acción. El ESP32 reescribe el paso en RAM y republica `status/program/current`. En la espera en curso la modal abre con lo que le queda, y lo que se ponga cuenta desde ahora: el firmware reinicia esa espera, así que la lista muestra ese tiempo y la cuenta atrás empieza en él. En `localhost`, `useGrillCommands` republica el estado él mismo.
 
 ### Flujo 2: sincronización de un cliente nuevo
 
@@ -256,7 +258,7 @@ El firmware envía **códigos**, nunca texto de interfaz: así reescribir un men
 | `no_rotor` | Comando de rotación dirigido a una parrilla sin rotor (la 1). |
 | `rotation_out_of_range` | `set_rotation` o `set_pose` fuera de `[0, 360)`. |
 | `mode_change_denied` | El cambio de modo no se pudo aplicar. |
-| `no_program_running` | `cancel` o `skip_step` sin programa en curso. Antes de contestar, el firmware republica `status/program/current`, que corrige al cliente que creía ver un programa. |
+| `no_program_running` | `cancel`, `skip_step` o `edit_step` sin programa en curso. Antes de contestar, el firmware republica `status/program/current`, que corrige al cliente que creía ver un programa. |
 | `rotation_unsafe` | Un giro con destino que no se puede asegurar: el encoder de posición no contesta, o la subida previa no llegó dentro de `MOVEMENT_TIMEOUT`. |
 | `rotor_busy` | `reset_rotation` o `set_pose` con un programa en marcha o un movimiento sin terminar. |
 | `encoder_not_answering` | Programa `relative` que no puede anclar su posición inicial. |

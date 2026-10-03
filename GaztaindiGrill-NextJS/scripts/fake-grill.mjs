@@ -139,6 +139,25 @@ client.on('message', (topic, buffer) => {
       }
       startStep(g, g.stepIndex + 1)
       break
+    case 'action/program/edit_step': {
+      if (!g.program) {
+        publishProgram(g)
+        return reply(base, requestId, command, 'no_program_running')
+      }
+      const index = value?.index
+      if (!Number.isInteger(index) || index < 0 || index >= g.program.steps.length || typeof value?.step !== 'object') {
+        return reply(base, requestId, command, 'invalid_json')
+      }
+      g.program.steps[index] = value.step
+      // A wait under way starts its clock again, as in the firmware.
+      if (index === g.stepIndex && g.stepStage === 'waiting') {
+        const now = Date.now()
+        g.stepStartUnix = Math.floor(now / 1000)
+        g.waitUntil = now + (value.step.time || 0) * 1000
+      }
+      publishProgram(g)
+      break
+    }
     case 'action/request/program_status':
       publishProgram(g)
       break

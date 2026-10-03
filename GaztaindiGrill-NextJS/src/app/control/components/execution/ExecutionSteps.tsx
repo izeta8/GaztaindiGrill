@@ -1,3 +1,4 @@
+import { Pencil } from "lucide-react";
 import { getStepIcon, getStepDescription, formatDuration } from "@/utils";
 import { RunningProgramStep } from "@/types";
 import { useSecondsSince } from "@/app/control/hooks/useSecondsSince";
@@ -5,6 +6,8 @@ import { useSecondsSince } from "@/app/control/hooks/useSecondsSince";
 interface ExecutionStepsProps {
   steps: RunningProgramStep[];
   currentStepIndex: number;
+  // Absent when the grill is offline: nothing could be sent.
+  onEdit?: (index: number) => void;
 }
 
 // Same precedence as the firmware: time only makes a wait step when nothing else is set.
@@ -22,7 +25,12 @@ function WaitCountdown({ step }: { step: RunningProgramStep }) {
   );
 }
 
-export function ExecutionSteps({ steps, currentStepIndex }: ExecutionStepsProps) {
+// A step under way has already started, except a wait, which the firmware re-reads every pass. An
+// action has no value to change.
+const isEditable = (step: RunningProgramStep, index: number, currentStepIndex: number) =>
+  step.action == null && (index > currentStepIndex || (index === currentStepIndex && isWaitStep(step)));
+
+export function ExecutionSteps({ steps, currentStepIndex, onEdit }: ExecutionStepsProps) {
   return (
     <div className="mb-6">
       <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 px-1">Secuencia</h4>
@@ -59,6 +67,17 @@ export function ExecutionSteps({ steps, currentStepIndex }: ExecutionStepsProps)
               </span>
 
               {isCurrent && isWaitStep(step) && <WaitCountdown step={step} />}
+
+              {onEdit && isEditable(step, index, currentStepIndex) && (
+                <button
+                  type="button"
+                  onClick={() => onEdit(index)}
+                  aria-label={`Editar paso ${index + 1} en esta ejecución`}
+                  className="flex-shrink-0 p-1.5 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
           );
         })}

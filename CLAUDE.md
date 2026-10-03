@@ -22,6 +22,9 @@ Qué probar, con `mosquitto_sub -v -t 'grill/#'` mirando:
    controles a mitad de giro, y darle al punto 0 (botón azul). Antes daba `rotor_busy` para siempre.
 6. **Girar hacia plano no sube:** con la rejilla a 20° y al 16 %, `set_rotation 0` gira sin mover
    la altura; de 0° a 90° desde el 20 % sigue subiendo al 60 %, y de 20° a 60° sube al 54 %.
+7. **Editar un paso en marcha** (sin flashear aún): con un programa en una espera, cambiarla desde
+   el lápiz de "Secuencia" en `/control`: la espera vuelve a empezar con lo que pongas (poner 10 s
+   deja "Espera: 10s" y la cuenta atrás en 10) y el programa guardado en la API no cambia. Editar un paso futuro y ver que se ejecuta con el valor nuevo.
 
 Cuando todo esté probado, borrar esta sección.
 

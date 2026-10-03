@@ -253,6 +253,15 @@ void Grill::handle_mqtt_message(const char* pAction, GrillRequest& request) {
         programManager->skip_current_step();
     }
 
+    if (topic == GrillConstants::TOPIC_CMD_PROG_EDIT_STEP) {
+        if (!programManager->is_program_running()) {
+            programManager->publish_program_status();
+            mqtt->reply_error(request, GrillConstants::ERROR_NO_PROGRAM_RUNNING);
+            return;
+        }
+        programManager->edit_step(request);
+    }
+
     if (topic == GrillConstants::TOPIC_CMD_SET_ROTATION)
     {
         if (!movement->has_rotor()) {

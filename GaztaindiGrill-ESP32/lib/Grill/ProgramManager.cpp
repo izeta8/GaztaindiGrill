@@ -92,17 +92,7 @@ void ProgramManager::execute_program(GrillRequest& request) {
        
         if (currentProgram.stepsCount >= GrillConstants::MAX_PROGRAM_STEPS) break; // Array protection
 
-        Step& s = currentProgram.steps[currentProgram.stepsCount];
-        s.time = v[GrillConstants::JSON_TIME] | 0;
-        s.temperature = v[GrillConstants::JSON_TEMPERATURE] | -1;
-        // NO_TARGET (not -1) marks "not set", since relative mode allows negative position deltas.
-        // (Copied to a local first: ArduinoJson's operator| binds its default by reference, which
-        // would otherwise require an out-of-line definition for this header-only static constexpr.)
-        const int noPositionTarget = GrillConstants::NO_TARGET;
-        s.position = v[GrillConstants::JSON_POSITION] | noPositionTarget;
-        s.rotation = v[GrillConstants::JSON_ROTATION] | -1;
-        s.action = v[GrillConstants::JSON_ACTION] | "";
-        
+        read_step(v, currentProgram.steps[currentProgram.stepsCount]);
         currentProgram.stepsCount++;
     }
 
@@ -271,6 +261,47 @@ void ProgramManager::execute_current_action() {
     }
 }
 
+
+void ProgramManager::read_step(JsonObject source, Step& step) {
+    step.time = source[GrillConstants::JSON_TIME] | 0;
+    step.temperature = source[GrillConstants::JSON_TEMPERATURE] | -1;
+    // NO_TARGET (not -1) marks "not set", since relative mode allows negative position deltas.
+    // (Copied to a local first: ArduinoJson's operator| binds its default by reference, which
+    // would otherwise require an out-of-line definition for this header-only static constexpr.)
+    const int noPositionTarget = GrillConstants::NO_TARGET;
+    step.position = source[GrillConstants::JSON_POSITION] | noPositionTarget;
+    step.rotation = source[GrillConstants::JSON_ROTATION] | -1;
+    step.action = source[GrillConstants::JSON_ACTION] | "";
+}
+
+// Only for this run: nothing goes back to the API. A step already under way keeps running as it
+// began, except a wait, which starts its clock again so the new time counts from now.
+void ProgramManager::edit_step(GrillRequest& request) {
+    JsonDocument envelope;
+    if (deserializeJson(envelope, request.raw) != DeserializationError::Ok) {
+        mqtt->reply_error(request, GrillConstants::ERROR_INVALID_JSON);
+        return;
+    }
+
+    JsonObject edit = envelope[GrillConstants::JSON_VALUE];
+    JsonObject step = edit[GrillConstants::JSON_STEP];
+    int index = edit[GrillConstants::JSON_INDEX] | -1;
+
+    // A bad index would write outside the steps array.
+    if (step.isNull() || index < 0 || index >= currentProgram.stepsCount) {
+        mqtt->reply_error(request, GrillConstants::ERROR_INVALID_JSON);
+        return;
+    }
+
+    read_step(step, currentProgram.steps[index]);
+
+    if (index == programCurrentStep && stepState == STEP_WAITING_TIME) {
+        stepDurationStart = millis();
+        stepStartUnix = Utils::get_current_unix_time();
+    }
+    mqtt->print("Step " + String(index + 1) + " edited for this run");
+    publish_program_status();
+}
 
 void ProgramManager::skip_current_step() {
     mqtt->print("Skipping step " + String(programCurrentStep + 1));

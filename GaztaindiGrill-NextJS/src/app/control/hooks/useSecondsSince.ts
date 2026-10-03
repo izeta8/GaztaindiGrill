@@ -5,7 +5,14 @@ import { useEffect, useState } from 'react';
 // Before its first NTP sync the ESP32 stamps seconds since boot, not a date.
 const MIN_PLAUSIBLE_UNIX = 1_000_000_000;
 
-// Seconds elapsed since a UTC unix timestamp, ticking every second. Null when there is no real date.
+// Seconds elapsed since a UTC unix timestamp, right now. Null when there is no real date.
+export function secondsSince(unix?: number): number | null {
+  if (unix == null || unix < MIN_PLAUSIBLE_UNIX) return null;
+  // Clamped because the tablet's clock may run a little behind the ESP32's.
+  return Math.max(0, Math.floor(Date.now() / 1000) - unix);
+}
+
+// The same, ticking every second.
 export function useSecondsSince(unix?: number): number | null {
   const [now, setNow] = useState(() => Date.now());
 

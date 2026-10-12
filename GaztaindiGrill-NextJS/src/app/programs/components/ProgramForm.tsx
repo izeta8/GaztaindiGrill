@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Select } from '@/components/ui/Select'
 import type { ProgramStep, ReferenceType } from '@/types'
-import { apiBaseUrl, toDateInputValue, fromDateInputValue } from '@/utils'
+import { toDateInputValue, fromDateInputValue } from '@/utils'
 import { StepsList } from './StepsList'
 import { StepModal, type StepFormState } from './StepModal'
 import { CategoryModal } from './CategoryModal'
@@ -142,7 +142,7 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const res = await fetch(`${apiBaseUrl()}/categories`)
+        const res = await fetch('/api/categories')
         if (!res.ok) throw new Error('No se pudieron cargar las categorías')
         const data = await res.json()
         if (Array.isArray(data)) {
@@ -278,7 +278,7 @@ export function ProgramForm({ mode, initialValues, onSubmit, submitLabel }: Prog
     }
     setIsCreatingCategory(true)
     try {
-      const res = await fetch(`${apiBaseUrl()}/categories/create`, {
+      const res = await fetch('/api/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newCategoryName.trim() })

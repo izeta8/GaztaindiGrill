@@ -22,3 +22,7 @@ export const parseId = (raw: string): number | null => {
   const id = Number(raw)
   return Number.isInteger(id) && id > 0 ? id : null
 }
+
+// A UNIQUE column hit is the caller's mistake, not a server fault.
+export const isDuplicateEntry = (e: unknown) =>
+  e instanceof Error && (e.cause as { code?: string } | undefined)?.code === 'ER_DUP_ENTRY'

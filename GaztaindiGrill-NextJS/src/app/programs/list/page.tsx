@@ -15,7 +15,7 @@ import { FiltersBar } from './components/FiltersBar'
 import type { Program } from '@/types'
 import { TOPICS } from '@/constants/mqtt'
 import { GlobalStatusDock } from '@/components/shared/GlobalStatusDock'
-import { apiBaseUrl, parseSteps } from '@/utils'
+import { parseSteps } from '@/utils'
 
 type Category = { id: number; name: string }
 
@@ -155,7 +155,7 @@ function ProgramsPageContent() {
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const res = await fetch(`${apiBaseUrl()}/categories`)
+        const res = await fetch('/api/categories')
         if (!res.ok) return
         const data = await res.json()
         const arr: ApiCategory[] = Array.isArray(data) ? data : (data?.results || data?.data || [])

@@ -3,7 +3,7 @@
 // the URL the page was served from instead.
 
 export const resolveHost = (): string => {
-  // In dev the page comes from the laptop while the API and the broker live on the HA host.
+  // In dev the page comes from the laptop while the broker lives on the HA host.
   // NODE_ENV is 'production' in a build, so this branch never reaches the export.
   if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEV_HOST) {
     return process.env.NEXT_PUBLIC_DEV_HOST
@@ -13,11 +13,4 @@ export const resolveHost = (): string => {
   if (typeof window === 'undefined') return ''
 
   return window.location.hostname
-}
-
-export const apiBaseUrl = (): string => {
-  const host = resolveHost()
-  if (!host) return ''
-  const port = process.env.NEXT_PUBLIC_API_PORT || '8000'
-  return `http://${host}:${port}`
 }

@@ -108,7 +108,7 @@ function ProgramsPageContent() {
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch(`${apiBaseUrl()}/programs`)
+        const res = await fetch('/api/programs')
         if (!res.ok) throw new Error('No se pudieron cargar los programas')
         const data: unknown = await res.json()
         const arr = Array.isArray(data) ? (data as Record<string, unknown>[]) : []

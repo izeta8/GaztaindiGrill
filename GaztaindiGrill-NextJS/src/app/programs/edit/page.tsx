@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { ProgramForm, type ProgramFormInitialValues, type ProgramFormSubmitPayload } from '@/app/programs/components/ProgramForm'
-import { apiBaseUrl, parseSteps } from '@/utils'
+import { parseSteps } from '@/utils'
 import { Button } from '@/components/ui/Button'
 
 
@@ -21,7 +21,7 @@ function EditProgramPageContent() {
     const load = async () => {
       setLoading(true)
       try {
-        const res = await fetch(`${apiBaseUrl()}/programs/${id}`)
+        const res = await fetch(`/api/programs/${id}`)
         if (!res.ok) {
           toast.error('No se pudo cargar el programa')
           setLoading(false)
@@ -69,7 +69,7 @@ function EditProgramPageContent() {
           usageCount: payload.usageCount,
           referenceType: payload.referenceType,
         }
-        const res = await fetch(`${apiBaseUrl()}/programs/${id}`, {
+        const res = await fetch(`/api/programs/${id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),

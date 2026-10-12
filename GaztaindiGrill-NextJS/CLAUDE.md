@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Next.js 15 (App Router) + React 19 web client used to control the grill in real time and manage cooking programs. Part of the larger GaztaindiGrill ecosystem — see `../CLAUDE.md` for how this fits with the firmware and API, and for the MQTT topic source of truth.
+Next.js 15 (App Router) + React 19 web app used to control the grill in real time and manage cooking programs, plus the REST API those programs are stored through (`src/app/api/`, on MariaDB). It runs as a Node server in Docker on the home lab. Part of the larger GaztaindiGrill ecosystem — see `../CLAUDE.md` for how this fits with the firmware, and for the MQTT topic source of truth.
 
 ## Commands
 
@@ -14,67 +14,32 @@ npm run build
 npm run start
 npm run lint      # next lint
 npm run typecheck # tsc --noEmit, does not touch .next
-npm run deploy    # lint + typecheck + static export, mirrored onto the HA share
 ```
 
-`deploy.ps1` is the whole deploy: it refuses to run while `npm run dev` is up, runs lint and
-typecheck (there is no test suite to run yet), builds the static export that `output: 'export'`
-in `next.config.ts` produces under `out/`, and mirrors it onto `\share\htdocs` on the HA host
-with robocopy `/MIR` — so whatever was served before is deleted, then checks the site answers.
-Share, Samba credentials and the web port are hardcoded at the top of the script.
+**Deploying** is Docker on the home lab: `output: 'standalone'` in `next.config.ts`, a multi-stage
+`Dockerfile` and `compose.yaml`, rebuilt on the LXC with `git pull` + `docker compose up -d --build`.
+[docs/deploy.md](docs/deploy.md) is the full runbook, Docker install included. `docker build .` also
+works on the dev machine (about 4 min) and, unlike `npm run build`, never touches the dev server's `.next`.
 
-The **host** is not: `homeassistant.local` is mDNS and only answers on the LAN, so the script tries
-it first and falls back to `homeassistant.tailbedb82.ts.net` when it does not resolve. That makes
-`npm run deploy` work from off the LAN with no extra flag; `-HaHost <name>` forces either one.
-Deploying over Tailscale needs the Samba add-on to allow the tailnet's CGNAT range
-(`100.64.0.0/10`) in its `allow_hosts` — without it the port accepts the connection and Samba drops
-the session, which surfaces as "the specified network name is no longer available".
-
-`deploy.htaccess` is copied into `out/` as `.htaccess` on every deploy. Apache sends no
-`Cache-Control` of its own, so without it browsers guess a freshness lifetime from the file's age
-and keep serving a stale `index.html`. It marks HTML `no-cache` (revalidate, cheap 304 via ETag)
-and `/_next/static/` `immutable` for a year, which is safe because those names carry a content
-hash. Every directive is behind `<IfModule>`, so a missing module leaves the site working instead
-of 500-ing. The deploy's last step reports the `Cache-Control` it got back — if it says none came,
-the add-on is ignoring `.htaccess` (`AllowOverride None`) and the file is doing nothing.
-
-It also carries a rewrite: the export writes `control.html`, not `control/index.html`, so without
-it Apache answers 404 to `/control` and every deep link or in-app reload breaks. The rewrite
-resolves an extensionless path to its `.html` file, and the deploy probes `/control` to confirm it.
-
-It also turns on `mod_deflate` for text and the `.glb`: the add-on compresses nothing by default,
-and the 3D model drops from 1.1 MB to about 130 KB. The `If-None-Match` edit next to it strips the
-`-gzip` that mod_deflate adds to the ETag, which otherwise turns every revalidation into a full
-200. The deploy's last step warns if the model still comes back uncompressed.
-
-`/models/`, `/hdri/` and `/fonts/` are `immutable` for a year too, like `/_next/static/`, but
-their names carry no hash, so **changing one of those files means renaming it** (`parrilla_model_v5`
-→ `v6`) and updating the path in the code. Replacing a file under the same name leaves every browser
-that has seen it on the old one until its cache is cleared.
-
-**Nothing needs restarting after a deploy.** The Apache2 add-on (`605cee21_apache2`) has
-`document_root: /share/htdocs` and reads from disk on every request, so replacing the files is
-live at once, on port 8081 of whichever name you reached the host by. Only a change to the add-on's own options
-needs Settings > Add-ons > Apache2 > Restart. A stale browser cache can still pin the old
-`index.html` — the JS and CSS filenames are hashed, so those never go stale.
-
-If only the upload failed, retry it with `npm run deploy -- -SkipBuild`: it reuses the export
-already in `out/` instead of running the checks and the build again. The usual cause is Windows
-allowing a single credential set per SMB server — an Explorer window sitting on the share keeps
-its own connection alive, and the script cannot drop it. Close that window first.
+**Configuration is server-side and read at runtime**, from `.env.local` in dev and `.env` next to
+`compose.yaml` on the server; `.env.example` lists every variable. `DB_*` point at MariaDB, `MQTT_*`
+at the broker. Nothing is `NEXT_PUBLIC_*` any more, so the image holds no host or credential, and the
+root layout calls `connection()` so pages render per request rather than freezing the build's
+environment. Changing a value needs a restart (`npm run dev` included), never a rebuild.
 
 **Do not run `npm run build` while `npm run dev` is up.** `next dev` uses Turbopack and `next build` uses webpack, and both write to the same `.next` directory, so a build wipes the manifests out from under the dev server. It then throws `ENOENT ... build-manifest.json` on every request until you restart it. Use `npm run typecheck` instead: it checks the same types and never touches `.next`.
 
 No automated test suite is configured (no jest/vitest setup) — verification is manual in the browser, against the real grill. To watch or fake MQTT traffic while developing, use `mosquitto_sub -v -t 'grill/#'` and `mosquitto_pub` directly against the broker.
 
-Without the grill, `npm run fake-grill` (`scripts/fake-grill.mjs`) stands in for the ESP32 against a local broker on `mqtt://localhost:1883` (`MQTT_URL` overrides it). It publishes the LWT, mode and reset status, moves position and rotation for real on `set_position`, `set_rotation` and the manual commands, sends a temperature every 5 s, and answers on `status/result`. It also runs programs: it steps through them in the firmware's order, publishes the retained `status/program/current`, and honours `skip_step`, `edit_step` and `cancel`. A temperature step just waits 5 s. With no API to list programs, `npm run fake-program -- <0|1> [cancel]` starts a demo one on that grill (left by default), or cancels it. The broker needs a WebSocket listener on 1884 and `allow_anonymous true`, and `.env.local` must leave `NEXT_PUBLIC_DEV_HOST` and the MQTT credentials unset so the page talks to localhost — or start the `nextjs-dev-fake-grill` config in `.claude/launch.json`, which runs the dev server with `NEXT_PUBLIC_DEV_HOST=localhost` and leaves `.env.local` pointing at the real grill. With no API running, the user modal does not open and the control page still works.
+Without the grill, `npm run fake-grill` (`scripts/fake-grill.mjs`) stands in for the ESP32 against a local broker on `mqtt://localhost:1883` (`MQTT_URL` overrides it). It publishes the LWT, mode and reset status, moves position and rotation for real on `set_position`, `set_rotation` and the manual commands, sends a temperature every 5 s, and answers on `status/result`. It also runs programs: it steps through them in the firmware's order, publishes the retained `status/program/current`, and honours `skip_step`, `edit_step` and `cancel`. A temperature step just waits 5 s. Without the database to list programs, `npm run fake-program -- <0|1> [cancel]` starts a demo one on that grill (left by default), or cancels it. The broker needs a WebSocket listener on 1884 and `allow_anonymous true`, and the web needs `MQTT_HOST=localhost` — or start the `nextjs-dev-fake-grill` config in `.claude/launch.json`, which runs the dev server with `MQTT_HOST=localhost` and leaves `.env.local` pointing at the real grill. A `localhost` broker is also what turns on the client's simulation shortcuts (`isLocalBroker` in `useMqtt`). With no database reachable, the user modal does not open and the control page still works.
 
 ## Architecture
 
-- **No host is baked into the build.** The export is one artifact served both by LAN IP and by Tailscale name, so `resolveHost()` and `apiBaseUrl()` (`src/utils/host.ts`) take the host from `window.location.hostname` at runtime; only ports, protocol and credentials still come from `NEXT_PUBLIC_*`. `npm run dev` is the exception — there the page comes from your machine while the API and broker do not, so `NEXT_PUBLIC_DEV_HOST` overrides it, behind a `NODE_ENV === 'development'` check that a production build folds away. Both helpers return `''` when there is no `window`, so callers must resolve inside effects or handlers: reading them in a component body breaks `next build` at prerender.
-- **`homeassistant/`** holds the two files that live in Home Assistant but whose source of truth is this repo, neither of them deployed by `deploy.ps1`. `grill.html` goes in `config/www` by hand (**never** with robocopy `/MIR`, which would wipe the rest of that directory) and HA serves it at `/local/grill.html`; it is a six-line redirect to port 8081 carrying `location.hostname` across, which is what lets the dashboard card use a relative URL instead of a hardcoded host. `dashboard-card.yaml` is that card's view, pasted into the dashboard's raw config editor by hand. It has to be an explicit `.html` because HA answers 403 to a directory under `/local/`.
-- **Who made a program** is a row in the API's `users` table, not free text. `CurrentUserContext` fetches `GET /users`, keeps the pick in `localStorage` under `gaztaindigrill.user`, and validates the stored id against that list on every load — a user deactivated since is dropped and the modal reopens. `UserSelectionModal` is mounted in `providers.tsx` and cannot be dismissed until a user is picked, since nothing in the app works without one; the FAB's `Cambiar usuario` reopens it later, and that one *is* dismissable. Programs carry `userId` and read the creator's name from the API's joined `userName`. The `creatorName` still in `RunningProgram` and the execute payload is the MQTT side, which was deliberately left alone.
-- **HTTP to the API** (`GaztaindiGrill-API`) is used *only* for CRUD on programs, categories and users. See [docs/api.md](docs/api.md) for the request/response shapes — note the API's camelCase-request / snake_case-response asymmetry, which this client's code already expects.
+- **The API lives in this project.** `src/app/api/**/route.ts` only handles HTTP; bodies are validated with `zod` (`src/server/validation/`), queries live in a data access layer (`src/server/data/`) built on Drizzle, and `src/db/` holds the `mysql2` pool and the schema, written by hand because `drizzle-kit pull` hangs on MariaDB's `json_valid` check. Everything under `src/server/` and `src/db/` imports `server-only`, so a client component that pulls it in fails the build instead of shipping the credentials. Responses keep the exact snake_case shape the old FastAPI service sent. See [docs/api.md](docs/api.md) and [docs/database.md](docs/database.md).
+- **The broker's address comes from the server.** The page is no longer served from the Home Assistant host, so `location.hostname` cannot find the broker. The root layout reads `MQTT_*` (`src/server/mqttConfig.ts`) and passes them through `Providers` to `MqttProvider`; an empty `MQTT_HOST` still falls back to the page's host. The password reaches the browser either way, as it did when it was `NEXT_PUBLIC_`: the broker's WebSocket needs it from there.
+- **`homeassistant/dashboard-card.yaml`** is the HA dashboard view that embeds this app in an iframe, pasted into the dashboard's raw config editor by hand. Its URL names the home lab's fixed address, which the browser resolves, so the card only works from the LAN.
+- **Who made a program** is a row in the `users` table, not free text. `CurrentUserContext` fetches `GET /api/users`, keeps the pick in `localStorage` under `gaztaindigrill.user`, and validates the stored id against that list on every load — a user deactivated since is dropped and the modal reopens. `UserSelectionModal` is mounted in `providers.tsx` and cannot be dismissed until a user is picked, since nothing in the app works without one; the FAB's `Cambiar usuario` reopens it later, and that one *is* dismissable. Programs carry `userId` and read the creator's name from the API's joined `userName`. The `creatorName` still in `RunningProgram` and the execute payload is the MQTT side, which was deliberately left alone.
+- **HTTP to `/api`** is used *only* for CRUD on programs, categories and users, always on the page's own origin (`fetch('/api/programs')`). See [docs/api.md](docs/api.md) for the request/response shapes — note the camelCase-request / snake_case-response asymmetry, which the pages already expect.
 - **MQTT directly to the grill** (not routed through the API) handles everything real-time: manual movement/rotation commands, program execution, sensor telemetry, mode switching, and online/offline connection state. [docs/mqtt.md](docs/mqtt.md) documents the whole contract — topic tables, the `{ value, requestId }` envelope, error codes, flows. The topic strings themselves are owned by the firmware's `GrillConstants.h` and mirrored in `src/constants/mqtt.ts`; on any disagreement the firmware wins.
 - **Running-program state** (`src/contexts/RunningProgramsContext.tsx`): there is no cache and no request/response round trip. The ESP32 publishes the *entire* running program (name, steps, `currentStepIndex`, `stepStartUnix` on the current step) **retained** on `grill/{id}/status/program/current`, so the broker hands it to any client the moment it subscribes. The context just stores that payload per grill index and nulls it on `{ isRunning: false }`. See [docs/cache.md](docs/cache.md).
 - **`src/hooks/useMqtt.tsx`** — core MQTT client hook (uses the `mqtt` package). Domain-specific hooks (`useGrillState`, `useGrillCommands`, `useSystemActions`) build on top of it for grill state and command dispatch.

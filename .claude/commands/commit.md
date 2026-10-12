@@ -1,6 +1,6 @@
 ---
 description: Group uncommitted changes into atomic commits with house-style messages, then commit what you approve. Takes an optional path scope.
-argument-hint: "[firmware|next|api|all] [extra instructions]"
+argument-hint: "[firmware|next|all] [extra instructions]"
 allowed-tools: Bash, Read, Grep, Glob, Agent
 ---
 
@@ -10,14 +10,12 @@ User arguments (may be empty): $ARGUMENTS
 
 ## 0. Resolve the scope
 
-GaztaindiGrill is one repo. The first token of the arguments selects a path prefix to scope the run to. Everything after it is a free-form instruction to pass along (e.g. `/commit api sin tocar los docs`).
+GaztaindiGrill is one repo. The first token of the arguments selects a path prefix to scope the run to. Everything after it is a free-form instruction to pass along (e.g. `/commit next sin tocar los docs`).
 
 | Token | Path prefix |
 |---|---|
 | `firmware`, `grill`, `esp32`, `fw` | `GaztaindiGrill-ESP32/` |
-| `next`, `nextjs`, `web`, `front`, `frontend` | `GaztaindiGrill-NextJS/` |
-| `api`, `db`, `backend` | `GaztaindiGrill-API/` |
-| `addon`, `ha` | `GaztaindiGrill-API/addons/` |
+| `next`, `nextjs`, `web`, `front`, `frontend`, `api`, `db`, `backend` | `GaztaindiGrill-NextJS/` |
 | `all`, or no token at all | no filter — the whole repo |
 
 Match case-insensitively. A bare path that matches an existing directory also works. If the first token is not a recognised alias, treat the whole argument string as a free-form instruction and default the scope to the whole repo — do not error out over it.

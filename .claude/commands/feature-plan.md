@@ -27,8 +27,8 @@ This command only plans. It hands off to `/feature-implement` once the plan is a
    | MQTT topics, payloads, error codes | `GaztaindiGrill-ESP32/lib/Grill/GrillConstants.h` **first** (source of truth), then `GaztaindiGrill-NextJS/docs/mqtt.md`, `src/constants/mqtt.ts`, `src/constants/commandErrors.ts` |
    | Firmware behaviour, program execution, movement | `GaztaindiGrill-ESP32/CLAUDE.md`, `ARCHITECTURE.md`, `TODO.md` (known bugs — read before touching encoder or program-execution code) |
    | Web UI, hooks, contexts | `GaztaindiGrill-NextJS/CLAUDE.md`, `docs/mqtt.md`, `docs/cache.md` |
-   | REST endpoints, MySQL schema | `GaztaindiGrill-API/CLAUDE.md`, `docs/api-reference.md`, `docs/architecture.md`, `docs/database.md` |
-   | Home Assistant add-on packaging | root `CLAUDE.md` "Deploying the API to Home Assistant", `GaztaindiGrill-API/addons/gaztaindigrill_api/` |
+   | REST endpoints, database schema | `GaztaindiGrill-NextJS/CLAUDE.md`, `docs/api.md`, `docs/database.md`, `src/db/schema.ts` |
+   | Docker image, deploy to the home lab | root `CLAUDE.md` "Deploying the web", `GaztaindiGrill-NextJS/Dockerfile`, `compose.yaml` |
 
    Also run `git log --oneline -15` and `git status --porcelain` — if there's already work in flight, the plan continues it rather than duplicating or colliding with it. Say so explicitly if the tree is dirty.
 
@@ -45,7 +45,6 @@ This command only plans. It hands off to `/feature-implement` once the plan is a
    |---|---|
    | `GaztaindiGrill-ESP32/` | `pio run` (compiles; flashing and watching serial/MQTT is manual) |
    | `GaztaindiGrill-NextJS/` | `npm run lint`, and `npm run build` when the change could break the build |
-   | `GaztaindiGrill-API/` | `python -m compileall app`, plus importing `app.main` if a venv with the deps is available |
    | Any MQTT contract change | the `mqtt-contract-auditor` agent, as the final task |
 
 5. **Flag ambiguity instead of silently deciding.** If two readings of the request lead to materially different work, say so and ask — that is cheaper here than after implementation.

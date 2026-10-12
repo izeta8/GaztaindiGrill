@@ -36,11 +36,9 @@ Close the loop before committing: diff this branch against its base, work out wh
    | `GaztaindiGrill-ESP32/platformio.ini`, build/OTA setup | `GaztaindiGrill-ESP32/CLAUDE.md` (commands section) |
    | `GaztaindiGrill-NextJS/src/constants/mqtt.ts`, `commandErrors.ts`, `src/hooks/useMqtt.tsx` | `GaztaindiGrill-NextJS/docs/mqtt.md` |
    | `GaztaindiGrill-NextJS/src/contexts/RunningProgramsContext.tsx` | `GaztaindiGrill-NextJS/docs/cache.md` |
-   | `GaztaindiGrill-NextJS/src/app/**` (fetch calls to the API) | `GaztaindiGrill-NextJS/docs/api.md` |
-   | `GaztaindiGrill-API/app/api/routes/**` | `GaztaindiGrill-API/docs/api-reference.md` |
-   | `GaztaindiGrill-API/app/core/**`, `app/main.py` | `GaztaindiGrill-API/docs/architecture.md`, `GaztaindiGrill-API/CLAUDE.md` |
-   | MySQL schema, `app/schemas/**` | `GaztaindiGrill-API/docs/database.md`, `docs/api-reference.md` |
-   | `GaztaindiGrill-API/addons/**`, `deploy-addon.ps1` | root `CLAUDE.md` ("Deploying the API to Home Assistant"), `GaztaindiGrill-API/CLAUDE.md` |
+   | `GaztaindiGrill-NextJS/src/app/api/**`, `src/server/**`, fetch calls in `src/app/**` | `GaztaindiGrill-NextJS/docs/api.md` |
+   | `GaztaindiGrill-NextJS/src/db/**`, the MariaDB schema | `GaztaindiGrill-NextJS/docs/database.md` |
+   | `GaztaindiGrill-NextJS/Dockerfile`, `compose.yaml`, `next.config.ts`, `.env.example` | root `CLAUDE.md` ("Deploying the web"), `GaztaindiGrill-NextJS/CLAUDE.md` |
    | New project, new cross-project convention, new tooling in `.claude/` | root `CLAUDE.md` |
 
    If a changed path matches no row and isn't trivially internal, that's a **new system**: it needs its own section or doc, plus a pointer from the relevant `CLAUDE.md` — not silence.

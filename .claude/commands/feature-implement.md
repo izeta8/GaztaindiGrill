@@ -34,7 +34,6 @@ Execute a plan from `/feature-plan` one atomic step at a time, staging each step
    |---|---|
    | `GaztaindiGrill-ESP32/` | `pio run` from `GaztaindiGrill-ESP32/` |
    | `GaztaindiGrill-NextJS/` | `npm run lint` from `GaztaindiGrill-NextJS/`; add `npm run build` if the change could break the build |
-   | `GaztaindiGrill-API/` | `python -m compileall app` from `GaztaindiGrill-API/`; import `app.main` too if a venv with the deps exists |
 
    If the task changed any MQTT topic, payload string, error code or JSON field name, run the `mqtt-contract-auditor` agent and report what it found before staging.
 

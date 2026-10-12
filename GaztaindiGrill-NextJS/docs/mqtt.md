@@ -1,6 +1,6 @@
 # Arquitectura de Comunicación y Flujos MQTT
 
-Este documento describe la comunicación en tiempo real entre la **Parrilla (ESP32)** y el **Cliente Web (navegador)**. La **API (FastAPI)** no participa en estos flujos: solo sirve el CRUD HTTP de programas y categorías (ver [api.md](api.md)).
+Este documento describe la comunicación en tiempo real entre la **Parrilla (ESP32)** y el **Cliente Web (navegador)**. El **servidor de Next.js** no participa en estos flujos: sus rutas `/api` solo sirven el CRUD HTTP de programas, categorías y usuarios (ver [api.md](api.md)).
 
 > **Fuente de verdad:** los nombres de topic, payloads y códigos de error los define el firmware en
 > `GaztaindiGrill-ESP32/lib/Grill/GrillConstants.h`. El espejo del cliente vive en
@@ -12,18 +12,18 @@ Este documento describe la comunicación en tiempo real entre la **Parrilla (ESP
 ```mermaid
 flowchart LR
     WEB["<b>Cliente Web</b><br/>navegador"]
-    API["<b>API</b><br/>FastAPI"]
+    API["<b>Servidor Next.js</b><br/>rutas /api"]
     BROKER{{"<b>Broker MQTT</b><br/>Mosquitto"}}
     ESP["<b>Parrilla</b><br/>ESP32"]
 
-    WEB -->|"HTTP CRUD<br/>programas y categorías"| API
+    WEB -->|"HTTP CRUD<br/>programas, categorías y usuarios"| API
     WEB -->|"MQTT sobre WebSocket<br/>publica grill/{id}/action/...<br/>se suscribe a grill/{id}/status/..."| BROKER
     BROKER -->|"MQTT sobre TCP<br/>se suscribe al comodín grill/{id}/action/<br/>publica grill/{id}/status/..."| ESP
 ```
 
-- **HTTP/S:** solo datos persistidos (CRUD) entre **Cliente Web** y **API**.
+- **HTTP/S:** solo datos persistidos (CRUD) entre **Cliente Web** y las rutas `/api` del **servidor Next.js**.
 - **MQTT:** todo lo demás — comandos manuales, ejecución de programas, telemetría de sensores, modo single/dual y estado de conexión — **exclusivamente entre Cliente Web y Parrilla**.
-- El cliente se conecta por **WebSocket** (`ws://` o `wss://`, puerto 1884/8884 por defecto, configurable con `NEXT_PUBLIC_MQTT_*` — ver `src/hooks/useMqtt.tsx`). El **host** no se configura: sale de `resolveHost()` (`src/utils/host.ts`), que devuelve aquel desde el que se sirvió la página, de modo que el mismo export estático vale por LAN y por Tailscale. En desarrollo lo sustituye `NEXT_PUBLIC_DEV_HOST`, porque ahí la página la sirve tu máquina y el broker no. El ESP32 se conecta por TCP normal.
+- El cliente se conecta por **WebSocket** (`ws://` o `wss://`, puerto 1884/8884 por defecto, configurable con `MQTT_PROTOCOL` y `MQTT_PORT`). El **host** sale de `MQTT_HOST`; vacío, es el host desde el que se sirvió la página. Todas las `MQTT_*` son variables del **servidor**, no `NEXT_PUBLIC_*`: el layout raíz las lee en cada petición (`src/server/mqttConfig.ts`) y se las pasa a `MqttProvider` (`src/hooks/useMqtt.tsx`), así que cambiar de broker pide reiniciar el contenedor, no reconstruir la imagen. El ESP32 se conecta por TCP normal.
 
 ---
 
@@ -282,4 +282,4 @@ Para simular un comando a mano, recuerda el envoltorio (aunque el firmware tambi
 mosquitto_pub -t 'grill/0/action/movement/vertical' -m '{"value":"up","requestId":"manual-1"}'
 ```
 
-Cuando `resolveHost()` devuelve `localhost` —o sea `npm run dev` sin `NEXT_PUBLIC_DEV_HOST`— el cliente activa además algunos atajos de simulación (ver `src/utils/mqttSimulators.ts` y la rama `isLocalhost` de `useGrillCommands`), que publican estado *impostando al ESP32* en vez de mandarle órdenes.
+Cuando el broker es `localhost` —`MQTT_HOST=localhost`, o vacío con la página en localhost— el cliente activa además algunos atajos de simulación (ver `src/utils/mqttSimulators.ts` e `isLocalBroker` en `useGrillCommands`), que publican estado *impostando al ESP32* en vez de mandarle órdenes.

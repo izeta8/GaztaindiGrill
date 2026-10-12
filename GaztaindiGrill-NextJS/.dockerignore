@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+.git
+.env*
+!.env.example
+Dockerfile
+compose.yaml
+docs
+homeassistant
+*.md
+*.tsbuildinfo

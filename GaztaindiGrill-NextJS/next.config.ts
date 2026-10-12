@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "export",
+  // Copies only the files the server needs into .next/standalone, for a small Docker image.
+  output: "standalone",
 };
 
 export default nextConfig;

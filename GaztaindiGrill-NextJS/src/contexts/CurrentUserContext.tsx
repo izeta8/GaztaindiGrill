@@ -2,7 +2,6 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { apiBaseUrl } from "@/utils";
 import type { User } from "@/types";
 
 const STORAGE_KEY = "gaztaindigrill.user";
@@ -26,7 +25,7 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
 
   const fetchUsers = useCallback(async (): Promise<User[]> => {
-    const res = await fetch(`${apiBaseUrl()}/users`);
+    const res = await fetch("/api/users");
     if (!res.ok) throw new Error("No se pudieron cargar los usuarios");
     const data = await res.json();
     return Array.isArray(data) ? data.map((u) => ({ id: u.id, name: u.name })) : [];
@@ -69,7 +68,7 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
 
   const createUser = useCallback(async (name: string): Promise<User | undefined> => {
     try {
-      const res = await fetch(`${apiBaseUrl()}/users/create`, {
+      const res = await fetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),

@@ -6,7 +6,7 @@ import { ConnectionStatus, ResetStatus } from '@/types'
 import { toast } from 'sonner'
 import { TOPICS, REQUEST_ID_EVERYONE } from '@/constants/mqtt'
 import { commandErrorMessage } from '@/constants/commandErrors'
-import { resolveHost } from '@/utils'
+import type { MqttConfig } from '@/types'
 
 type MqttContextValue = {
   client: MqttClient | null
@@ -18,6 +18,8 @@ type MqttContextValue = {
   publish: (topic: string, payload: string, options?: IClientPublishOptions) => Promise<void>
   sendCommand: (topic: string, value: unknown, options?: SendCommandOptions) => Promise<void>
   subscribe: (topic: string, handler: (topic: string, payload: Uint8Array) => void) => Promise<() => void>
+  // A broker on localhost has no ESP32 behind it, only the fake grill.
+  isLocalBroker: boolean
 }
 
 export type SendCommandOptions = {
@@ -48,18 +50,17 @@ const PENDING_COMMAND_TTL_MS = 30_000
 
 const MqttContext = createContext<MqttContextValue | undefined>(undefined)
 
-function buildUrlAndOptions() {
-  const host = resolveHost()
-  const envPort = process.env.NEXT_PUBLIC_MQTT_PORT
-  const envProtocol = process.env.NEXT_PUBLIC_MQTT_PROTOCOL
-  const protocol =
-    envProtocol ||
-    (typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss' : 'ws')
-  const path = process.env.NEXT_PUBLIC_MQTT_PATH || ''
-  const username = process.env.NEXT_PUBLIC_MQTT_USER
-  const password = process.env.NEXT_PUBLIC_MQTT_PASSWORD
+// Without a configured host the broker is taken to live where the page came from.
+const brokerHostOf = (config: MqttConfig) => config.host || window.location.hostname
 
-  const port = envPort || (protocol === 'wss' ? '8884' : '1884')
+function buildUrlAndOptions(config: MqttConfig) {
+  const host = brokerHostOf(config)
+  const protocol = config.protocol || (window.location.protocol === 'https:' ? 'wss' : 'ws')
+  const path = config.path || ''
+  const username = config.username
+  const password = config.password
+
+  const port = config.port || (protocol === 'wss' ? '8884' : '1884')
   const normalizedPath = path ? (path.startsWith('/') ? path : `/${path}`) : ''
   const url = `${protocol}://${host}:${port}${normalizedPath}`
 
@@ -76,7 +77,7 @@ function buildUrlAndOptions() {
   return { url, options }
 }
 
-export function MqttProvider({ children }: { children: React.ReactNode }) {
+export function MqttProvider({ config, children }: { config: MqttConfig, children: React.ReactNode }) {
   const [client, setClient] = useState<MqttClient | null>(null)
   const [espConnectionStatus, setEspConnectionStatus] = useState(ConnectionStatus.Connecting)
   const [clientConnectionStatus, setClientConnectionStatus] = useState(ConnectionStatus.Connecting)
@@ -100,7 +101,7 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
     let c: MqttClient | null = null
 
     try {
-      const { url, options } = buildUrlAndOptions()
+      const { url, options } = buildUrlAndOptions(config)
       setEspConnectionStatus(ConnectionStatus.Connecting)
       c = mqtt.connect(url, options)
 
@@ -180,7 +181,7 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Config error')
     }
-  }, [])
+  }, [config])
 
   const publish = useCallback(async (topic: string, payload: string, options?: IClientPublishOptions) => {
     if (!client) throw new Error('MQTT client not initialized')
@@ -334,8 +335,10 @@ export function MqttProvider({ children }: { children: React.ReactNode }) {
     isPublishing,
     publish,
     sendCommand,
-    subscribe
-  }), [client, espConnectionStatus, clientConnectionStatus, resetStatus, error, isPublishing, publish, sendCommand, subscribe])
+    subscribe,
+    // Render also runs on the server, where there is no page host to fall back to.
+    isLocalBroker: typeof window !== 'undefined' && brokerHostOf(config) === 'localhost',
+  }), [client, espConnectionStatus, clientConnectionStatus, resetStatus, error, isPublishing, publish, sendCommand, subscribe, config.host])
 
   return <MqttContext.Provider value={value}>{children}</MqttContext.Provider>
 }

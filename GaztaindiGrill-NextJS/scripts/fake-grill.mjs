@@ -1,5 +1,5 @@
 // Fake ESP32 for developing without the grill. Speaks the contract in GrillConstants.h
-// against a local broker: `npm run fake-grill`, with NEXT_PUBLIC_DEV_HOST left empty.
+// against a local broker: `npm run fake-grill`, with the web's MQTT_HOST set to localhost.
 import mqtt from 'mqtt'
 
 const URL = process.env.MQTT_URL || 'mqtt://localhost:1883'

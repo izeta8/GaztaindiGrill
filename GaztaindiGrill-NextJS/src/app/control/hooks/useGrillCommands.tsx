@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { useMqtt } from '@/hooks/useMqtt';
 import { useRunningPrograms } from '@/contexts/RunningProgramsContext';
 import { TOPICS } from '@/constants';
-import { resolveHost } from '@/utils';
 import { ConnectionStatus as ConnectionStatusEnum } from '@/types';
 import type { GrillDirection, GrillRotation, ProgramStep } from '@/types';
 
@@ -17,7 +16,7 @@ const LIMITS = {
 export function useGrillCommands(grillIndex: number) {
   // publish stays for the localhost simulation below, which impersonates the ESP32 rather than
   // commanding it; real commands go through sendMqttCommand so they get an answer back.
-  const { publish, sendCommand: sendMqttCommand, espConnectionStatus, clientConnectionStatus } = useMqtt();
+  const { publish, sendCommand: sendMqttCommand, espConnectionStatus, clientConnectionStatus, isLocalBroker } = useMqtt();
   const { runningPrograms } = useRunningPrograms();
 
   const isConnected = espConnectionStatus === ConnectionStatusEnum.Online && clientConnectionStatus === ConnectionStatusEnum.Online;
@@ -106,9 +105,7 @@ export function useGrillCommands(grillIndex: number) {
       sendCommand(TOPICS.ACTION.PROGRAM.CANCEL, '');
 
       // If environment is localhost get rid of mqtt message so the hook doesnt re-read.
-      const isLocalhost = resolveHost() === 'localhost';
-
-      if (isLocalhost) {
+      if (isLocalBroker) {
         try {
           const payload = JSON.stringify({ isRunning: false });
           await publish(`grill/${grillIndex}/${TOPICS.STATUS.PROGRAM.CURRENT}`, payload, { qos: 1, retain: true });
@@ -117,14 +114,14 @@ export function useGrillCommands(grillIndex: number) {
         }
       }
     }
-  }, [grillName, sendCommand, publish, grillIndex]);
+  }, [grillName, sendCommand, publish, grillIndex, isLocalBroker]);
 
   const handleSkipStep = useCallback(async () => {
     sendCommand(TOPICS.ACTION.PROGRAM.SKIP_STEP, '');
 
     // On localhost there is no ESP32 to publish the next step, so do it as the firmware would.
     const program = runningPrograms[grillIndex as 0 | 1];
-    if (resolveHost() !== 'localhost' || !program) return;
+    if (!isLocalBroker || !program) return;
 
     const nextStepIndex = program.currentStepIndex + 1;
     const payload = nextStepIndex >= program.steps.length
@@ -143,7 +140,7 @@ export function useGrillCommands(grillIndex: number) {
     } catch (error) {
       console.error("Error updating local state in broker (simulation):", error);
     }
-  }, [sendCommand, runningPrograms, publish, grillIndex]);
+  }, [sendCommand, runningPrograms, publish, grillIndex, isLocalBroker]);
 
   // Only for this run: the saved program in the API is left as it was.
   const handleEditStep = useCallback(async (index: number, step: ProgramStep) => {
@@ -151,7 +148,7 @@ export function useGrillCommands(grillIndex: number) {
 
     // On localhost there is no ESP32 to republish the program, so do it as the firmware would.
     const program = runningPrograms[grillIndex as 0 | 1];
-    if (resolveHost() !== 'localhost' || !program) return;
+    if (!isLocalBroker || !program) return;
 
     const payload = {
       ...program,
@@ -168,7 +165,7 @@ export function useGrillCommands(grillIndex: number) {
     } catch (error) {
       console.error("Error updating local state in broker (simulation):", error);
     }
-  }, [sendCommand, runningPrograms, publish, grillIndex]);
+  }, [sendCommand, runningPrograms, publish, grillIndex, isLocalBroker]);
 
   return {
     handleDirectionCommand,

@@ -9,10 +9,11 @@ import { GrillStateProvider } from '@/contexts/GrillStateContext';
 import { CurrentUserProvider } from '@/contexts/CurrentUserContext';
 import { UserSelectionModal } from '@/components/shared/UserSelectionModal';
 import { SharedGrillCanvasProvider } from '@/components/three/SharedGrillCanvas';
+import type { MqttConfig } from '@/types';
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({ mqttConfig, children }: { mqttConfig: MqttConfig, children: React.ReactNode }) {
   return (
-    <MqttProvider>
+    <MqttProvider config={mqttConfig}>
       <GrillStateProvider>
         <ResettingOverlay />
         <RunningProgramsProvider>

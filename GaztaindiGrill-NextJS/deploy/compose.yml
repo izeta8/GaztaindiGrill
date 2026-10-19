@@ -1,0 +1,4 @@
+
+services:
+  next:
+    image: ghcr.io/izeta8/gaztaindigrillnext:0.0.1

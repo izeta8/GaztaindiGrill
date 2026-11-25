@@ -64,7 +64,7 @@ const IPAddress ETH_SUBNET  (255, 255, 255, 0);
 const IPAddress ETH_DNS     (8, 8, 8, 8);
 
 // MQTT broker
-const char * const MQTT_SERVER   = "192.168.1.76";
+const char * const MQTT_SERVER   = "192.168.1.102"; // Home Assistant (Mosquitto add-on)
 const int          MQTT_PORT     = 1883;
 const char * const MQTT_USER     = "gaztaindi";
 const char * const MQTT_PASSWORD = "gaztaindi";

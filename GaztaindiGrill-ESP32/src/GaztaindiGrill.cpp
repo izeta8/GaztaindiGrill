@@ -70,7 +70,7 @@ void loop() {
 
     if (ota_active) return; // Stop everything else if updating
 
-    // Renew DHCP lease if applicable (no-op with a static IP, but harmless).
+    // Renew the DHCP lease (no-op with the static fallback).
     Ethernet.maintain();
 
     // Ensure the physical Ethernet link is up.
@@ -119,8 +119,11 @@ void connect_to_ethernet() {
     // Tell the Ethernet library which pin is the W5500 chip-select.
     Ethernet.init(PIN_W5500_CS);
 
-    // Static configuration (same IP the device used over WiFi).
-    Ethernet.begin(ETH_MAC, ETH_LOCAL_IP, ETH_DNS, ETH_GATEWAY, ETH_SUBNET);
+    // DHCP (router reservation by MAC); static fallback if no lease.
+    if (Ethernet.begin(ETH_MAC, ETH_DHCP_TIMEOUT_MS) == 0) {
+        Serial.print("\nDHCP failed, using static fallback IP...");
+        Ethernet.begin(ETH_MAC, ETH_FALLBACK_IP, ETH_DNS, ETH_GATEWAY, ETH_SUBNET);
+    }
 
     if (Ethernet.hardwareStatus() == EthernetNoHardware) {
         Serial.println("\nERROR: W5500 not detected! Check SPI wiring / CS (GPIO2) / power.");

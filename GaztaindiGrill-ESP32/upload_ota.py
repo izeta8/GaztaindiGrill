@@ -13,7 +13,7 @@ import sys
 import urllib.error
 import urllib.request
 
-OTA_URL = "http://192.168.1.100:3232/update"
+OTA_URL = "http://192.168.1.70:3232/update"
 
 
 def main() -> int:

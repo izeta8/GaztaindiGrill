@@ -55,8 +55,10 @@ const int PIN_CS_LIMIT_LINEAL []  = {4, 15};
 // Locally-administered MAC for the W5500 (defined in GrillConfig.cpp).
 extern byte ETH_MAC[];
 
-// Static IP configuration (same address the device used over WiFi).
-const IPAddress ETH_LOCAL_IP(192, 168, 1, 100);
+// IP comes from DHCP (the router reserves 192.168.1.70 for ETH_MAC).
+// Static fallback, used only if DHCP fails: same address as the reservation.
+const unsigned long ETH_DHCP_TIMEOUT_MS = 10000;
+const IPAddress ETH_FALLBACK_IP(192, 168, 1, 70);
 const IPAddress ETH_GATEWAY (192, 168, 1, 1);
 const IPAddress ETH_SUBNET  (255, 255, 255, 0);
 const IPAddress ETH_DNS     (8, 8, 8, 8);

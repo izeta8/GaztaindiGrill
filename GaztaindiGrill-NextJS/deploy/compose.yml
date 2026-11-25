@@ -1,7 +1,0 @@
-
-services:
-  next:
-    image: ghcr.io/izeta8/gaztaindigrillnext:0.0.1
-    restart: unless-stopped
-    ports: 
-      - 3000:3000

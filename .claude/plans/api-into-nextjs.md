@@ -1,15 +1,18 @@
-# Plan: la API dentro de Next.js
+# Plan: la API dentro de Next.js y despliegue en el home lab
 
-Rama: `refactor/api-into-nextjs` (sale de `develop`; árbol limpio salvo `.vscode/` sin seguimiento, que este plan no toca).
+Ramas: `refactor/api-into-nextjs` (fase 1, sale de `develop`) y `feature/dockerize` (fase 2, sigue a la anterior).
 
 ## Qué es
 
-`GaztaindiGrill-API` existe solo porque el add-on Apache2 de Home Assistant servía ficheros
-estáticos. La web pasa a correr como servidor Node en un contenedor del home lab (Proxmox), así que
-el CRUD de programas, categorías y usuarios se muda a Route Handlers de Next.js y la API de Python
-se borra. MariaDB y Mosquitto se quedan, de momento, en Home Assistant.
+`GaztaindiGrill-API` existía solo porque el add-on Apache2 de Home Assistant servía ficheros
+estáticos. La web pasa a correr como servidor Node en el CT 103 del home lab (Proxmox), así que el
+CRUD de programas, categorías y usuarios se muda a Route Handlers de Next.js y la API de Python se
+borra. MariaDB y Mosquitto se quedan en Home Assistant.
 
-## Decisiones tomadas (edita este fichero antes de implementar si alguna no vale)
+Después, el despliegue se automatiza: un merge a `main` comprueba la web en GitHub y, si pasa, un
+runner self-hosted en el CT 103 actualiza el repo y la vuelve a arrancar. **Sin Docker por ahora.**
+
+## Decisiones
 
 ### Rutas REST bajo `/api`
 
@@ -25,116 +28,106 @@ se borra. MariaDB y Mosquitto se quedan, de momento, en Home Assistant.
 | `GET /users` | `GET /api/users` |
 | `POST /users/create` | `POST /api/users` |
 
-Mismo origen que la página, así que el cliente llama a `/api/...` relativo: desaparecen
-`apiBaseUrl()`, `NEXT_PUBLIC_API_PORT` y el CORS. Las respuestas se quedan **idénticas**
-(snake_case, mismos códigos y mensajes): las páginas no cambian más que la URL.
+Mismo origen que la página: el cliente llama a `/api/...` relativo, sin `apiBaseUrl()` ni CORS. Las
+respuestas son **idénticas** a las de FastAPI (snake_case, mismos códigos y mensajes).
 
 ### Capa de datos: Drizzle ORM sobre `mysql2`
 
-Lo estándar en Next.js hoy es un ORM con tipos (Drizzle o Prisma). Drizzle porque:
-- el esquema vive en TypeScript (`src/db/schema.ts`) y las consultas salen tipadas;
-- pasar a PostgreSQL más adelante es cambiar el dialecto y el esquema, no reescribir cada consulta;
-- `drizzle-kit` da migraciones versionadas, que sustituyen al SQL ejecutado a mano.
+- Esquema en TypeScript (`src/db/schema.ts`), consultas tipadas, migraciones con `drizzle-kit`.
+- `src/db/index.ts`: pool de `mysql2` con `import 'server-only'`, guardado en `globalThis` para el hot reload.
+- `src/server/data/*.ts`: consultas. `src/server/validation/*.ts`: esquemas `zod`. `src/app/api/**/route.ts`: solo HTTP.
+- **`steps_json` sale como string** (en MariaDB `JSON` es `LONGTEXT`; `parseSteps()` espera un string).
+- **Fechas en ISO con `T`** (`2026-09-10T23:09:29`): Safari en iPad no parsea el formato con espacio.
 
-Estructura:
-- `src/db/index.ts` — pool de `mysql2` con `import 'server-only'`, guardado en `globalThis`
-  para que el hot reload de `next dev` no abra un pool nuevo en cada cambio.
-- `src/db/schema.ts` — las tres tablas, sacadas de la base real con `drizzle-kit pull`.
-- `src/server/data/{programs,categories,users}.ts` — las consultas (Data Access Layer).
-- `src/server/validation/*.ts` — esquemas `zod` que sustituyen a los modelos de Pydantic.
-- `src/app/api/**/route.ts` — solo HTTP: validar, llamar a la capa de datos, responder.
+### Config en runtime, no en el build
 
-Dos detalles que hay que mantener para no romper el cliente:
-- **`steps_json` sale como string.** En MariaDB `JSON` es `LONGTEXT`; en el esquema va como texto,
-  no como `json()`, porque `parseSteps()` espera un string.
-- **Fechas.** FastAPI devolvía `2026-09-10T23:09:29`. Las timestamps salen en ese mismo formato
-  ISO (con `T`): Safari en iPad no parsea `2026-09-10 23:09:29`.
+`DB_*` y `MQTT_*` son variables de servidor que el layout raíz lee al servir la página y pasa al
+cliente. Nada de `NEXT_PUBLIC_*` para hosts: cambiar una IP no obliga a recompilar.
 
-### Config del servidor en runtime, no en el build
+### Red
 
-Lo que se hace en la industria con Docker: **una imagen, muchas máquinas**. Todo lo `NEXT_PUBLIC_*`
-se hornea en el bundle durante `next build`, así que cambiar el broker obligaría a reconstruir. Se
-pasa a variables de servidor (`DB_*`, `MQTT_*`) que el layout raíz lee al servir la página y le pasa
-al cliente. Además el host del broker ya no puede salir de `location.hostname`: la página vendrá
-del home lab y el broker sigue en Home Assistant.
+| Qué | Dónde |
+|---|---|
+| Web | CT 103, `http://192.168.1.103:3000`, HTTP (sin HTTPS, así que el broker va por `ws`) |
+| MariaDB | HA, `192.168.1.102:3306`, base `gaztaindi_grill`, login `gaztaindi_grill` |
+| Mosquitto | HA, `192.168.1.102`, WebSocket en `1884` |
 
-### Despliegue: Docker `standalone` + Compose
+### Despliegue: Node + systemd, sin Docker
 
-`output: 'standalone'` genera un `server.js` con solo las dependencias que usa; la imagen
-multi-stage final pesa ~150-200 MB en lugar de >1 GB. `compose.yaml` la arranca con un `.env`
-del host. Para empezar se construye en el propio contenedor de Proxmox (`docker compose up -d --build`
-tras un `git pull`). Lo habitual en la industria, en una rama aparte: GitHub Actions
-construye la imagen, la sube a GHCR y el servidor solo hace `pull`.
+- El CT 103 tiene el repo clonado (público, se baja sin credenciales) y Node de la versión fijada en
+  `GaztaindiGrill-NextJS/.nvmrc`, la misma que usa el CI.
+- `output: 'standalone'` genera `.next/standalone/server.js`, que corre como servicio systemd con
+  las variables en un `EnvironmentFile` (el `.env` del servidor, fuera del repo, permisos `600`).
+- **Ojo:** `standalone` no incluye `.next/static` ni `public`; hay que copiarlos dentro de
+  `.next/standalone/` en cada despliegue. `next start` no sirve con `output: 'standalone'`.
+- Por qué sin Docker: se compila en el CT de todas formas (no hay registro de imágenes), es la
+  única app del CT, y el usuario del runner en el grupo `docker` sería casi root. El `Dockerfile` y
+  los `compose.yml` se quedan en el repo, sin usar.
+- Por qué sin GHCR: para una sola máquina, construir, subir y bajar una imagen no aporta nada
+  frente a compilar en el CT.
 
-## Tareas
+## Fase 1: API dentro de Next.js (hecha, 12/10)
 
-### 1. Capa de datos con Drizzle
-- Añadir `drizzle-orm`, `zod`, `server-only` y `drizzle-kit` (dev). `mysql2` ya está.
-- `drizzle.config.ts`, `src/db/index.ts`, `src/db/schema.ts` (con `drizzle-kit pull` contra la base real, retocado a mano para `steps_json` como texto).
-- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` en `.env.example`.
-- Nadie lo usa todavía.
-- **Ficheros:** `package.json`, `package-lock.json`, `drizzle.config.ts`, `src/db/*`, `.env.example`
-- **Commit:** `feat: add a typed database layer for the programs database`
-- **Verificación:** `npm run lint`, `npm run typecheck`, `npx drizzle-kit pull` conecta y el esquema coincide.
-- **Manual antes:** en HA, add-on MariaDB → Network, exponer el puerto 3306 (por defecto no está expuesto), y que el usuario `gaztaindi` acepte conexiones desde la IP del home lab.
+| # | Tarea | Commit |
+|---|---|---|
+| 1 | Capa de datos con Drizzle | `feat: add a typed database layer for the programs database` |
+| 2 | Next.js como servidor (`standalone`, `/api/health`) | `feat: run the web client as a Node server in a Docker container` |
+| 3 | Programas en `/api/programs` | `refactor: serve programs from the web's own api routes` |
+| 4 | Categorías en `/api/categories` | `refactor: serve categories from the web's own api routes` |
+| 5 | Usuarios en `/api/users` | `refactor: serve users from the web's own api routes` |
+| 6 | Quitar `apiBaseUrl()` | `refactor: drop the separate api host from the web client` |
+| 7 | Broker MQTT en runtime | `feat: read the broker address at runtime instead of baking it into the build` |
+| 8 | Tarjeta de HA apunta a `192.168.1.103:3000/control` | `fix: point the home assistant dashboard card at the home lab` |
+| 9 | Borrar `GaztaindiGrill-API` | `chore: remove the fastapi service now that the web serves its own api` |
+| 10 | Herramientas de `.claude/` sin la API | `chore: drop the api project from the claude tooling` |
 
-### 2. Next.js como servidor en Docker
-- `next.config.ts`: `output: 'export'` → `output: 'standalone'`.
-- `Dockerfile` multi-stage (deps → build → runner con usuario no root), `.dockerignore`, `compose.yaml` con `env_file` y `restart: unless-stopped`, `GET /api/health` para el `healthcheck`.
-- Borrar `deploy.ps1`, `deploy.htaccess` y el script `deploy` de `package.json`: el Apache de HA deja de servir la web.
-- **Ficheros:** `next.config.ts`, `Dockerfile`, `.dockerignore`, `compose.yaml`, `src/app/api/health/route.ts`, `package.json`, `deploy.ps1`, `deploy.htaccess`
-- **Commit:** `feat: run the web client as a Node server in a Docker container`
-- **Verificación:** `npm run build`; `docker build` + `docker run` y abrir `/control` (si Docker Desktop está disponible).
+Manual pendiente en HA: desinstalar el add-on `gaztaindigrill_api` y, si nada más lo usa, Apache2.
 
-### 3. Programas en `/api/programs`
-- `src/server/data/programs.ts`, `src/server/validation/programs.ts`, `src/app/api/programs/route.ts`, `src/app/api/programs/[id]/route.ts`.
-- `PATCH` parcial como en FastAPI: solo los campos presentes, 400 si no llega ninguno, 404 si no existe.
-- Cliente: `list/page.tsx`, `create/page.tsx`, `edit/page.tsx`, `ProgramCard.tsx` llaman a `/api/programs...`.
-- **Commit:** `refactor: serve programs from the web's own api routes`
-- **Verificación:** `npm run lint`, `npm run typecheck`; en `npm run dev`: listar, crear, editar y borrar un programa, y comparar el JSON con el de FastAPI.
+## Fase 2: CI/CD (lo escribe el usuario; aquí solo el objetivo de cada tarea)
 
-### 4. Categorías en `/api/categories`
-- Igual que la 3. Cliente: `ProgramForm.tsx`, `list/page.tsx`.
-- **Commit:** `refactor: serve categories from the web's own api routes`
-- **Verificación:** lint, typecheck; crear una categoría desde el formulario.
+```mermaid
+flowchart LR
+    PR["PR a main"] --> C["job checks<br/>runner de GitHub"]
+    M["merge a main"] --> C
+    C -->|"verde y es push"| D["job deploy<br/>runner self-hosted en CT 103"]
+    D --> W["git pull, build,<br/>reinicio, /api/health"]
+```
 
-### 5. Usuarios en `/api/users`
-- Igual. El nombre duplicado (`ER_DUP_ENTRY`) sigue dando 409. Cliente: `CurrentUserContext.tsx`.
-- **Commit:** `refactor: serve users from the web's own api routes`
-- **Verificación:** lint, typecheck; abrir la app sin usuario guardado, crear uno, crear uno repetido.
+### 11. Job `checks` (runner de GitHub)
+- `.github/workflows/web.yml`. Se dispara con `push` y `pull_request` hacia `main` que toquen `GaztaindiGrill-NextJS/**`.
+- `npm ci`, `npm run lint`, `npm run typecheck`, `npm run build` en `GaztaindiGrill-NextJS/`, con caché de npm y Node desde `.nvmrc`.
+- **Verificación:** un PR que toca la web sale en verde; con un error de tipos a propósito, en rojo.
 
-### 6. Quitar `apiBaseUrl()`
-- Fuera `apiBaseUrl()`, `NEXT_PUBLIC_API_PORT` y su entrada en `.env.example`.
-- **Commit:** `refactor: drop the separate api host from the web client`
-- **Verificación:** lint, typecheck, `grep apiBaseUrl` vacío.
+### 12. Runner self-hosted en el CT 103
+- Usuario propio sin `sudo`, instalado como servicio, etiqueta `homelab`.
+- Node de la versión de `.nvmrc` instalado en el CT.
+- **Verificación:** «Idle» en Settings → Actions → Runners, también después de reiniciar el CT.
 
-### 7. Broker MQTT configurado en runtime
-- El layout raíz lee `MQTT_HOST`, `MQTT_PORT`, `MQTT_PROTOCOL`, `MQTT_PATH`, `MQTT_USER`, `MQTT_PASSWORD` de `process.env` y se los pasa a `MqttProvider`. Sin `MQTT_HOST`, se sigue usando el host de la página.
-- Fuera `NEXT_PUBLIC_MQTT_*` y `NEXT_PUBLIC_DEV_HOST`; `resolveHost()` se queda solo para lo que no es MQTT. La comprobación de `localhost` del simulador pasa a mirar el host del broker.
-- La config `nextjs-dev-fake-grill` de `.claude/launch.json` pasa `MQTT_HOST=localhost`.
-- **Commit:** `feat: read the broker address at runtime instead of baking it into the build`
-- **Verificación:** lint, typecheck; `npm run dev` contra la parrilla real y contra `npm run fake-grill`.
+### 13. Servicio systemd de la web
+- Arranca `server.js` de `standalone` en el puerto 3000 con el `.env` del servidor; se reinicia si se cae.
+- El usuario del runner puede reiniciar ese servicio y nada más (regla de sudoers limitada a ese comando).
+- **Verificación:** `http://192.168.1.103:3000/api/health` responde tras reiniciar el CT.
 
-### 8. Tarjeta del dashboard de Home Assistant
-- `homeassistant/grill.html` y `dashboard-card.yaml` apuntan a `http://192.168.1.103:3000/control` en vez de al puerto 8081 de la HA. Con IP fija el shim ya no necesita copiar `location.hostname`.
-- **Commit:** `fix: point the home assistant dashboard card at the home lab`
-- **Verificación:** manual, abrir el dashboard por LAN y por Tailscale.
+### 14. Job `deploy` (runner self-hosted)
+- Solo con `push` a `main`, nunca con PR; depende de `checks`; nunca dos a la vez.
+- Lleva el repo del CT al commit del push, compila, copia `static` y `public`, reinicia el servicio.
+- Falla si `/api/health` no responde después.
+- **Verificación:** mergear un cambio visible y verlo en la web sin entrar al CT; un PR sin mergear no lanza `deploy`.
 
-### 9. Borrar `GaztaindiGrill-API`
-- Fuera el directorio entero, add-on incluido. `docs/database.md` se mueve a `GaztaindiGrill-NextJS/docs/` antes, porque es el único registro del esquema; `api-reference.md` ya está cubierto por `docs/api.md`.
-- **Commit:** `chore: remove the fastapi service now that the web serves its own api`
-- **Verificación:** `npm run build`.
-- **Manual después:** desinstalar el add-on `gaztaindigrill_api` en HA.
+### 15. Ruleset de `main`
+- «Restrict deletions», «Block force pushes», «Require a pull request before merging» (0 aprobaciones), sin bypass.
+- «Require status checks to pass» con el job `checks`, cuando haya corrido una vez.
+- **Verificación:** un PR con `checks` en rojo no deja mergear.
 
-### 10. Herramientas de `.claude/`
-- `feature-plan`, `feature-implement`, `commit`, `docs-sync` y `commit-splitter` dejan de nombrar `GaztaindiGrill-API` y el scope `api`.
-- **Commit:** `chore: drop the api project from the claude tooling`
-- **Verificación:** `grep -r GaztaindiGrill-API .claude` solo encuentra planes antiguos.
+### 16. Docs
+- `docs/deploy.md` y los dos `CLAUDE.md`: el flujo sin Docker sustituye al de `docker compose`;
+  cómo volver a una versión anterior (`git checkout <sha>` y relanzar el despliegue); RAM del CT
+  (3 GB: compila con three.js).
 
-Después: `/docs-sync` (CLAUDE.md raíz y de NextJS, `docs/api.md`, `docs/database.md`).
+## Seguridad (repo público + runner self-hosted)
 
-## Decidido después
-
-1. **Web en el home lab:** IP fija `192.168.1.103`, HTTP, puerto 3000. Sin HTTPS, así que el broker sigue en `ws`.
-2. **MariaDB y Mosquitto:** por LAN, contra la IP de la HA (`192.168.1.101`): `DB_HOST` y `MQTT_HOST` en el `.env` del servidor.
-3. **Imagen en GitHub Actions:** rama aparte, después de esta.
+- [ ] Ningún job con `runs-on: self-hosted` se dispara con `pull_request`, `pull_request_target` ni `issue_comment`.
+- [ ] Settings → Actions → General → «Require approval for all external contributors».
+- [ ] No aprobar PRs de fuera que toquen `.github/workflows/`.
+- [ ] `.env` del servidor fuera de la carpeta de trabajo del runner, permisos `600`.
+- [ ] El usuario del runner sin `sudo` general ni grupo `docker`.

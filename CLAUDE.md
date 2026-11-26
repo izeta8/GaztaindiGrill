@@ -49,7 +49,7 @@ is the whole runbook (LXC, Docker install, first deploy, updates, troubleshootin
 
 - `next.config.ts` sets `output: 'standalone'`; the multi-stage `Dockerfile` copies only `server.js`, the traced `node_modules` and the static files. `compose.yaml` starts it with `restart: unless-stopped` and the healthcheck hits `/api/health`.
 - **Every setting is read by the server at runtime**, from `.env` next to `compose.yaml` on the server (`.env.local` in dev): `DB_*` for MariaDB and `MQTT_*` for the broker. None is `NEXT_PUBLIC_*`, so the image holds no host or credential and a change needs a restart, never a rebuild. The root layout calls `connection()` so pages render per request instead of freezing the build's environment.
-- Deploying today is `git pull` + `docker compose up -d --build` on the LXC. Building on GitHub Actions and pulling the image from GHCR is planned for its own branch.
+- Deployment is moving away from Docker (in progress on `feature/dockerize`): a merge to `main` runs lint, typecheck and build on GitHub, then a self-hosted runner on CT 103 pulls, builds and restarts a systemd service. No GHCR. The Dockerfile and compose files stay but are unused. See `.claude/plans/api-into-nextjs.md` and `TODO.md` §0; the Docker parts of this section and of `docs/deploy.md` are outdated until task 16 of that plan.
 - Home Assistant's IP has come from DHCP and changed more than once; `DB_HOST` and `MQTT_HOST` break when it does, so give it a fixed one.
 
 `GaztaindiGrill-NextJS/homeassistant/dashboard-card.yaml` is the HA dashboard view that embeds the web in an iframe (pasted into the dashboard by hand). Its URL names the home lab's fixed address, which the browser resolves, so it only works from the LAN.

@@ -5,7 +5,7 @@ out
 .env*
 !.env.example
 Dockerfile
-compose.yaml
+compose.yml
 docs
 homeassistant
 *.md

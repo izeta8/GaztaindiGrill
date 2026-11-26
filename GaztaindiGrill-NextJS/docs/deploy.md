@@ -1,45 +1,42 @@
 # Despliegue en el home lab
 
-La web (páginas y API) corre como un contenedor Docker en un LXC de Proxmox, en
-`http://192.168.1.103:3000`. MariaDB y Mosquitto siguen en Home Assistant y se alcanzan por la LAN.
+La web (páginas y API) corre como contenedor Docker en el CT 103 de Proxmox, en
+`http://192.168.1.103:3000`. MariaDB y Mosquitto siguen en Home Assistant (`192.168.1.102`) y se
+alcanzan por la LAN.
+
+## Cómo funciona
 
 ```mermaid
 flowchart LR
-    NAV["Navegador"] -->|"HTTP :3000<br/>páginas + /api"| WEB["LXC 192.168.1.103<br/>Docker: gaztaindigrill-web"]
-    WEB -->|"MySQL :3306"| DB[("MariaDB<br/>add-on de HA")]
-    NAV -->|"MQTT sobre WebSocket :1884"| BROKER{{"Mosquitto<br/>add-on de HA"}}
+    PR["PR a main"] --> C["checks<br/>runner de GitHub<br/>lint, typecheck, build"]
+    M["merge a main"] --> C
+    C -->|"verde y es push a main"| D["deploy<br/>runner self-hosted en CT 103"]
+    D --> B["docker compose up --build --wait<br/>imagen gaztaindigrill-web:&lt;sha&gt;"]
+    B -->|"no llega a healthy"| F["el job falla"]
 ```
 
-El navegador habla con el broker directamente: el servidor solo le dice dónde está (`MQTT_*`).
-
-## 1. Antes de empezar, en Home Assistant
-
-1. **IP fija para Home Assistant.** Ahora la coge por DHCP y ya ha cambiado dos veces
-   (`.76` → `.101` → `.102`). Fíjala en Ajustes → Sistema → Red → IPv4 → Estática, o con una reserva
-   en el router. Si cambia, `DB_HOST` y `MQTT_HOST` dejan de apuntar a ella.
-2. **Puerto 3306 de MariaDB expuesto**: add-on MariaDB → pestaña Red.
-3. Cuando la web nueva funcione: desinstalar los add-ons **GaztaindiGrill API** y, si ya no sirve
-   nada más, **Apache2**.
-
-## 2. Crear el LXC en Proxmox
-
-| | |
+| Pieza | Dónde |
 |---|---|
-| Plantilla | Debian 12 o 13, **Unprivileged** |
-| CPU | 2 cores |
-| RAM | **3 GB** + 1 GB de swap mientras la imagen se construya aquí; 1 GB cuando la construya GitHub Actions |
-| Disco | 10 GB en `local-lvm` |
-| Red | IP estática `192.168.1.103/24`, puerta de enlace la del router |
-| Options → Features | `nesting=1` y `keyctl=1` (sin ellos Docker no arranca dentro) |
+| Workflow | `.github/workflows/web.yml` |
+| Imagen | `Dockerfile` (multi-stage, `standalone`, `HEALTHCHECK` contra `/api/health`) |
+| Contenedor | `compose.yml`, proyecto `gaztaindigrill`, servicio `web` |
+| Variables (`DB_*`, `MQTT_*`) | `/etc/gaztaindigrill-web.env` en el CT (plantilla: `.env.example`) |
+| Versión de Node | `.nvmrc` en el CI; `node:22-alpine` en el Dockerfile |
 
-`next build` con three.js necesita 1,5–2 GB de RAM; con 1 GB el build muere por falta de memoria.
+Cada despliegue construye la imagen en el CT con la etiqueta del commit (`gaztaindigrill-web:<sha>`)
+y sustituye el contenedor; `latest` apunta siempre a la que corre. Mientras construye, la versión anterior sigue sirviendo. Las imágenes de
+menos de 30 días se guardan para volver atrás.
 
-## 3. Instalar Docker en el LXC
+## Montaje del CT 103 (una vez)
 
-Entra en la consola del LXC (como root) y pega esto. Es el repositorio oficial de Docker, no el
-paquete `docker.io` de Debian, que va con versiones atrasadas y sin el plugin de Compose.
+CT: Debian 12 o 13 sin privilegios, 2 cores, **3 GB de RAM** (`next build` con three.js necesita
+1,5–2 GB), 10 GB de disco, IP fija `192.168.1.103/24`. En Options → Features, `nesting=1` y
+`keyctl=1` (sin ellos Docker no arranca dentro).
+
+Como root en el CT:
 
 ```bash
+# 1. Docker desde su repositorio oficial (el docker.io de Debian va atrasado y sin Compose)
 apt update && apt install -y ca-certificates curl git
 install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
@@ -47,39 +44,54 @@ chmod a+r /etc/apt/keyrings/docker.asc
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list
 apt update && apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 docker run --rm hello-world
+
+# 2. Usuario del runner, con permiso para usar Docker
+useradd --create-home --shell /bin/bash github-runner
+usermod -aG docker github-runner
+
+# 3. Variables: copia .env.example y rellena DB_USER, DB_PASSWORD, MQTT_* (en Bitwarden)
+install -m 640 -o root -g github-runner /dev/null /etc/gaztaindigrill-web.env
+nano /etc/gaztaindigrill-web.env
 ```
 
-Si el último comando imprime "Hello from Docker!", está listo. Docker arranca solo con el LXC.
+⚠️ Estar en el grupo `docker` equivale a ser root en el CT: por eso el job `deploy` nunca corre
+con PRs y los PRs de fuera necesitan tu aprobación (abajo).
 
-## 4. Primer despliegue
+Runner:
+
+1. GitHub → repo → Settings → Actions → Runners → **New self-hosted runner** → Linux x64.
+2. En el CT, `su - github-runner` y pega los comandos de descarga y `./config.sh` que da GitHub.
+   Cuando pregunte etiquetas, añade `homelab`.
+3. `exit` (vuelve a root), y en la carpeta del runner: `./svc.sh install github-runner && ./svc.sh start`.
+4. Comprueba que sale **Idle** en Settings → Actions → Runners.
+
+En GitHub, antes del primer despliegue:
+
+- Settings → Actions → General → **Require approval for all external contributors**.
+- Primer despliegue: Actions → Web → **Run workflow** sobre `main`.
+- Cuando `checks` haya corrido una vez: en el ruleset de `main`, **Require status checks to pass** con `Lint, typecheck and build`.
+
+## Volver a una versión anterior
+
+En el CT, desde la carpeta de trabajo del runner (`~github-runner/actions-runner/_work/GaztaindiGrill/GaztaindiGrill/GaztaindiGrill-NextJS`):
 
 ```bash
-git clone https://github.com/izeta8/GaztaindiGrill.git /opt/gaztaindigrill
-cd /opt/gaztaindigrill/GaztaindiGrill-NextJS
-cp .env.example .env
-nano .env        # DB_USER, DB_PASSWORD, MQTT_USER, MQTT_PASSWORD; revisa las IPs
-docker compose up -d --build
-docker compose ps   # tras unos 30 s, STATUS debe decir (healthy)
+docker images gaztaindigrill-web                 # etiquetas = commits
+IMAGE_TAG=<sha> docker compose up -d --wait
+docker tag gaztaindigrill-web:<sha> gaztaindigrill-web:latest
 ```
 
-`.env` está en `.gitignore`: las credenciales viven solo en el servidor, nunca en la imagen ni en git.
+Sin compilar: tarda lo que el arranque. El siguiente merge a `main` vuelve a desplegar lo último.
 
-## 5. Actualizar
+## Cuando algo falla
 
-```bash
-cd /opt/gaztaindigrill && git pull
-cd GaztaindiGrill-NextJS && docker compose up -d --build
-docker image prune -f   # borra las imágenes viejas; el disco es pequeño
-```
-
-Cambiar solo una variable de `.env` no necesita build: `docker compose up -d` recrea el contenedor
-con los valores nuevos.
-
-## 6. Cuando algo falla
+Los comandos `docker compose`, desde la carpeta de arriba.
 
 | Síntoma | Mira |
 |---|---|
-| La página no carga | `docker compose ps` y `docker compose logs -f web` |
+| El job `deploy` no arranca | El runner sale «Offline» en Settings → Actions → Runners: `systemctl status 'actions.runner.*'` en el CT |
+| `deploy` falla en `--wait` | `docker compose logs web`; el contenedor no llegó a `healthy` |
+| El build muere en el CT | Falta RAM: 3 GB |
 | Los programas no cargan, `/api/programs` da 500 | El mensaje trae el error de MariaDB. `ECONNREFUSED` = IP de HA cambiada o 3306 sin exponer |
-| La parrilla sale desconectada | `MQTT_HOST` y `MQTT_PORT` en `.env`; el broker tiene que aceptar WebSocket en 1884 |
-| `unhealthy` en `docker compose ps` | `docker inspect --format '{{json .State.Health}}' $(docker compose ps -q web)` |
+| La parrilla sale desconectada | `MQTT_HOST` y `MQTT_PORT` en `/etc/gaztaindigrill-web.env`; el broker acepta WebSocket en 1884 |
+| Cambié una variable | `docker compose up -d` (recrea el contenedor sin compilar) |

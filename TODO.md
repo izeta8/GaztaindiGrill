@@ -1,31 +1,27 @@
 # TODO
 
-## 0. Despliegue — en curso (rama `feature/dockerize`, 2026-11-25)
+## 0. Despliegue — en curso (rama `feature/dockerize`)
 
-Plan y motivos: `.claude/plans/api-into-nextjs.md`. Resumen: merge a `main` → job `checks` en
-GitHub (lint, typecheck, build) → job `deploy` en un runner self-hosted del CT 103 (`git pull`,
-build, reinicio del servicio systemd). **Sin Docker ni GHCR.** La fase 2 la escribe Julen para
-aprender; Claude revisa y da pistas, no la solución.
+Plan y motivos: `.claude/plans/api-into-nextjs.md`; montaje y uso: `GaztaindiGrill-NextJS/docs/deploy.md`.
+Merge a `main` → job `checks` en GitHub (lint, typecheck, build) → job `deploy` en un runner
+self-hosted del CT 103 (`docker compose up --build --wait`). Docker construido en el CT, sin GHCR.
 
 Hecho:
 - Fase 1 (API dentro de Next.js, FastAPI borrado), 12/10.
-- ESP32 por DHCP en `192.168.1.70` y broker MQTT en `192.168.1.102` (la HA), flasheado, 25/11.
-- Plan reescrito para CI/CD sin Docker, 25/11.
+- ESP32 por DHCP en `192.168.1.70` y broker MQTT en `192.168.1.102` (la HA), 25/11.
+- Workflow `.github/workflows/web.yml`, `compose.yml`, `.nvmrc` y `docs/deploy.md`, 26/11.
+  El compose está probado en local (llega a `healthy`); el workflow aún no ha corrido.
 
 Falta, en orden:
-1. Commit del plan (`.claude/plans/api-into-nextjs.md`).
-2. GitHub: confirmar que el ruleset `main protection` está creado (sin borrar ni force push, PR
-   obligatorio con 0 aprobaciones) y activar Settings → Actions → General → «Require approval
-   for all external contributors».
-3. `GaztaindiGrill-NextJS/.nvmrc` con `22`.
-4. Tareas 11–16 del plan: job `checks`, runner en el CT 103, servicio systemd, job `deploy`,
-   status check en el ruleset, docs (`docs/deploy.md` y `CLAUDE.md` siguen hablando de Docker).
-5. `.env` del CT 103: login nuevo `gaztaindi_grill` (en Bitwarden) y `DB_NAME=gaztaindi_grill`;
-   corregir también `deploy/.env.example`, que sigue con `DB_NAME=gaztaindi`.
-6. Comprobar en los logs del add-on Mosquitto que la parrilla (`.70`) conecta al broker.
-7. Sacar el usuario y la contraseña de MQTT de `GrillConfig.h` (repo público) y cambiarlos.
-8. HA: desinstalar el add-on `gaztaindigrill_api` y, si nada más lo usa, Apache2.
-9. Mergear `feature/dockerize` (lleva también los dos arreglos del ESP32) a `develop` y `main`.
+1. GitHub: confirmar el ruleset `main protection` y activar Settings → Actions → General →
+   «Require approval for all external contributors».
+2. CT 103: montaje de `docs/deploy.md` (Docker, usuario `github-runner`, `/etc/gaztaindigrill-web.env`
+   con el login `gaztaindi_grill` de Bitwarden, runner con etiqueta `homelab`).
+3. Mergear `feature/dockerize` a `main` (lleva también los arreglos del ESP32) y comprobar que
+   `checks` y `deploy` pasan; después, el status check en el ruleset.
+4. Comprobar en los logs del add-on Mosquitto que la parrilla (`.70`) conecta al broker.
+5. Sacar el usuario y la contraseña de MQTT de `GrillConfig.h` (repo público) y cambiarlos.
+6. HA: desinstalar el add-on `gaztaindigrill_api` y, si nada más lo usa, Apache2.
 
 ## 1. Temperatura — en orden, ya desbloqueado por el termopar
 

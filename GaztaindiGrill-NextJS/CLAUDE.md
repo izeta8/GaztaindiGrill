@@ -17,12 +17,13 @@ npm run typecheck # tsc --noEmit, does not touch .next
 ```
 
 **Deploying** is Docker on the home lab: `output: 'standalone'` in `next.config.ts`, a multi-stage
-`Dockerfile` and `compose.yaml`, rebuilt on the LXC with `git pull` + `docker compose up -d --build`.
-[docs/deploy.md](docs/deploy.md) is the full runbook, Docker install included. `docker build .` also
+`Dockerfile` and `compose.yml`. A merge to `main` runs `.github/workflows/web.yml`: checks on
+GitHub, then a self-hosted runner on CT 103 runs `docker compose up -d --build --wait`.
+[docs/deploy.md](docs/deploy.md) is the full runbook, CT setup included. `docker build .` also
 works on the dev machine (about 4 min) and, unlike `npm run build`, never touches the dev server's `.next`.
 
-**Configuration is server-side and read at runtime**, from `.env.local` in dev and `.env` next to
-`compose.yaml` on the server; `.env.example` lists every variable. `DB_*` point at MariaDB, `MQTT_*`
+**Configuration is server-side and read at runtime**, from `.env.local` in dev and 
+`/etc/gaztaindigrill-web.env` on the server; `.env.example` lists every variable. `DB_*` point at MariaDB, `MQTT_*`
 at the broker. Nothing is `NEXT_PUBLIC_*` any more, so the image holds no host or credential, and the
 root layout calls `connection()` so pages render per request rather than freezing the build's
 environment. Changing a value needs a restart (`npm run dev` included), never a rebuild.

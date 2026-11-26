@@ -1,0 +1,14 @@
+# Runs the web on CT 103. The deploy job builds and starts it with:
+#   IMAGE_TAG=<sha> docker compose up -d --build --wait
+# --wait fails the job if the container does not become healthy (Dockerfile HEALTHCHECK).
+name: gaztaindigrill
+
+services:
+  web:
+    build: .
+    image: gaztaindigrill-web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    # Outside the repo, so it never reaches git or the runner's checkout.
+    env_file: /etc/gaztaindigrill-web.env

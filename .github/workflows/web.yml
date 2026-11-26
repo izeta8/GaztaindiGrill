@@ -1,0 +1,66 @@
+# Web: checks on GitHub's runners for every PR and push to main; deploy to CT 103 only after a
+# push to main passes them. The deploy job runs on the self-hosted runner in the home lab, so it
+# must never run for pull requests: this repo is public and a fork could change this file.
+name: Web
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'GaztaindiGrill-NextJS/**'
+      - '.github/workflows/web.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'GaztaindiGrill-NextJS/**'
+      - '.github/workflows/web.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: GaztaindiGrill-NextJS
+
+jobs:
+  checks:
+    name: Lint, typecheck and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: GaztaindiGrill-NextJS/.nvmrc
+          cache: npm
+          cache-dependency-path: GaztaindiGrill-NextJS/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+
+  deploy:
+    name: Deploy to CT 103
+    needs: checks
+    # Only main, only from a push or a manual run: never a pull request.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, homelab]
+    # One deploy at a time; a newer push waits instead of cancelling one halfway.
+    concurrency:
+      group: deploy-web
+      cancel-in-progress: false
+    env:
+      IMAGE_TAG: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v5
+
+      # Builds the image on the CT and replaces the container; fails if it is not healthy.
+      - run: docker compose up -d --build --wait
+
+      # "latest" is what is running, so manual compose commands need no tag.
+      - run: docker tag "gaztaindigrill-web:$IMAGE_TAG" gaztaindigrill-web:latest
+
+      # Images older than 30 days go; newer ones stay for rollbacks by commit.
+      - run: docker image prune -af --filter "until=720h"
